@@ -180,7 +180,7 @@ impl CurrencyService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -199,7 +199,7 @@ impl CurrencyService {
         .bind(to)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         row.map(|r| r.0)
             .ok_or_else(|| Error::not_found("ExchangeRate", &format!("{}->{}", from, to)))
@@ -228,7 +228,7 @@ impl CurrencyService {
         .bind(er.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         Ok(er)
     }
@@ -275,7 +275,7 @@ impl BudgetService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         let mut budgets = Vec::new();
         for row in rows {
@@ -329,7 +329,7 @@ impl BudgetService {
         .bind(&budget_id)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         Ok(rows.into_iter().map(|r| {
             let variance = r.amount - r.actual;
@@ -369,7 +369,7 @@ impl BudgetService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         for (account_id, period, amount) in lines {
             let line_id = Uuid::new_v4();
@@ -384,7 +384,7 @@ impl BudgetService {
             .bind(amount)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(|e| Error::Database(e))?;
         }
         
         let budgets = Self::list_budgets(pool).await?;
@@ -415,6 +415,235 @@ struct BudgetLineRow {
     variance: i64,
     account_code: Option<String>,
     account_name: Option<String>,
+}
+
+pub struct FixedAssetService;
+
+impl FixedAssetService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_asset(
+        pool: &SqlitePool,
+        asset_code: &str,
+        name: &str,
+        category: &str,
+        cost: i64,
+        salvage_value: i64,
+        useful_life_years: i32,
+        depreciation_method: DepreciationMethod,
+        acquisition_date: &str,
+        location: Option<&str>,
+        description: Option<&str>,
+    ) -> Result<FixedAsset> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        
+        let asset = FixedAsset {
+            id,
+            asset_code: asset_code.to_string(),
+            name: name.to_string(),
+            description: description.map(|s| s.to_string()),
+            category: category.to_string(),
+            location: location.map(|s| s.to_string()),
+            cost,
+            salvage_value,
+            useful_life_years,
+            depreciation_method,
+            acquisition_date: chrono::DateTime::parse_from_rfc3339(acquisition_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or(now),
+            depreciation_start_date: None,
+            accumulated_depreciation: 0,
+            net_book_value: cost,
+            status: Status::Active,
+            created_at: now,
+            updated_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO fixed_assets (id, asset_code, name, description, category, location, cost, salvage_value, useful_life_years, depreciation_method, acquisition_date, depreciation_start_date, accumulated_depreciation, net_book_value, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, 0, ?, 'Active', ?, ?)"
+        )
+        .bind(asset.id.to_string())
+        .bind(&asset.asset_code)
+        .bind(&asset.name)
+        .bind(&asset.description)
+        .bind(&asset.category)
+        .bind(&asset.location)
+        .bind(asset.cost)
+        .bind(asset.salvage_value)
+        .bind(asset.useful_life_years)
+        .bind(format!("{:?}", asset.depreciation_method))
+        .bind(asset.acquisition_date.to_rfc3339())
+        .bind(asset.net_book_value)
+        .bind(asset.created_at.to_rfc3339())
+        .bind(asset.updated_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(asset)
+    }
+
+    pub async fn get_asset(pool: &SqlitePool, id: Uuid) -> Result<FixedAsset> {
+        let row = sqlx::query_as::<_, AssetRow>(
+            "SELECT id, asset_code, name, description, category, location, cost, salvage_value, useful_life_years, depreciation_method, acquisition_date, depreciation_start_date, accumulated_depreciation, net_book_value, status, created_at, updated_at
+             FROM fixed_assets WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("FixedAsset", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+
+    pub async fn list_assets(pool: &SqlitePool) -> Result<Vec<FixedAsset>> {
+        let rows = sqlx::query_as::<_, AssetRow>(
+            "SELECT id, asset_code, name, description, category, location, cost, salvage_value, useful_life_years, depreciation_method, acquisition_date, depreciation_start_date, accumulated_depreciation, net_book_value, status, created_at, updated_at
+             FROM fixed_assets WHERE status = 'Active' ORDER BY asset_code"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn calculate_depreciation(pool: &SqlitePool, id: Uuid) -> Result<AssetDepreciation> {
+        let asset = Self::get_asset(pool, id).await?;
+        let now = chrono::Utc::now();
+        let period = now.format("%Y-%m").to_string();
+        
+        let depreciable_amount = asset.cost - asset.salvage_value;
+        let monthly_depreciation = match asset.depreciation_method {
+            DepreciationMethod::StraightLine => {
+                let months = asset.useful_life_years * 12;
+                if months > 0 { depreciable_amount / months as i64 } else { 0 }
+            }
+            DepreciationMethod::DecliningBalance => {
+                let rate = 0.2;
+                (asset.net_book_value as f64 * rate / 12.0) as i64
+            }
+            _ => depreciable_amount / (asset.useful_life_years * 12) as i64,
+        };
+        
+        let new_accumulated = asset.accumulated_depreciation + monthly_depreciation;
+        let new_nbv = asset.cost - new_accumulated;
+        
+        let dep = AssetDepreciation {
+            id: Uuid::new_v4(),
+            asset_id: id,
+            period: period.clone(),
+            depreciation_amount: monthly_depreciation,
+            accumulated_depreciation: new_accumulated,
+            posted_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO asset_depreciation (id, asset_id, period, depreciation_amount, accumulated_depreciation, posted_at)
+             VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        .bind(dep.id.to_string())
+        .bind(dep.asset_id.to_string())
+        .bind(&dep.period)
+        .bind(dep.depreciation_amount)
+        .bind(dep.accumulated_depreciation)
+        .bind(dep.posted_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        sqlx::query(
+            "UPDATE fixed_assets SET accumulated_depreciation = ?, net_book_value = ?, updated_at = ? WHERE id = ?"
+        )
+        .bind(new_accumulated)
+        .bind(new_nbv.max(asset.salvage_value))
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(dep)
+    }
+
+    pub async fn dispose_asset(pool: &SqlitePool, id: Uuid) -> Result<FixedAsset> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE fixed_assets SET status = 'Disposed', updated_at = ? WHERE id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_asset(pool, id).await
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct AssetRow {
+    id: String,
+    asset_code: String,
+    name: String,
+    description: Option<String>,
+    category: String,
+    location: Option<String>,
+    cost: i64,
+    salvage_value: i64,
+    useful_life_years: i64,
+    depreciation_method: String,
+    acquisition_date: String,
+    depreciation_start_date: Option<String>,
+    accumulated_depreciation: i64,
+    net_book_value: i64,
+    status: String,
+    created_at: String,
+    updated_at: String,
+}
+
+impl From<AssetRow> for FixedAsset {
+    fn from(r: AssetRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            asset_code: r.asset_code,
+            name: r.name,
+            description: r.description,
+            category: r.category,
+            location: r.location,
+            cost: r.cost,
+            salvage_value: r.salvage_value,
+            useful_life_years: r.useful_life_years as i32,
+            depreciation_method: match r.depreciation_method.as_str() {
+                "DecliningBalance" => DepreciationMethod::DecliningBalance,
+                "SumOfYearsDigits" => DepreciationMethod::SumOfYearsDigits,
+                "UnitsOfProduction" => DepreciationMethod::UnitsOfProduction,
+                _ => DepreciationMethod::StraightLine,
+            },
+            acquisition_date: chrono::DateTime::parse_from_rfc3339(&r.acquisition_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            depreciation_start_date: r.depreciation_start_date
+                .and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            accumulated_depreciation: r.accumulated_depreciation,
+            net_book_value: r.net_book_value,
+            status: match r.status.as_str() {
+                "Disposed" => Status::Inactive,
+                _ => Status::Active,
+            },
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.updated_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
 }
 
 pub struct FinancialReportingService {
@@ -458,7 +687,7 @@ impl FinancialReportingService {
         .bind(account_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
         
         Ok(balance.0 - balance.1)
     }

@@ -123,6 +123,52 @@ fn api_routes(state: AppState) -> Router<AppState> {
             "/expense-reports/:id/reject",
             post(handlers::extended::reject_expense),
         )
+        .route(
+            "/fixed-assets",
+            get(handlers::extended::list_fixed_assets).post(handlers::extended::create_fixed_asset),
+        )
+        .route(
+            "/fixed-assets/:id/depreciate",
+            post(handlers::extended::depreciate_asset),
+        )
+        .route("/inspections", post(handlers::extended::create_inspection))
+        .route(
+            "/inspections/:id/complete",
+            post(handlers::extended::complete_inspection),
+        )
+        .route("/ncrs", post(handlers::extended::create_ncr))
+        .route(
+            "/leads",
+            get(handlers::extended::list_leads).post(handlers::extended::create_lead),
+        )
+        .route(
+            "/opportunities",
+            get(handlers::extended::list_opportunities)
+                .post(handlers::extended::create_opportunity),
+        )
+        .route(
+            "/opportunities/:id/stage",
+            post(handlers::extended::update_opportunity_stage),
+        )
+        .route(
+            "/schedules",
+            get(handlers::extended::list_schedules)
+                .post(handlers::extended::create_production_schedule),
+        )
+        .route("/scorecards", post(handlers::extended::create_scorecard))
+        .route(
+            "/scorecards/:vendor_id",
+            get(handlers::extended::list_scorecards),
+        )
+        .route(
+            "/custom-fields",
+            post(handlers::extended::create_custom_field),
+        )
+        .route(
+            "/custom-fields/:entity_type",
+            get(handlers::extended::list_custom_fields),
+        )
+        .route("/custom-values", post(handlers::extended::set_custom_value))
         .route("/export", get(handlers::import_export::export_csv))
         .route("/import", post(handlers::import_export::import_csv))
 }

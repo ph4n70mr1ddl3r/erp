@@ -113,3 +113,94 @@ pub enum PaymentMethod {
     CreditCard,
     BankTransfer,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Lead {
+    pub id: Uuid,
+    pub lead_number: String,
+    pub company_name: String,
+    pub contact_name: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub source: Option<String>,
+    pub industry: Option<String>,
+    pub estimated_value: i64,
+    pub status: LeadStatus,
+    pub assigned_to: Option<Uuid>,
+    pub notes: Option<String>,
+    pub converted_to_customer: Option<Uuid>,
+    pub converted_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum LeadStatus {
+    New,
+    Contacted,
+    Qualified,
+    Unqualified,
+    Converted,
+    Lost,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Opportunity {
+    pub id: Uuid,
+    pub opportunity_number: String,
+    pub name: String,
+    pub customer_id: Option<Uuid>,
+    pub lead_id: Option<Uuid>,
+    pub stage: OpportunityStage,
+    pub probability: i32,
+    pub expected_close_date: Option<DateTime<Utc>>,
+    pub amount: i64,
+    pub description: Option<String>,
+    pub assigned_to: Option<Uuid>,
+    pub status: OpportunityStatus,
+    pub activities: Vec<OpportunityActivity>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum OpportunityStage {
+    Prospecting,
+    Qualification,
+    Proposal,
+    Negotiation,
+    ClosedWon,
+    ClosedLost,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum OpportunityStatus {
+    Open,
+    Won,
+    Lost,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OpportunityActivity {
+    pub id: Uuid,
+    pub opportunity_id: Uuid,
+    pub activity_type: ActivityType,
+    pub subject: String,
+    pub description: Option<String>,
+    pub due_date: Option<DateTime<Utc>>,
+    pub completed: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ActivityType {
+    Call,
+    Meeting,
+    Email,
+    Task,
+    Note,
+}

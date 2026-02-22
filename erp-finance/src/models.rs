@@ -172,3 +172,43 @@ pub struct BudgetLineWithVariance {
     pub variance: i64,
     pub variance_percent: f64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FixedAsset {
+    pub id: Uuid,
+    pub asset_code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub category: String,
+    pub location: Option<String>,
+    pub cost: i64,
+    pub salvage_value: i64,
+    pub useful_life_years: i32,
+    pub depreciation_method: DepreciationMethod,
+    pub acquisition_date: DateTime<Utc>,
+    pub depreciation_start_date: Option<DateTime<Utc>>,
+    pub accumulated_depreciation: i64,
+    pub net_book_value: i64,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum DepreciationMethod {
+    StraightLine,
+    DecliningBalance,
+    SumOfYearsDigits,
+    UnitsOfProduction,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssetDepreciation {
+    pub id: Uuid,
+    pub asset_id: Uuid,
+    pub period: String,
+    pub depreciation_amount: i64,
+    pub accumulated_depreciation: i64,
+    pub posted_at: DateTime<Utc>,
+}

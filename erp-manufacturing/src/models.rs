@@ -86,3 +86,38 @@ pub struct RoutingOperation {
     pub setup_time: i64,
     pub run_time: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkCenterResource {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub capacity: i64,
+    pub efficiency: i32,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductionSchedule {
+    pub id: Uuid,
+    pub schedule_number: String,
+    pub work_order_id: Uuid,
+    pub work_center_id: Uuid,
+    pub start_time: DateTime<Utc>,
+    pub end_time: DateTime<Utc>,
+    pub status: ScheduleStatus,
+    pub actual_start: Option<DateTime<Utc>>,
+    pub actual_end: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ScheduleStatus {
+    Planned,
+    InProgress,
+    Completed,
+    Cancelled,
+}

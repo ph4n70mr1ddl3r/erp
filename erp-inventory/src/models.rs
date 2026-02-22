@@ -150,3 +150,165 @@ pub enum LotTransactionType {
     Adjustment,
     Expiry,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QualityInspection {
+    pub id: Uuid,
+    pub inspection_number: String,
+    pub inspection_type: InspectionType,
+    pub entity_type: String,
+    pub entity_id: Uuid,
+    pub inspector_id: Option<Uuid>,
+    pub inspection_date: DateTime<Utc>,
+    pub status: InspectionStatus,
+    pub result: Option<InspectionResult>,
+    pub notes: Option<String>,
+    pub items: Vec<InspectionItem>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum InspectionType {
+    Incoming,
+    InProcess,
+    Final,
+    Outgoing,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum InspectionStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum InspectionResult {
+    Pass,
+    Fail,
+    Conditional,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InspectionItem {
+    pub id: Uuid,
+    pub inspection_id: Uuid,
+    pub criterion: String,
+    pub expected_value: Option<String>,
+    pub actual_value: Option<String>,
+    pub pass_fail: Option<PassFail>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum PassFail {
+    Pass,
+    Fail,
+    NotApplicable,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NonConformanceReport {
+    pub id: Uuid,
+    pub ncr_number: String,
+    pub source_type: String,
+    pub source_id: Uuid,
+    pub description: String,
+    pub severity: NCRSeverity,
+    pub status: NCRStatus,
+    pub assigned_to: Option<Uuid>,
+    pub root_cause: Option<String>,
+    pub corrective_action: Option<String>,
+    pub preventive_action: Option<String>,
+    pub resolution_date: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum NCRSeverity {
+    Minor,
+    Major,
+    Critical,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum NCRStatus {
+    Open,
+    InProgress,
+    Resolved,
+    Closed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DemandForecast {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Option<Uuid>,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+    pub forecast_quantity: i64,
+    pub confidence_level: i32,
+    pub method: ForecastMethod,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ForecastMethod {
+    MovingAverage,
+    WeightedAverage,
+    ExponentialSmoothing,
+    Seasonal,
+    Manual,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SafetyStock {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub safety_stock: i64,
+    pub reorder_point: i64,
+    pub reorder_quantity: i64,
+    pub lead_time_days: i32,
+    pub service_level: i32,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReplenishmentOrder {
+    pub id: Uuid,
+    pub order_number: String,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub order_type: ReplenishmentType,
+    pub quantity: i64,
+    pub status: ReplenishmentStatus,
+    pub source: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ReplenishmentType {
+    Purchase,
+    Transfer,
+    Production,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ReplenishmentStatus {
+    Draft,
+    Submitted,
+    Completed,
+    Cancelled,
+}

@@ -1,5 +1,6 @@
 pub mod audit;
 pub mod attachment;
+pub mod custom_field;
 pub mod db;
 pub mod error;
 pub mod models;
@@ -10,9 +11,10 @@ pub mod workflow_service;
 
 pub use audit::{AuditLog, AuditAction, log_audit, get_audit_logs};
 pub use attachment::{Attachment, AttachmentService};
+pub use custom_field::CustomFieldService;
 pub use db::Database;
 pub use error::{Error, Result};
-pub use models::{Address, BaseEntity, ContactInfo, Currency, Money, Status};
+pub use models::{Address, BaseEntity, ContactInfo, Currency, Money, Status, CustomFieldDefinition, CustomFieldType, CustomFieldValue};
 pub use pagination::{Pagination, Paginated};
 pub use workflow_models::*;
 pub use workflow_service::{WorkflowService, ApprovalService, NotificationService};

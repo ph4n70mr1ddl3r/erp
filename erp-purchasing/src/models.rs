@@ -77,3 +77,31 @@ pub struct GoodsReceiptLine {
     pub quantity_ordered: i64,
     pub quantity_received: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupplierScorecard {
+    pub id: Uuid,
+    pub vendor_id: Uuid,
+    pub period: String,
+    pub on_time_delivery: i32,
+    pub quality_score: i32,
+    pub price_competitiveness: i32,
+    pub responsiveness: i32,
+    pub overall_score: i32,
+    pub total_orders: i32,
+    pub total_value: i64,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VendorPerformance {
+    pub id: Uuid,
+    pub vendor_id: Uuid,
+    pub order_id: Uuid,
+    pub delivery_date: Option<DateTime<Utc>>,
+    pub expected_date: Option<DateTime<Utc>>,
+    pub on_time: bool,
+    pub quality_rating: i32,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}

@@ -488,3 +488,549 @@ pub async fn list_expense_categories(
     let categories = ExpenseService::list_expense_categories(&state.pool).await?;
     Ok(Json(categories.into_iter().map(ExpenseCategoryResponse::from).collect()))
 }
+
+use erp_finance::{FixedAsset, AssetDepreciation, FixedAssetService, DepreciationMethod};
+use erp_inventory::{
+    QualityInspection, InspectionType, InspectionStatus, InspectionResult, QualityInspectionService,
+    NonConformanceReport, NCRSeverity, NCRStatus, NonConformanceService,
+    DemandForecast, ForecastMethod, DemandForecastService,
+    SafetyStock, SafetyStockService,
+    ReplenishmentOrder, ReplenishmentType, ReplenishmentOrderService,
+};
+use erp_sales::{
+    Lead, LeadStatus, LeadService,
+    Opportunity, OpportunityStage, OpportunityStatus, ActivityType, OpportunityService,
+};
+use erp_manufacturing::{ProductionSchedule, ScheduleStatus, ProductionScheduleService};
+use erp_purchasing::{SupplierScorecard, VendorPerformance, SupplierScorecardService};
+use erp_core::{CustomFieldService, CustomFieldDefinition, CustomFieldType, CustomFieldValue};
+
+#[derive(Debug, Serialize)]
+pub struct FixedAssetResponse {
+    pub id: Uuid,
+    pub asset_code: String,
+    pub name: String,
+    pub category: String,
+    pub cost: f64,
+    pub net_book_value: f64,
+    pub accumulated_depreciation: f64,
+    pub status: String,
+}
+
+impl From<FixedAsset> for FixedAssetResponse {
+    fn from(a: FixedAsset) -> Self {
+        Self {
+            id: a.id,
+            asset_code: a.asset_code,
+            name: a.name,
+            category: a.category,
+            cost: a.cost as f64 / 100.0,
+            net_book_value: a.net_book_value as f64 / 100.0,
+            accumulated_depreciation: a.accumulated_depreciation as f64 / 100.0,
+            status: format!("{:?}", a.status),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateAssetRequest {
+    pub asset_code: String,
+    pub name: String,
+    pub category: String,
+    pub cost: i64,
+    pub salvage_value: i64,
+    pub useful_life_years: i32,
+    pub depreciation_method: String,
+    pub acquisition_date: String,
+    pub location: Option<String>,
+    pub description: Option<String>,
+}
+
+pub async fn create_fixed_asset(
+    State(state): State<AppState>,
+    Json(req): Json<CreateAssetRequest>,
+) -> ApiResult<Json<FixedAssetResponse>> {
+    let method = match req.depreciation_method.as_str() {
+        "DecliningBalance" => DepreciationMethod::DecliningBalance,
+        "SumOfYearsDigits" => DepreciationMethod::SumOfYearsDigits,
+        "UnitsOfProduction" => DepreciationMethod::UnitsOfProduction,
+        _ => DepreciationMethod::StraightLine,
+    };
+    let asset = FixedAssetService::create_asset(
+        &state.pool,
+        &req.asset_code,
+        &req.name,
+        &req.category,
+        req.cost,
+        req.salvage_value,
+        req.useful_life_years,
+        method,
+        &req.acquisition_date,
+        req.location.as_deref(),
+        req.description.as_deref(),
+    ).await?;
+    Ok(Json(FixedAssetResponse::from(asset)))
+}
+
+pub async fn list_fixed_assets(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<FixedAssetResponse>>> {
+    let assets = FixedAssetService::list_assets(&state.pool).await?;
+    Ok(Json(assets.into_iter().map(FixedAssetResponse::from).collect()))
+}
+
+pub async fn depreciate_asset(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<FixedAssetResponse>> {
+    FixedAssetService::calculate_depreciation(&state.pool, id).await?;
+    let asset = FixedAssetService::get_asset(&state.pool, id).await?;
+    Ok(Json(FixedAssetResponse::from(asset)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct InspectionResponse {
+    pub id: Uuid,
+    pub inspection_number: String,
+    pub inspection_type: String,
+    pub entity_type: String,
+    pub entity_id: Uuid,
+    pub status: String,
+    pub result: Option<String>,
+}
+
+impl From<QualityInspection> for InspectionResponse {
+    fn from(i: QualityInspection) -> Self {
+        Self {
+            id: i.id,
+            inspection_number: i.inspection_number,
+            inspection_type: format!("{:?}", i.inspection_type),
+            entity_type: i.entity_type,
+            entity_id: i.entity_id,
+            status: format!("{:?}", i.status),
+            result: i.result.map(|r| format!("{:?}", r)),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateInspectionRequest {
+    pub inspection_type: String,
+    pub entity_type: String,
+    pub entity_id: Uuid,
+    pub inspector_id: Option<Uuid>,
+}
+
+pub async fn create_inspection(
+    State(state): State<AppState>,
+    Json(req): Json<CreateInspectionRequest>,
+) -> ApiResult<Json<InspectionResponse>> {
+    let itype = match req.inspection_type.as_str() {
+        "Incoming" => InspectionType::Incoming,
+        "InProcess" => InspectionType::InProcess,
+        "Final" => InspectionType::Final,
+        "Outgoing" => InspectionType::Outgoing,
+        _ => InspectionType::Incoming,
+    };
+    let inspection = QualityInspectionService::create_inspection(
+        &state.pool,
+        itype,
+        &req.entity_type,
+        req.entity_id,
+        req.inspector_id,
+    ).await?;
+    Ok(Json(InspectionResponse::from(inspection)))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CompleteInspectionRequest {
+    pub result: String,
+    pub notes: Option<String>,
+}
+
+pub async fn complete_inspection(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<CompleteInspectionRequest>,
+) -> ApiResult<Json<InspectionResponse>> {
+    let result = match req.result.as_str() {
+        "Pass" => InspectionResult::Pass,
+        "Fail" => InspectionResult::Fail,
+        _ => InspectionResult::Conditional,
+    };
+    let inspection = QualityInspectionService::complete_inspection(&state.pool, id, result, req.notes.as_deref()).await?;
+    Ok(Json(InspectionResponse::from(inspection)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct NCRResponse {
+    pub id: Uuid,
+    pub ncr_number: String,
+    pub source_type: String,
+    pub description: String,
+    pub severity: String,
+    pub status: String,
+}
+
+impl From<NonConformanceReport> for NCRResponse {
+    fn from(n: NonConformanceReport) -> Self {
+        Self {
+            id: n.id,
+            ncr_number: n.ncr_number,
+            source_type: n.source_type,
+            description: n.description,
+            severity: format!("{:?}", n.severity),
+            status: format!("{:?}", n.status),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateNCRRequest {
+    pub source_type: String,
+    pub source_id: Uuid,
+    pub description: String,
+    pub severity: String,
+}
+
+pub async fn create_ncr(
+    State(state): State<AppState>,
+    Json(req): Json<CreateNCRRequest>,
+) -> ApiResult<Json<NCRResponse>> {
+    let severity = match req.severity.as_str() {
+        "Major" => NCRSeverity::Major,
+        "Critical" => NCRSeverity::Critical,
+        _ => NCRSeverity::Minor,
+    };
+    let ncr = NonConformanceService::create_ncr(&state.pool, &req.source_type, req.source_id, &req.description, severity).await?;
+    Ok(Json(NCRResponse::from(ncr)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct LeadResponse {
+    pub id: Uuid,
+    pub lead_number: String,
+    pub company_name: String,
+    pub contact_name: Option<String>,
+    pub email: Option<String>,
+    pub estimated_value: f64,
+    pub status: String,
+}
+
+impl From<Lead> for LeadResponse {
+    fn from(l: Lead) -> Self {
+        Self {
+            id: l.id,
+            lead_number: l.lead_number,
+            company_name: l.company_name,
+            contact_name: l.contact_name,
+            email: l.email,
+            estimated_value: l.estimated_value as f64 / 100.0,
+            status: format!("{:?}", l.status),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateLeadRequest {
+    pub company_name: String,
+    pub contact_name: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub source: Option<String>,
+    pub industry: Option<String>,
+    pub estimated_value: i64,
+    pub assigned_to: Option<Uuid>,
+}
+
+pub async fn create_lead(
+    State(state): State<AppState>,
+    Json(req): Json<CreateLeadRequest>,
+) -> ApiResult<Json<LeadResponse>> {
+    let lead = LeadService::create(
+        &state.pool,
+        &req.company_name,
+        req.contact_name.as_deref(),
+        req.email.as_deref(),
+        req.phone.as_deref(),
+        req.source.as_deref(),
+        req.industry.as_deref(),
+        req.estimated_value,
+        req.assigned_to,
+    ).await?;
+    Ok(Json(LeadResponse::from(lead)))
+}
+
+pub async fn list_leads(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<LeadResponse>>> {
+    let leads = LeadService::list(&state.pool, None).await?;
+    Ok(Json(leads.into_iter().map(LeadResponse::from).collect()))
+}
+
+#[derive(Debug, Serialize)]
+pub struct OpportunityResponse {
+    pub id: Uuid,
+    pub opportunity_number: String,
+    pub name: String,
+    pub stage: String,
+    pub probability: i32,
+    pub amount: f64,
+    pub status: String,
+}
+
+impl From<Opportunity> for OpportunityResponse {
+    fn from(o: Opportunity) -> Self {
+        Self {
+            id: o.id,
+            opportunity_number: o.opportunity_number,
+            name: o.name,
+            stage: format!("{:?}", o.stage),
+            probability: o.probability,
+            amount: o.amount as f64 / 100.0,
+            status: format!("{:?}", o.status),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateOpportunityRequest {
+    pub name: String,
+    pub customer_id: Option<Uuid>,
+    pub lead_id: Option<Uuid>,
+    pub amount: i64,
+    pub expected_close_date: Option<String>,
+    pub description: Option<String>,
+    pub assigned_to: Option<Uuid>,
+}
+
+pub async fn create_opportunity(
+    State(state): State<AppState>,
+    Json(req): Json<CreateOpportunityRequest>,
+) -> ApiResult<Json<OpportunityResponse>> {
+    let opp = OpportunityService::create(
+        &state.pool,
+        &req.name,
+        req.customer_id,
+        req.lead_id,
+        req.amount,
+        req.expected_close_date.as_deref(),
+        req.description.as_deref(),
+        req.assigned_to,
+    ).await?;
+    Ok(Json(OpportunityResponse::from(opp)))
+}
+
+pub async fn list_opportunities(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<OpportunityResponse>>> {
+    let opps = OpportunityService::list(&state.pool, None).await?;
+    Ok(Json(opps.into_iter().map(OpportunityResponse::from).collect()))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateStageRequest {
+    pub stage: String,
+}
+
+pub async fn update_opportunity_stage(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateStageRequest>,
+) -> ApiResult<Json<OpportunityResponse>> {
+    let stage = match req.stage.as_str() {
+        "Qualification" => OpportunityStage::Qualification,
+        "Proposal" => OpportunityStage::Proposal,
+        "Negotiation" => OpportunityStage::Negotiation,
+        "ClosedWon" => OpportunityStage::ClosedWon,
+        "ClosedLost" => OpportunityStage::ClosedLost,
+        _ => OpportunityStage::Prospecting,
+    };
+    let opp = OpportunityService::update_stage(&state.pool, id, stage).await?;
+    Ok(Json(OpportunityResponse::from(opp)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScheduleResponse {
+    pub id: Uuid,
+    pub schedule_number: String,
+    pub work_order_id: Uuid,
+    pub work_center_id: Uuid,
+    pub start_time: String,
+    pub end_time: String,
+    pub status: String,
+}
+
+impl From<ProductionSchedule> for ScheduleResponse {
+    fn from(s: ProductionSchedule) -> Self {
+        Self {
+            id: s.id,
+            schedule_number: s.schedule_number,
+            work_order_id: s.work_order_id,
+            work_center_id: s.work_center_id,
+            start_time: s.start_time.to_rfc3339(),
+            end_time: s.end_time.to_rfc3339(),
+            status: format!("{:?}", s.status),
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateScheduleRequest {
+    pub work_order_id: Uuid,
+    pub work_center_id: Uuid,
+    pub start_time: String,
+    pub end_time: String,
+    pub notes: Option<String>,
+}
+
+pub async fn create_production_schedule(
+    State(state): State<AppState>,
+    Json(req): Json<CreateScheduleRequest>,
+) -> ApiResult<Json<ScheduleResponse>> {
+    let schedule = ProductionScheduleService::create_schedule(
+        &state.pool,
+        req.work_order_id,
+        req.work_center_id,
+        &req.start_time,
+        &req.end_time,
+        req.notes.as_deref(),
+    ).await?;
+    Ok(Json(ScheduleResponse::from(schedule)))
+}
+
+pub async fn list_schedules(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<ScheduleResponse>>> {
+    let schedules = ProductionScheduleService::list(&state.pool, None).await?;
+    Ok(Json(schedules.into_iter().map(ScheduleResponse::from).collect()))
+}
+
+#[derive(Debug, Serialize)]
+pub struct ScorecardResponse {
+    pub id: Uuid,
+    pub vendor_id: Uuid,
+    pub period: String,
+    pub on_time_delivery: i32,
+    pub quality_score: i32,
+    pub overall_score: i32,
+    pub total_orders: i32,
+}
+
+impl From<SupplierScorecard> for ScorecardResponse {
+    fn from(s: SupplierScorecard) -> Self {
+        Self {
+            id: s.id,
+            vendor_id: s.vendor_id,
+            period: s.period,
+            on_time_delivery: s.on_time_delivery,
+            quality_score: s.quality_score,
+            overall_score: s.overall_score,
+            total_orders: s.total_orders,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateScorecardRequest {
+    pub vendor_id: Uuid,
+    pub period: String,
+}
+
+pub async fn create_scorecard(
+    State(state): State<AppState>,
+    Json(req): Json<CreateScorecardRequest>,
+) -> ApiResult<Json<ScorecardResponse>> {
+    let scorecard = SupplierScorecardService::create_scorecard(&state.pool, req.vendor_id, &req.period).await?;
+    Ok(Json(ScorecardResponse::from(scorecard)))
+}
+
+pub async fn list_scorecards(
+    State(state): State<AppState>,
+    Path(vendor_id): Path<Uuid>,
+) -> ApiResult<Json<Vec<ScorecardResponse>>> {
+    let scorecards = SupplierScorecardService::get_for_vendor(&state.pool, vendor_id).await?;
+    Ok(Json(scorecards.into_iter().map(ScorecardResponse::from).collect()))
+}
+
+#[derive(Debug, Serialize)]
+pub struct CustomFieldDefResponse {
+    pub id: Uuid,
+    pub entity_type: String,
+    pub field_name: String,
+    pub field_label: String,
+    pub field_type: String,
+    pub required: bool,
+}
+
+impl From<CustomFieldDefinition> for CustomFieldDefResponse {
+    fn from(d: CustomFieldDefinition) -> Self {
+        Self {
+            id: d.id,
+            entity_type: d.entity_type,
+            field_name: d.field_name,
+            field_label: d.field_label,
+            field_type: format!("{:?}", d.field_type),
+            required: d.required,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateCustomFieldRequest {
+    pub entity_type: String,
+    pub field_name: String,
+    pub field_label: String,
+    pub field_type: String,
+    pub required: bool,
+    pub options: Option<String>,
+    pub sort_order: i32,
+}
+
+pub async fn create_custom_field(
+    State(state): State<AppState>,
+    Json(req): Json<CreateCustomFieldRequest>,
+) -> ApiResult<Json<CustomFieldDefResponse>> {
+    let ftype = match req.field_type.as_str() {
+        "Number" => CustomFieldType::Number,
+        "Date" => CustomFieldType::Date,
+        "Boolean" => CustomFieldType::Boolean,
+        "Select" => CustomFieldType::Select,
+        "MultiSelect" => CustomFieldType::MultiSelect,
+        _ => CustomFieldType::Text,
+    };
+    let def = CustomFieldService::create_definition(
+        &state.pool,
+        &req.entity_type,
+        &req.field_name,
+        &req.field_label,
+        ftype,
+        req.required,
+        req.options.as_deref(),
+        req.sort_order,
+    ).await?;
+    Ok(Json(CustomFieldDefResponse::from(def)))
+}
+
+pub async fn list_custom_fields(
+    State(state): State<AppState>,
+    Path(entity_type): Path<String>,
+) -> ApiResult<Json<Vec<CustomFieldDefResponse>>> {
+    let defs = CustomFieldService::get_definitions_for_entity(&state.pool, &entity_type).await?;
+    Ok(Json(defs.into_iter().map(CustomFieldDefResponse::from).collect()))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SetCustomValueRequest {
+    pub definition_id: Uuid,
+    pub entity_id: Uuid,
+    pub value: String,
+}
+
+pub async fn set_custom_value(
+    State(state): State<AppState>,
+    Json(req): Json<SetCustomValueRequest>,
+) -> ApiResult<Json<serde_json::Value>> {
+    CustomFieldService::set_value(&state.pool, req.definition_id, req.entity_id, &req.value).await?;
+    Ok(Json(serde_json::json!({"success": true})))
+}

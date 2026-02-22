@@ -127,3 +127,38 @@ pub struct ContactInfo {
     pub fax: Option<String>,
     pub website: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomFieldDefinition {
+    pub id: Uuid,
+    pub entity_type: String,
+    pub field_name: String,
+    pub field_label: String,
+    pub field_type: CustomFieldType,
+    pub required: bool,
+    pub options: Option<String>,
+    pub sort_order: i32,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CustomFieldType {
+    Text,
+    Number,
+    Date,
+    Boolean,
+    Select,
+    MultiSelect,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomFieldValue {
+    pub id: Uuid,
+    pub definition_id: Uuid,
+    pub entity_id: Uuid,
+    pub value: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
