@@ -1,5 +1,6 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 use crate::repository::*;
@@ -165,6 +166,141 @@ impl FiscalYearService {
 
     pub async fn update_fiscal_year(&self, pool: &SqlitePool, year: FiscalYear) -> Result<FiscalYear> {
         self.repo.update(pool, year).await
+    }
+}
+
+pub struct FinancialReportingService {
+    account_repo: SqliteAccountRepository,
+    journal_repo: SqliteJournalEntryRepository,
+}
+
+impl FinancialReportingService {
+    pub fn new() -> Self {
+        Self {
+            account_repo: SqliteAccountRepository,
+            journal_repo: SqliteJournalEntryRepository,
+        }
+    }
+
+    pub async fn get_account_balances(&self, pool: &SqlitePool) -> Result<Vec<AccountBalance>> {
+        let accounts = self.account_repo.find_all(pool, Pagination { page: 1, per_page: 1000 }).await?;
+        let mut balances = Vec::new();
+        
+        for account in accounts.items {
+            let balance = self.calculate_account_balance(pool, account.base.id).await?;
+            balances.push(AccountBalance {
+                account_id: account.base.id,
+                account_code: account.code.clone(),
+                account_name: account.name.clone(),
+                account_type: account.account_type.clone(),
+                balance,
+            });
+        }
+        
+        Ok(balances)
+    }
+
+    async fn calculate_account_balance(&self, pool: &SqlitePool, account_id: Uuid) -> Result<i64> {
+        let balance: (i64, i64) = sqlx::query_as(
+            "SELECT COALESCE(SUM(debit), 0), COALESCE(SUM(credit), 0)
+             FROM journal_lines jl
+             JOIN journal_entries je ON jl.journal_entry_id = je.id
+             WHERE jl.account_id = ? AND je.status = 'Completed'"
+        )
+        .bind(account_id.to_string())
+        .fetch_one(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(balance.0 - balance.1)
+    }
+
+    pub async fn get_balance_sheet(&self, pool: &SqlitePool) -> Result<BalanceSheet> {
+        let balances = self.get_account_balances(pool).await?;
+        
+        let assets: Vec<AccountBalance> = balances.iter()
+            .filter(|b| matches!(b.account_type, AccountType::Asset))
+            .filter(|b| b.balance != 0)
+            .cloned()
+            .collect();
+        let total_assets: i64 = assets.iter().map(|a| a.balance).sum();
+        
+        let liabilities: Vec<AccountBalance> = balances.iter()
+            .filter(|b| matches!(b.account_type, AccountType::Liability))
+            .filter(|b| b.balance != 0)
+            .cloned()
+            .collect();
+        let total_liabilities: i64 = liabilities.iter().map(|a| a.balance).sum();
+        
+        let equity: Vec<AccountBalance> = balances.iter()
+            .filter(|b| matches!(b.account_type, AccountType::Equity))
+            .filter(|b| b.balance != 0)
+            .cloned()
+            .collect();
+        let total_equity: i64 = equity.iter().map(|a| a.balance).sum();
+        
+        Ok(BalanceSheet {
+            as_of_date: chrono::Utc::now(),
+            assets,
+            total_assets,
+            liabilities,
+            total_liabilities,
+            equity,
+            total_equity,
+        })
+    }
+
+    pub async fn get_profit_and_loss(&self, pool: &SqlitePool, from_date: Option<DateTime<chrono::Utc>>, to_date: Option<DateTime<chrono::Utc>>) -> Result<ProfitAndLoss> {
+        let balances = self.get_account_balances(pool).await?;
+        
+        let revenue: Vec<AccountBalance> = balances.iter()
+            .filter(|b| matches!(b.account_type, AccountType::Revenue))
+            .filter(|b| b.balance != 0)
+            .cloned()
+            .collect();
+        let total_revenue: i64 = revenue.iter().map(|a| a.balance.abs()).sum();
+        
+        let expenses: Vec<AccountBalance> = balances.iter()
+            .filter(|b| matches!(b.account_type, AccountType::Expense))
+            .filter(|b| b.balance != 0)
+            .cloned()
+            .collect();
+        let total_expenses: i64 = expenses.iter().map(|a| a.balance.abs()).sum();
+        
+        Ok(ProfitAndLoss {
+            from_date: from_date.unwrap_or_else(|| chrono::Utc::now() - chrono::Duration::days(365)),
+            to_date: to_date.unwrap_or_else(chrono::Utc::now),
+            revenue,
+            total_revenue,
+            expenses,
+            total_expenses,
+            net_income: total_revenue - total_expenses,
+        })
+    }
+
+    pub async fn get_trial_balance(&self, pool: &SqlitePool) -> Result<TrialBalance> {
+        let balances = self.get_account_balances(pool).await?;
+        
+        let accounts: Vec<TrialBalanceLine> = balances.iter()
+            .filter(|b| b.balance != 0)
+            .map(|b| TrialBalanceLine {
+                account_id: b.account_id,
+                account_code: b.account_code.clone(),
+                account_name: b.account_name.clone(),
+                debit: if b.balance > 0 { b.balance.abs() } else { 0 },
+                credit: if b.balance < 0 { b.balance.abs() } else { 0 },
+            })
+            .collect();
+        
+        let total_debits: i64 = accounts.iter().map(|a| a.debit).sum();
+        let total_credits: i64 = accounts.iter().map(|a| a.credit).sum();
+        
+        Ok(TrialBalance {
+            as_of_date: chrono::Utc::now(),
+            accounts,
+            total_debits,
+            total_credits,
+        })
     }
 }
 

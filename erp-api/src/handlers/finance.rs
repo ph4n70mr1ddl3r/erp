@@ -9,7 +9,8 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{BaseEntity, Status, Currency, Money, Pagination};
 use erp_finance::{Account, AccountType, JournalEntry, JournalLine, FiscalYear,
-                 AccountService, JournalEntryService, FiscalYearService};
+                 AccountService, JournalEntryService, FiscalYearService, FinancialReportingService,
+                 BalanceSheet, ProfitAndLoss, TrialBalance};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateAccountRequest {
@@ -311,4 +312,151 @@ pub async fn create_fiscal_year(
     
     let created = service.create_fiscal_year(&state.pool, year).await?;
     Ok(Json(FiscalYearResponse::from(created)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct BalanceSheetResponse {
+    pub as_of_date: String,
+    pub assets: Vec<AccountBalanceResponse>,
+    pub total_assets: f64,
+    pub liabilities: Vec<AccountBalanceResponse>,
+    pub total_liabilities: f64,
+    pub equity: Vec<AccountBalanceResponse>,
+    pub total_equity: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AccountBalanceResponse {
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub account_type: String,
+    pub balance: f64,
+}
+
+impl From<BalanceSheet> for BalanceSheetResponse {
+    fn from(bs: BalanceSheet) -> Self {
+        Self {
+            as_of_date: bs.as_of_date.to_rfc3339(),
+            assets: bs.assets.into_iter().map(|a| AccountBalanceResponse {
+                account_id: a.account_id,
+                account_code: a.account_code,
+                account_name: a.account_name,
+                account_type: format!("{:?}", a.account_type),
+                balance: a.balance as f64 / 100.0,
+            }).collect(),
+            total_assets: bs.total_assets as f64 / 100.0,
+            liabilities: bs.liabilities.into_iter().map(|a| AccountBalanceResponse {
+                account_id: a.account_id,
+                account_code: a.account_code,
+                account_name: a.account_name,
+                account_type: format!("{:?}", a.account_type),
+                balance: a.balance as f64 / 100.0,
+            }).collect(),
+            total_liabilities: bs.total_liabilities as f64 / 100.0,
+            equity: bs.equity.into_iter().map(|a| AccountBalanceResponse {
+                account_id: a.account_id,
+                account_code: a.account_code,
+                account_name: a.account_name,
+                account_type: format!("{:?}", a.account_type),
+                balance: a.balance as f64 / 100.0,
+            }).collect(),
+            total_equity: bs.total_equity as f64 / 100.0,
+        }
+    }
+}
+
+pub async fn get_balance_sheet(
+    State(state): State<AppState>,
+) -> ApiResult<Json<BalanceSheetResponse>> {
+    let service = FinancialReportingService::new();
+    let bs = service.get_balance_sheet(&state.pool).await?;
+    Ok(Json(BalanceSheetResponse::from(bs)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProfitAndLossResponse {
+    pub from_date: String,
+    pub to_date: String,
+    pub revenue: Vec<AccountBalanceResponse>,
+    pub total_revenue: f64,
+    pub expenses: Vec<AccountBalanceResponse>,
+    pub total_expenses: f64,
+    pub net_income: f64,
+}
+
+impl From<ProfitAndLoss> for ProfitAndLossResponse {
+    fn from(pl: ProfitAndLoss) -> Self {
+        Self {
+            from_date: pl.from_date.to_rfc3339(),
+            to_date: pl.to_date.to_rfc3339(),
+            revenue: pl.revenue.into_iter().map(|a| AccountBalanceResponse {
+                account_id: a.account_id,
+                account_code: a.account_code,
+                account_name: a.account_name,
+                account_type: format!("{:?}", a.account_type),
+                balance: a.balance as f64 / 100.0,
+            }).collect(),
+            total_revenue: pl.total_revenue as f64 / 100.0,
+            expenses: pl.expenses.into_iter().map(|a| AccountBalanceResponse {
+                account_id: a.account_id,
+                account_code: a.account_code,
+                account_name: a.account_name,
+                account_type: format!("{:?}", a.account_type),
+                balance: a.balance as f64 / 100.0,
+            }).collect(),
+            total_expenses: pl.total_expenses as f64 / 100.0,
+            net_income: pl.net_income as f64 / 100.0,
+        }
+    }
+}
+
+pub async fn get_profit_and_loss(
+    State(state): State<AppState>,
+) -> ApiResult<Json<ProfitAndLossResponse>> {
+    let service = FinancialReportingService::new();
+    let pl = service.get_profit_and_loss(&state.pool, None, None).await?;
+    Ok(Json(ProfitAndLossResponse::from(pl)))
+}
+
+#[derive(Debug, Serialize)]
+pub struct TrialBalanceResponse {
+    pub as_of_date: String,
+    pub accounts: Vec<TrialBalanceLineResponse>,
+    pub total_debits: f64,
+    pub total_credits: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct TrialBalanceLineResponse {
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub debit: f64,
+    pub credit: f64,
+}
+
+impl From<TrialBalance> for TrialBalanceResponse {
+    fn from(tb: TrialBalance) -> Self {
+        Self {
+            as_of_date: tb.as_of_date.to_rfc3339(),
+            accounts: tb.accounts.into_iter().map(|a| TrialBalanceLineResponse {
+                account_id: a.account_id,
+                account_code: a.account_code,
+                account_name: a.account_name,
+                debit: a.debit as f64 / 100.0,
+                credit: a.credit as f64 / 100.0,
+            }).collect(),
+            total_debits: tb.total_debits as f64 / 100.0,
+            total_credits: tb.total_credits as f64 / 100.0,
+        }
+    }
+}
+
+pub async fn get_trial_balance(
+    State(state): State<AppState>,
+) -> ApiResult<Json<TrialBalanceResponse>> {
+    let service = FinancialReportingService::new();
+    let tb = service.get_trial_balance(&state.pool).await?;
+    Ok(Json(TrialBalanceResponse::from(tb)))
 }

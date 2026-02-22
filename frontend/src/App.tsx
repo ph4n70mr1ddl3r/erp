@@ -11,6 +11,8 @@ import Sales from './pages/Sales';
 import Purchasing from './pages/Purchasing';
 import Manufacturing from './pages/Manufacturing';
 import HR from './pages/HR';
+import Reports from './pages/Reports';
+import AuditLogs from './pages/AuditLogs';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -34,6 +36,8 @@ function AppRoutes() {
       <Route path="/login" element={token ? <Navigate to="/" /> : <Login />} />
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/finance" element={<PrivateRoute><Finance /></PrivateRoute>} />
+      <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
+      <Route path="/audit" element={<PrivateRoute><AuditLogs /></PrivateRoute>} />
       <Route path="/inventory" element={<PrivateRoute><Inventory /></PrivateRoute>} />
       <Route path="/sales" element={<PrivateRoute><Sales /></PrivateRoute>} />
       <Route path="/purchasing" element={<PrivateRoute><Purchasing /></PrivateRoute>} />

@@ -104,3 +104,11 @@ export interface Employee {
   email: string;
   status: string;
 }
+
+export interface AccountBalanceResponse {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_type: string;
+  balance: number;
+}

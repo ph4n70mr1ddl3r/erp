@@ -9,7 +9,9 @@ import {
   UserCog,
   LogOut,
   Menu,
-  X
+  X,
+  FileBarChart,
+  ClipboardList
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -17,6 +19,8 @@ import { useAuth } from '../hooks/useAuth';
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/finance', icon: Building2, label: 'Finance' },
+  { path: '/reports', icon: FileBarChart, label: 'Reports' },
+  { path: '/audit', icon: ClipboardList, label: 'Audit Trail' },
   { path: '/inventory', icon: Package, label: 'Inventory' },
   { path: '/sales', icon: ShoppingCart, label: 'Sales' },
   { path: '/purchasing', icon: Users, label: 'Purchasing' },

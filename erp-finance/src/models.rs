@@ -78,3 +78,51 @@ pub struct BudgetLine {
     pub period: u32,
     pub amount: Money,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountBalance {
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub account_type: AccountType,
+    pub balance: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BalanceSheet {
+    pub as_of_date: DateTime<Utc>,
+    pub assets: Vec<AccountBalance>,
+    pub total_assets: i64,
+    pub liabilities: Vec<AccountBalance>,
+    pub total_liabilities: i64,
+    pub equity: Vec<AccountBalance>,
+    pub total_equity: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProfitAndLoss {
+    pub from_date: DateTime<Utc>,
+    pub to_date: DateTime<Utc>,
+    pub revenue: Vec<AccountBalance>,
+    pub total_revenue: i64,
+    pub expenses: Vec<AccountBalance>,
+    pub total_expenses: i64,
+    pub net_income: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrialBalance {
+    pub as_of_date: DateTime<Utc>,
+    pub accounts: Vec<TrialBalanceLine>,
+    pub total_debits: i64,
+    pub total_credits: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrialBalanceLine {
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub debit: i64,
+    pub credit: i64,
+}

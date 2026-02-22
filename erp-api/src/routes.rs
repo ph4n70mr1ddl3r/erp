@@ -31,6 +31,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/purchasing", purchasing_routes(state.clone()))
         .nest("/manufacturing", manufacturing_routes(state.clone()))
         .nest("/hr", hr_routes(state.clone()))
+        .route("/audit-logs", get(handlers::audit::list_audit_logs))
 }
 
 fn finance_routes(state: AppState) -> Router<AppState> {
@@ -61,6 +62,18 @@ fn finance_routes(state: AppState) -> Router<AppState> {
         .route(
             "/fiscal-years",
             get(handlers::finance::list_fiscal_years).post(handlers::finance::create_fiscal_year),
+        )
+        .route(
+            "/reports/balance-sheet",
+            get(handlers::finance::get_balance_sheet),
+        )
+        .route(
+            "/reports/profit-and-loss",
+            get(handlers::finance::get_profit_and_loss),
+        )
+        .route(
+            "/reports/trial-balance",
+            get(handlers::finance::get_trial_balance),
         )
         .with_state(state)
 }

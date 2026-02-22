@@ -43,6 +43,9 @@ export const finance = {
   getJournalEntries: (page = 1, perPage = 20) => api.get(`/api/v1/finance/journal-entries?page=${page}&per_page=${perPage}`),
   createJournalEntry: (data: any) => api.post('/api/v1/finance/journal-entries', data),
   postJournalEntry: (id: string) => api.post(`/api/v1/finance/journal-entries/${id}/post`),
+  getBalanceSheet: () => api.get('/api/v1/finance/reports/balance-sheet'),
+  getProfitAndLoss: () => api.get('/api/v1/finance/reports/profit-and-loss'),
+  getTrialBalance: () => api.get('/api/v1/finance/reports/trial-balance'),
 };
 
 // Inventory
@@ -81,4 +84,17 @@ export const hr = {
   createEmployee: (data: any) => api.post('/api/v1/hr/employees', data),
   checkIn: (employeeId: string) => api.post('/api/v1/hr/attendance/check-in', { employee_id: employeeId }),
   checkOut: (employeeId: string) => api.post('/api/v1/hr/attendance/check-out', { employee_id: employeeId }),
+};
+
+// Audit
+export const audit = {
+  getLogs: (params?: { entity_type?: string; entity_id?: string; page?: number; per_page?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.entity_type) query.set('entity_type', params.entity_type);
+    if (params?.entity_id) query.set('entity_id', params.entity_id);
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.per_page) query.set('per_page', params.per_page.toString());
+    const qs = query.toString();
+    return api.get(`/api/v1/audit-logs${qs ? '?' + qs : ''}`);
+  },
 };
