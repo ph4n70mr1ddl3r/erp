@@ -67,6 +67,12 @@ export const sales = {
   getOrders: (page = 1, perPage = 20) => api.get(`/api/v1/sales/orders?page=${page}&per_page=${perPage}`),
   createOrder: (data: any) => api.post('/api/v1/sales/orders', data),
   confirmOrder: (id: string) => api.post(`/api/v1/sales/orders/${id}/confirm`),
+  getQuotations: (page = 1, perPage = 20) => api.get(`/api/v1/sales/quotations?page=${page}&per_page=${perPage}`),
+  createQuotation: (data: any) => api.post('/api/v1/sales/quotations', data),
+  sendQuotation: (id: string) => api.post(`/api/v1/sales/quotations/${id}/send`),
+  acceptQuotation: (id: string) => api.post(`/api/v1/sales/quotations/${id}/accept`),
+  rejectQuotation: (id: string) => api.post(`/api/v1/sales/quotations/${id}/reject`),
+  convertQuotation: (id: string) => api.post(`/api/v1/sales/quotations/${id}/convert`),
 };
 
 // Purchasing

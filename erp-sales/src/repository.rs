@@ -259,3 +259,195 @@ pub trait SalesOrderRepository: Send + Sync {
     async fn create(&self, pool: &SqlitePool, order: SalesOrder) -> Result<SalesOrder>;
     async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()>;
 }
+
+#[derive(sqlx::FromRow)]
+struct QuotationRow {
+    id: String,
+    quote_number: String,
+    customer_id: String,
+    quote_date: String,
+    valid_until: Option<String>,
+    subtotal: i64,
+    tax_amount: i64,
+    total: i64,
+    status: String,
+    notes: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct QuotationLineRow {
+    id: String,
+    quotation_id: String,
+    product_id: String,
+    description: Option<String>,
+    quantity: i64,
+    unit_price: i64,
+    discount: i64,
+    line_total: i64,
+}
+
+pub struct SqliteQuotationRepository;
+
+#[async_trait]
+impl QuotationRepository for SqliteQuotationRepository {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<SalesQuote> {
+        let row = sqlx::query_as::<_, QuotationRow>(
+            "SELECT id, quote_number, customer_id, quote_date, valid_until, subtotal, tax_amount, total, status, notes, created_at, updated_at
+             FROM quotations WHERE id = ?"
+        ).bind(id.to_string()).fetch_optional(pool).await?
+        .ok_or_else(|| Error::not_found("Quotation", &id.to_string()))?;
+        
+        let lines = sqlx::query_as::<_, QuotationLineRow>(
+            "SELECT id, quotation_id, product_id, description, quantity, unit_price, discount, line_total
+             FROM quotation_lines WHERE quotation_id = ?"
+        ).bind(id.to_string()).fetch_all(pool).await?;
+        
+        Ok(SalesQuote {
+            base: BaseEntity {
+                id: Uuid::parse_str(&row.id).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None, updated_by: None,
+            },
+            quote_number: row.quote_number,
+            customer_id: Uuid::parse_str(&row.customer_id).unwrap_or_default(),
+            quote_date: chrono::DateTime::parse_from_rfc3339(&row.quote_date).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+            valid_until: row.valid_until.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|| Utc::now() + chrono::Duration::days(30)),
+            lines: lines.into_iter().map(|l| SalesQuoteLine {
+                id: Uuid::parse_str(&l.id).unwrap_or_default(),
+                product_id: Uuid::parse_str(&l.product_id).unwrap_or_default(),
+                description: l.description.unwrap_or_default(),
+                quantity: l.quantity,
+                unit_price: Money::new(l.unit_price, Currency::USD),
+                discount_percent: l.discount as f64 / 100.0,
+                line_total: Money::new(l.line_total, Currency::USD),
+            }).collect(),
+            subtotal: Money::new(row.subtotal, Currency::USD),
+            tax_amount: Money::new(row.tax_amount, Currency::USD),
+            total: Money::new(row.total, Currency::USD),
+            status: match row.status.as_str() { "Sent" => Status::Pending, "Accepted" => Status::Approved, "Rejected" => Status::Rejected, _ => Status::Draft },
+        })
+    }
+
+    async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<SalesQuote>> {
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM quotations").fetch_one(pool).await?;
+        let rows = sqlx::query_as::<_, QuotationRow>(
+            "SELECT id, quote_number, customer_id, quote_date, valid_until, subtotal, tax_amount, total, status, notes, created_at, updated_at
+             FROM quotations ORDER BY quote_date DESC LIMIT ? OFFSET ?"
+        ).bind(pagination.limit() as i64).bind(pagination.offset() as i64).fetch_all(pool).await?;
+        
+        let mut quotes = Vec::new();
+        for row in rows {
+            let id = Uuid::parse_str(&row.id).unwrap_or_default();
+            let lines = sqlx::query_as::<_, QuotationLineRow>(
+                "SELECT id, quotation_id, product_id, description, quantity, unit_price, discount, line_total
+                 FROM quotation_lines WHERE quotation_id = ?"
+            ).bind(id.to_string()).fetch_all(pool).await?;
+            
+            quotes.push(SalesQuote {
+                base: BaseEntity {
+                    id, created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                    updated_at: chrono::DateTime::parse_from_rfc3339(&row.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                    created_by: None, updated_by: None,
+                },
+                quote_number: row.quote_number,
+                customer_id: Uuid::parse_str(&row.customer_id).unwrap_or_default(),
+                quote_date: chrono::DateTime::parse_from_rfc3339(&row.quote_date).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                valid_until: row.valid_until.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|| Utc::now() + chrono::Duration::days(30)),
+                lines: lines.into_iter().map(|l| SalesQuoteLine {
+                    id: Uuid::parse_str(&l.id).unwrap_or_default(),
+                    product_id: Uuid::parse_str(&l.product_id).unwrap_or_default(),
+                    description: l.description.unwrap_or_default(),
+                    quantity: l.quantity,
+                    unit_price: Money::new(l.unit_price, Currency::USD),
+                    discount_percent: l.discount as f64 / 100.0,
+                    line_total: Money::new(l.line_total, Currency::USD),
+                }).collect(),
+                subtotal: Money::new(row.subtotal, Currency::USD),
+                tax_amount: Money::new(row.tax_amount, Currency::USD),
+                total: Money::new(row.total, Currency::USD),
+                status: match row.status.as_str() { "Sent" => Status::Pending, "Accepted" => Status::Approved, "Rejected" => Status::Rejected, _ => Status::Draft },
+            });
+        }
+        Ok(Paginated::new(quotes, count.0 as u64, pagination))
+    }
+
+    async fn create(&self, pool: &SqlitePool, quote: SalesQuote) -> Result<SalesQuote> {
+        let now = Utc::now();
+        let mut tx = pool.begin().await?;
+        
+        sqlx::query(
+            "INSERT INTO quotations (id, quote_number, customer_id, quote_date, valid_until, subtotal, tax_amount, total, status, notes, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        ).bind(quote.base.id.to_string()).bind(&quote.quote_number).bind(quote.customer_id.to_string())
+        .bind(quote.quote_date.to_rfc3339()).bind(quote.valid_until.to_rfc3339())
+        .bind(quote.subtotal.amount).bind(quote.tax_amount.amount).bind(quote.total.amount)
+        .bind(format!("{:?}", quote.status)).bind(None::<String>)
+        .bind(quote.base.created_at.to_rfc3339()).bind(now.to_rfc3339())
+        .execute(&mut *tx).await?;
+        
+        for line in &quote.lines {
+            sqlx::query(
+                "INSERT INTO quotation_lines (id, quotation_id, product_id, description, quantity, unit_price, discount, line_total)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            ).bind(line.id.to_string()).bind(quote.base.id.to_string()).bind(line.product_id.to_string())
+            .bind(&line.description).bind(line.quantity).bind(line.unit_price.amount)
+            .bind((line.discount_percent * 100.0) as i64).bind(line.line_total.amount)
+            .execute(&mut *tx).await?;
+        }
+        
+        tx.commit().await?;
+        Ok(quote)
+    }
+
+    async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()> {
+        let status_str = format!("{:?}", status);
+        let rows = sqlx::query("UPDATE quotations SET status = ?, updated_at = ? WHERE id = ?")
+            .bind(&status_str).bind(Utc::now().to_rfc3339()).bind(id.to_string())
+            .execute(pool).await?;
+        if rows.rows_affected() == 0 { return Err(Error::not_found("Quotation", &id.to_string())); }
+        Ok(())
+    }
+
+    async fn convert_to_order(&self, pool: &SqlitePool, quote: SalesQuote) -> Result<SalesOrder> {
+        let order = SalesOrder {
+            base: BaseEntity::new(),
+            order_number: format!("SO-{}", chrono::Local::now().format("%Y%m%d%H%M%S")),
+            customer_id: quote.customer_id,
+            order_date: Utc::now(),
+            required_date: None,
+            lines: quote.lines.into_iter().map(|l| SalesOrderLine {
+                id: Uuid::new_v4(),
+                product_id: l.product_id,
+                description: l.description,
+                quantity: l.quantity,
+                unit_price: l.unit_price,
+                discount_percent: l.discount_percent,
+                tax_rate: 0.0,
+                line_total: l.line_total,
+            }).collect(),
+            subtotal: quote.subtotal,
+            tax_amount: quote.tax_amount,
+            total: quote.total,
+            status: Status::Draft,
+        };
+        
+        let order_repo = SqliteSalesOrderRepository;
+        let created = order_repo.create(pool, order).await?;
+        
+        self.update_status(pool, quote.base.id, Status::Completed).await?;
+        
+        Ok(created)
+    }
+}
+
+#[async_trait]
+pub trait QuotationRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<SalesQuote>;
+    async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<SalesQuote>>;
+    async fn create(&self, pool: &SqlitePool, quote: SalesQuote) -> Result<SalesQuote>;
+    async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()>;
+    async fn convert_to_order(&self, pool: &SqlitePool, quote: SalesQuote) -> Result<SalesOrder>;
+}

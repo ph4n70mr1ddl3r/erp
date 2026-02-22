@@ -120,6 +120,27 @@ fn sales_routes(state: AppState) -> Router<AppState> {
             "/invoices",
             get(handlers::sales::list_invoices).post(handlers::sales::create_invoice),
         )
+        .route(
+            "/quotations",
+            get(handlers::sales::list_quotations).post(handlers::sales::create_quotation),
+        )
+        .route("/quotations/:id", get(handlers::sales::get_quotation))
+        .route(
+            "/quotations/:id/send",
+            post(handlers::sales::send_quotation),
+        )
+        .route(
+            "/quotations/:id/accept",
+            post(handlers::sales::accept_quotation),
+        )
+        .route(
+            "/quotations/:id/reject",
+            post(handlers::sales::reject_quotation),
+        )
+        .route(
+            "/quotations/:id/convert",
+            post(handlers::sales::convert_quotation),
+        )
         .with_state(state)
 }
 

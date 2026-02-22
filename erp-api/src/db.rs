@@ -31,6 +31,7 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240101000005_hr.sql"),
         include_str!("../../migrations/20240101000006_auth.sql"),
         include_str!("../../migrations/20240101000007_audit.sql"),
+        include_str!("../../migrations/20240101000008_quotations.sql"),
     ];
     
     for migration in migration_queries {
