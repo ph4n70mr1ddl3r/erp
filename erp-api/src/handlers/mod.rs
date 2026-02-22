@@ -1,7 +1,9 @@
 pub mod audit;
 pub mod attachment;
 pub mod auth;
+pub mod extended;
 pub mod finance;
+pub mod import_export;
 pub mod inventory;
 pub mod sales;
 pub mod purchasing;

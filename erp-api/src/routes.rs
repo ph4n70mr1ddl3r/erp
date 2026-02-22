@@ -74,6 +74,57 @@ fn api_routes(state: AppState) -> Router<AppState> {
             get(handlers::attachment::get_attachment)
                 .delete(handlers::attachment::delete_attachment),
         )
+        .route("/currencies", get(handlers::extended::list_currencies))
+        .route(
+            "/exchange-rates",
+            post(handlers::extended::set_exchange_rate),
+        )
+        .route("/convert", get(handlers::extended::convert_currency))
+        .route(
+            "/budgets",
+            get(handlers::extended::list_budgets).post(handlers::extended::create_budget),
+        )
+        .route(
+            "/lots",
+            get(handlers::extended::list_lots).post(handlers::extended::create_lot),
+        )
+        .route("/leave-types", get(handlers::extended::list_leave_types))
+        .route(
+            "/leave-requests",
+            get(handlers::extended::list_pending_leave)
+                .post(handlers::extended::create_leave_request),
+        )
+        .route(
+            "/leave-requests/:id/approve",
+            post(handlers::extended::approve_leave),
+        )
+        .route(
+            "/leave-requests/:id/reject",
+            post(handlers::extended::reject_leave),
+        )
+        .route(
+            "/expense-categories",
+            get(handlers::extended::list_expense_categories),
+        )
+        .route(
+            "/expense-reports",
+            get(handlers::extended::list_expense_reports)
+                .post(handlers::extended::create_expense_report),
+        )
+        .route(
+            "/expense-reports/:id/submit",
+            post(handlers::extended::submit_expense),
+        )
+        .route(
+            "/expense-reports/:id/approve",
+            post(handlers::extended::approve_expense),
+        )
+        .route(
+            "/expense-reports/:id/reject",
+            post(handlers::extended::reject_expense),
+        )
+        .route("/export", get(handlers::import_export::export_csv))
+        .route("/import", post(handlers::import_export::import_csv))
 }
 
 fn finance_routes(state: AppState) -> Router<AppState> {

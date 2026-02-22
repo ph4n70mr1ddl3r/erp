@@ -106,3 +106,47 @@ pub struct PriceListItem {
     pub price: Money,
     pub min_quantity: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Lot {
+    pub id: Uuid,
+    pub lot_number: String,
+    pub product_id: Uuid,
+    pub serial_number: Option<String>,
+    pub manufacture_date: Option<DateTime<Utc>>,
+    pub expiry_date: Option<DateTime<Utc>>,
+    pub quantity: i64,
+    pub status: LotStatus,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum LotStatus {
+    Active,
+    Expired,
+    Quarantined,
+    Depleted,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LotTransaction {
+    pub id: Uuid,
+    pub lot_id: Uuid,
+    pub transaction_type: LotTransactionType,
+    pub quantity: i64,
+    pub reference_type: Option<String>,
+    pub reference_id: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum LotTransactionType {
+    Receipt,
+    Issue,
+    Transfer,
+    Adjustment,
+    Expiry,
+}

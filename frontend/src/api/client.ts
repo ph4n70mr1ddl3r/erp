@@ -104,3 +104,50 @@ export const audit = {
     return api.get(`/api/v1/audit-logs${qs ? '?' + qs : ''}`);
   },
 };
+
+// Currency
+export const currency = {
+  listCurrencies: () => api.get('/api/v1/currencies'),
+  setExchangeRate: (data: { from: string; to: string; rate: number }) => api.post('/api/v1/exchange-rates', data),
+  convert: (from: string, to: string, amount: number) => api.get(`/api/v1/convert?from=${from}&to=${to}&amount=${amount}`),
+};
+
+// Budgets
+export const budget = {
+  list: () => api.get('/api/v1/budgets'),
+  create: (data: any) => api.post('/api/v1/budgets', data),
+};
+
+// Lots
+export const lot = {
+  list: (productId: string) => api.get(`/api/v1/lots?product_id=${productId}`),
+  create: (data: any) => api.post('/api/v1/lots', data),
+};
+
+// Leave
+export const leave = {
+  listTypes: () => api.get('/api/v1/leave-types'),
+  listRequests: () => api.get('/api/v1/leave-requests'),
+  createRequest: (data: any) => api.post('/api/v1/leave-requests', data),
+  approve: (id: string) => api.post(`/api/v1/leave-requests/${id}/approve`),
+  reject: (id: string, reason: string) => api.post(`/api/v1/leave-requests/${id}/reject`, { reason }),
+};
+
+// Expenses
+export const expense = {
+  listCategories: () => api.get('/api/v1/expense-categories'),
+  listReports: (employeeId?: string) => api.get(`/api/v1/expense-reports${employeeId ? `?employee_id=${employeeId}` : ''}`),
+  createReport: (data: any) => api.post('/api/v1/expense-reports', data),
+  submit: (id: string) => api.post(`/api/v1/expense-reports/${id}/submit`),
+  approve: (id: string) => api.post(`/api/v1/expense-reports/${id}/approve`),
+  reject: (id: string, reason: string) => api.post(`/api/v1/expense-reports/${id}/reject`, { reason }),
+};
+
+// Import/Export
+export const data = {
+  exportCsv: (entity: string) => api.get(`/api/v1/export?entity=${entity}`, { responseType: 'blob' }),
+  importCsv: (entity: string, csvContent: string) => 
+    api.post(`/api/v1/import?entity=${entity}`, csvContent, {
+      headers: { 'Content-Type': 'text/csv' }
+    }),
+};

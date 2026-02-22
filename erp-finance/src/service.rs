@@ -169,6 +169,254 @@ impl FiscalYearService {
     }
 }
 
+pub struct CurrencyService;
+
+impl CurrencyService {
+    pub fn new() -> Self { Self }
+
+    pub async fn list_currencies(pool: &SqlitePool) -> Result<Vec<CurrencyDef>> {
+        let rows = sqlx::query_as::<_, CurrencyRow>(
+            "SELECT code, name, symbol, is_base, status FROM currencies ORDER BY code"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn get_exchange_rate(pool: &SqlitePool, from: &str, to: &str) -> Result<f64> {
+        if from == to {
+            return Ok(1.0);
+        }
+        
+        let row: Option<(f64,)> = sqlx::query_as(
+            "SELECT rate FROM exchange_rates 
+             WHERE from_currency = ? AND to_currency = ? 
+             ORDER BY effective_date DESC LIMIT 1"
+        )
+        .bind(from)
+        .bind(to)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        row.map(|r| r.0)
+            .ok_or_else(|| Error::not_found("ExchangeRate", &format!("{}->{}", from, to)))
+    }
+
+    pub async fn set_exchange_rate(pool: &SqlitePool, from: &str, to: &str, rate: f64) -> Result<ExchangeRate> {
+        let now = chrono::Utc::now();
+        let er = ExchangeRate {
+            id: Uuid::new_v4(),
+            from_currency: from.to_string(),
+            to_currency: to.to_string(),
+            rate,
+            effective_date: now,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO exchange_rates (id, from_currency, to_currency, rate, effective_date, created_at)
+             VALUES (?, ?, ?, ?, ?, ?)"
+        )
+        .bind(er.id.to_string())
+        .bind(&er.from_currency)
+        .bind(&er.to_currency)
+        .bind(er.rate)
+        .bind(er.effective_date.to_rfc3339())
+        .bind(er.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(er)
+    }
+
+    pub async fn convert_amount(pool: &SqlitePool, amount: i64, from: &str, to: &str) -> Result<i64> {
+        let rate = Self::get_exchange_rate(pool, from, to).await?;
+        Ok((amount as f64 * rate) as i64)
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CurrencyRow {
+    code: String,
+    name: String,
+    symbol: String,
+    is_base: i64,
+    status: String,
+}
+
+impl From<CurrencyRow> for CurrencyDef {
+    fn from(r: CurrencyRow) -> Self {
+        Self {
+            code: r.code,
+            name: r.name,
+            symbol: r.symbol,
+            is_base: r.is_base != 0,
+            status: match r.status.as_str() {
+                "Inactive" => Status::Inactive,
+                _ => Status::Active,
+            },
+        }
+    }
+}
+
+pub struct BudgetService;
+
+impl BudgetService {
+    pub fn new() -> Self { Self }
+
+    pub async fn list_budgets(pool: &SqlitePool) -> Result<Vec<BudgetWithVariance>> {
+        let rows = sqlx::query_as::<_, BudgetRow>(
+            "SELECT id, name, start_date, end_date, total_amount, status, created_at, updated_at
+             FROM budgets ORDER BY start_date DESC"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        let mut budgets = Vec::new();
+        for row in rows {
+            let lines = Self::get_budget_lines_with_variance(pool, row.id.clone()).await?;
+            let total_actual: i64 = lines.iter().map(|l| l.actual_amount).sum();
+            let total_variance: i64 = lines.iter().map(|l| l.variance).sum();
+            let variance_percent = if row.total_amount > 0 {
+                (total_variance as f64 / row.total_amount as f64) * 100.0
+            } else { 0.0 };
+            
+            budgets.push(BudgetWithVariance {
+                base: BaseEntity {
+                    id: Uuid::parse_str(&row.id).unwrap_or_default(),
+                    created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
+                        .map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                    updated_at: chrono::DateTime::parse_from_rfc3339(&row.updated_at)
+                        .map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                    created_by: None,
+                    updated_by: None,
+                },
+                name: row.name,
+                start_date: chrono::DateTime::parse_from_rfc3339(&row.start_date)
+                    .map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                end_date: chrono::DateTime::parse_from_rfc3339(&row.end_date)
+                    .map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                total_amount: row.total_amount,
+                total_actual,
+                total_variance,
+                variance_percent,
+                status: match row.status.as_str() {
+                    "Approved" => Status::Approved,
+                    "Completed" => Status::Completed,
+                    _ => Status::Draft,
+                },
+                lines,
+            });
+        }
+        
+        Ok(budgets)
+    }
+
+    async fn get_budget_lines_with_variance(pool: &SqlitePool, budget_id: String) -> Result<Vec<BudgetLineWithVariance>> {
+        let rows = sqlx::query_as::<_, BudgetLineRow>(
+            "SELECT bl.id, bl.account_id, bl.period, bl.amount, bl.actual, bl.variance,
+                    a.code as account_code, a.name as account_name
+             FROM budget_lines bl
+             LEFT JOIN accounts a ON bl.account_id = a.id
+             WHERE bl.budget_id = ?
+             ORDER BY a.code, bl.period"
+        )
+        .bind(&budget_id)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(rows.into_iter().map(|r| {
+            let variance = r.amount - r.actual;
+            let variance_percent = if r.amount > 0 {
+                (variance as f64 / r.amount as f64) * 100.0
+            } else { 0.0 };
+            
+            BudgetLineWithVariance {
+                id: Uuid::parse_str(&r.id).unwrap_or_default(),
+                account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),
+                account_code: r.account_code.unwrap_or_default(),
+                account_name: r.account_name.unwrap_or_default(),
+                period: r.period as u32,
+                budget_amount: r.amount,
+                actual_amount: r.actual,
+                variance,
+                variance_percent,
+            }
+        }).collect())
+    }
+
+    pub async fn create_budget(pool: &SqlitePool, name: &str, start_date: &str, end_date: &str, lines: Vec<(String, u32, i64)>) -> Result<BudgetWithVariance> {
+        let id = Uuid::new_v4();
+        let now = chrono::Utc::now();
+        let total: i64 = lines.iter().map(|(_, _, amt)| amt).sum();
+        
+        sqlx::query(
+            "INSERT INTO budgets (id, name, start_date, end_date, total_amount, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 'Draft', ?, ?)"
+        )
+        .bind(id.to_string())
+        .bind(name)
+        .bind(start_date)
+        .bind(end_date)
+        .bind(total)
+        .bind(now.to_rfc3339())
+        .bind(now.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        for (account_id, period, amount) in lines {
+            let line_id = Uuid::new_v4();
+            sqlx::query(
+                "INSERT INTO budget_lines (id, budget_id, account_id, period, amount, actual, variance)
+                 VALUES (?, ?, ?, ?, ?, 0, 0)"
+            )
+            .bind(line_id.to_string())
+            .bind(id.to_string())
+            .bind(&account_id)
+            .bind(period as i64)
+            .bind(amount)
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e.into()))?;
+        }
+        
+        let budgets = Self::list_budgets(pool).await?;
+        budgets.into_iter().next()
+            .ok_or_else(|| Error::not_found("Budget", &id.to_string()))
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct BudgetRow {
+    id: String,
+    name: String,
+    start_date: String,
+    end_date: String,
+    total_amount: i64,
+    status: String,
+    created_at: String,
+    updated_at: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct BudgetLineRow {
+    id: String,
+    account_id: String,
+    period: i64,
+    amount: i64,
+    actual: i64,
+    variance: i64,
+    account_code: Option<String>,
+    account_name: Option<String>,
+}
+
 pub struct FinancialReportingService {
     account_repo: SqliteAccountRepository,
     journal_repo: SqliteJournalEntryRepository,

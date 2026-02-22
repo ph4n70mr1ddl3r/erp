@@ -242,3 +242,177 @@ mod tests {
         assert_eq!(number.len(), 17);
     }
 }
+
+pub struct LotService;
+
+impl LotService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_lot(
+        pool: &SqlitePool,
+        lot_number: &str,
+        product_id: Uuid,
+        serial_number: Option<&str>,
+        manufacture_date: Option<String>,
+        expiry_date: Option<String>,
+        quantity: i64,
+        notes: Option<&str>,
+    ) -> Result<Lot> {
+        let now = chrono::Utc::now();
+        let lot = Lot {
+            id: Uuid::new_v4(),
+            lot_number: lot_number.to_string(),
+            product_id,
+            serial_number: serial_number.map(|s| s.to_string()),
+            manufacture_date: manufacture_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            expiry_date: expiry_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            quantity,
+            status: LotStatus::Active,
+            notes: notes.map(|s| s.to_string()),
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO lots (id, lot_number, product_id, serial_number, manufacture_date, expiry_date, quantity, status, notes, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(lot.id.to_string())
+        .bind(&lot.lot_number)
+        .bind(lot.product_id.to_string())
+        .bind(&lot.serial_number)
+        .bind(lot.manufacture_date.map(|d| d.to_rfc3339()))
+        .bind(lot.expiry_date.map(|d| d.to_rfc3339()))
+        .bind(lot.quantity)
+        .bind("Active")
+        .bind(&lot.notes)
+        .bind(lot.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(lot)
+    }
+
+    pub async fn get_lot(pool: &SqlitePool, id: Uuid) -> Result<Lot> {
+        let row = sqlx::query_as::<_, LotRow>(
+            "SELECT id, lot_number, product_id, serial_number, manufacture_date, expiry_date, quantity, status, notes, created_at
+             FROM lots WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?
+        .ok_or_else(|| Error::not_found("Lot", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+
+    pub async fn list_lots_for_product(pool: &SqlitePool, product_id: Uuid) -> Result<Vec<Lot>> {
+        let rows = sqlx::query_as::<_, LotRow>(
+            "SELECT id, lot_number, product_id, serial_number, manufacture_date, expiry_date, quantity, status, notes, created_at
+             FROM lots WHERE product_id = ? ORDER BY created_at DESC"
+        )
+        .bind(product_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn record_transaction(
+        pool: &SqlitePool,
+        lot_id: Uuid,
+        transaction_type: LotTransactionType,
+        quantity: i64,
+        reference_type: Option<&str>,
+        reference_id: Option<&str>,
+    ) -> Result<LotTransaction> {
+        let now = chrono::Utc::now();
+        let tx = LotTransaction {
+            id: Uuid::new_v4(),
+            lot_id,
+            transaction_type: transaction_type.clone(),
+            quantity,
+            reference_type: reference_type.map(|s| s.to_string()),
+            reference_id: reference_id.map(|s| s.to_string()),
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO lot_transactions (id, lot_id, transaction_type, quantity, reference_type, reference_id, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(tx.id.to_string())
+        .bind(tx.lot_id.to_string())
+        .bind(format!("{:?}", tx.transaction_type))
+        .bind(tx.quantity)
+        .bind(&tx.reference_type)
+        .bind(&tx.reference_id)
+        .bind(tx.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        let delta = match transaction_type {
+            LotTransactionType::Receipt => quantity,
+            LotTransactionType::Issue => -quantity,
+            LotTransactionType::Transfer => 0,
+            LotTransactionType::Adjustment => quantity,
+            LotTransactionType::Expiry => -quantity,
+        };
+        
+        sqlx::query(
+            "UPDATE lots SET quantity = quantity + ? WHERE id = ?"
+        )
+        .bind(delta)
+        .bind(lot_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e.into()))?;
+        
+        Ok(tx)
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct LotRow {
+    id: String,
+    lot_number: String,
+    product_id: String,
+    serial_number: Option<String>,
+    manufacture_date: Option<String>,
+    expiry_date: Option<String>,
+    quantity: i64,
+    status: String,
+    notes: Option<String>,
+    created_at: String,
+}
+
+impl From<LotRow> for Lot {
+    fn from(r: LotRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            lot_number: r.lot_number,
+            product_id: Uuid::parse_str(&r.product_id).unwrap_or_default(),
+            serial_number: r.serial_number,
+            manufacture_date: r.manufacture_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            expiry_date: r.expiry_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            quantity: r.quantity,
+            status: match r.status.as_str() {
+                "Expired" => LotStatus::Expired,
+                "Quarantined" => LotStatus::Quarantined,
+                "Depleted" => LotStatus::Depleted,
+                _ => LotStatus::Active,
+            },
+            notes: r.notes,
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}

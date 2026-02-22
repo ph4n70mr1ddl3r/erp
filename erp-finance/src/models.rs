@@ -126,3 +126,49 @@ pub struct TrialBalanceLine {
     pub debit: i64,
     pub credit: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurrencyDef {
+    pub code: String,
+    pub name: String,
+    pub symbol: String,
+    pub is_base: bool,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExchangeRate {
+    pub id: Uuid,
+    pub from_currency: String,
+    pub to_currency: String,
+    pub rate: f64,
+    pub effective_date: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BudgetWithVariance {
+    pub base: BaseEntity,
+    pub name: String,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub total_amount: i64,
+    pub total_actual: i64,
+    pub total_variance: i64,
+    pub variance_percent: f64,
+    pub status: Status,
+    pub lines: Vec<BudgetLineWithVariance>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BudgetLineWithVariance {
+    pub id: Uuid,
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub period: u32,
+    pub budget_amount: i64,
+    pub actual_amount: i64,
+    pub variance: i64,
+    pub variance_percent: f64,
+}

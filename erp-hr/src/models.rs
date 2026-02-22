@@ -116,3 +116,99 @@ pub struct Allowance {
     pub amount: Money,
     pub taxable: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeaveTypeDef {
+    pub id: Uuid,
+    pub name: String,
+    pub code: String,
+    pub days_per_year: i64,
+    pub carry_over: bool,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeaveBalance {
+    pub id: Uuid,
+    pub employee_id: Uuid,
+    pub leave_type_id: Uuid,
+    pub year: i32,
+    pub entitled: i64,
+    pub used: i64,
+    pub remaining: i64,
+    pub carried_over: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LeaveRequestExtended {
+    pub id: Uuid,
+    pub employee_id: Uuid,
+    pub leave_type_id: Uuid,
+    pub start_date: NaiveDate,
+    pub end_date: NaiveDate,
+    pub days: i64,
+    pub reason: Option<String>,
+    pub status: LeaveRequestStatus,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejection_reason: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum LeaveRequestStatus {
+    Pending,
+    Approved,
+    Rejected,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpenseCategory {
+    pub id: Uuid,
+    pub name: String,
+    pub code: String,
+    pub description: Option<String>,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpenseReport {
+    pub id: Uuid,
+    pub report_number: String,
+    pub employee_id: Uuid,
+    pub title: String,
+    pub description: Option<String>,
+    pub total_amount: i64,
+    pub status: ExpenseReportStatus,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub rejected_at: Option<DateTime<Utc>>,
+    pub rejection_reason: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ExpenseReportStatus {
+    Draft,
+    Submitted,
+    Approved,
+    Rejected,
+    Paid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExpenseLine {
+    pub id: Uuid,
+    pub expense_report_id: Uuid,
+    pub category_id: Uuid,
+    pub expense_date: NaiveDate,
+    pub description: String,
+    pub amount: i64,
+    pub currency: String,
+    pub receipt_path: Option<String>,
+}
