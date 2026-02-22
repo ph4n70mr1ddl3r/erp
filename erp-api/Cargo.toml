@@ -1,0 +1,38 @@
+[package]
+name = "erp-api"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "erp-server"
+path = "src/main.rs"
+
+[dependencies]
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+async-trait.workspace = true
+validator.workspace = true
+erp-core.workspace = true
+erp-finance.workspace = true
+erp-inventory.workspace = true
+erp-sales.workspace = true
+erp-purchasing.workspace = true
+erp-manufacturing.workspace = true
+erp-hr.workspace = true
+erp-auth.workspace = true
+once_cell.workspace = true
+http-body-util = "0.1"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

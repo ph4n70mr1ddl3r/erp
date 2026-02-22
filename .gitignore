@@ -1,0 +1,9 @@
+.env
+erp.db
+*.db
+target/
+node_modules/
+frontend/dist/
+frontend/.vite/
+.DS_Store
+*.log
