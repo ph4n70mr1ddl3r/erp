@@ -1,4 +1,5 @@
 pub mod audit;
+pub mod attachment;
 pub mod auth;
 pub mod finance;
 pub mod inventory;
@@ -6,6 +7,7 @@ pub mod sales;
 pub mod purchasing;
 pub mod manufacturing;
 pub mod hr;
+pub mod workflow;
 
 use axum::{extract::State, Json};
 use serde_json::json;
