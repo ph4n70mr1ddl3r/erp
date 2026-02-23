@@ -1,0 +1,1197 @@
+-- AI/ML Module Tables
+CREATE TABLE IF NOT EXISTS ai_models (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    model_type TEXT NOT NULL,
+    algorithm TEXT NOT NULL,
+    description TEXT,
+    version TEXT NOT NULL,
+    parameters TEXT,
+    features TEXT,
+    target_variable TEXT,
+    training_data_source TEXT,
+    training_config TEXT,
+    validation_split REAL DEFAULT 0.2,
+    cross_validation_folds INTEGER DEFAULT 5,
+    hyperparameters TEXT,
+    training_status TEXT DEFAULT 'Draft',
+    training_started_at TEXT,
+    training_completed_at TEXT,
+    training_duration_seconds INTEGER,
+    training_samples INTEGER,
+    validation_metrics TEXT,
+    test_metrics TEXT,
+    accuracy_score REAL,
+    precision_score REAL,
+    recall_score REAL,
+    f1_score REAL,
+    rmse REAL,
+    mae REAL,
+    mape REAL,
+    r2_score REAL,
+    auc_roc REAL,
+    feature_importance TEXT,
+    model_artifact_path TEXT,
+    deployment_endpoint TEXT,
+    deployment_status TEXT DEFAULT 'Draft',
+    deployed_at TEXT,
+    inference_count INTEGER DEFAULT 0,
+    last_inference_at TEXT,
+    drift_detected INTEGER DEFAULT 0,
+    drift_score REAL,
+    retraining_required INTEGER DEFAULT 0,
+    auto_retrain INTEGER DEFAULT 0,
+    retrain_threshold REAL,
+    retrain_schedule_cron TEXT,
+    last_retrain_at TEXT,
+    owner_id TEXT,
+    tags TEXT,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS training_jobs (
+    id TEXT PRIMARY KEY,
+    model_id TEXT NOT NULL,
+    job_number TEXT NOT NULL,
+    data_source TEXT NOT NULL,
+    data_filters TEXT,
+    feature_config TEXT,
+    parameter_overrides TEXT,
+    training_config TEXT,
+    status TEXT DEFAULT 'Queued',
+    progress_percent INTEGER DEFAULT 0,
+    current_epoch INTEGER,
+    total_epochs INTEGER,
+    current_batch INTEGER,
+    total_batches INTEGER,
+    loss_value REAL,
+    metrics_history TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    duration_seconds INTEGER,
+    samples_processed INTEGER,
+    error_message TEXT,
+    compute_resource TEXT,
+    gpu_used INTEGER DEFAULT 0,
+    memory_used_mb INTEGER,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS prediction_requests (
+    id TEXT PRIMARY KEY,
+    model_id TEXT NOT NULL,
+    request_id TEXT NOT NULL UNIQUE,
+    input_data TEXT NOT NULL,
+    input_features TEXT,
+    batch_mode INTEGER DEFAULT 0,
+    batch_size INTEGER,
+    priority INTEGER DEFAULT 5,
+    status TEXT DEFAULT 'Pending',
+    result TEXT,
+    predictions TEXT,
+    confidence_scores TEXT,
+    explanation TEXT,
+    feature_contributions TEXT,
+    processing_time_ms INTEGER,
+    created_by TEXT,
+    processed_at TEXT,
+    error_message TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS demand_forecasts (
+    id TEXT PRIMARY KEY,
+    model_id TEXT,
+    product_id TEXT NOT NULL,
+    warehouse_id TEXT,
+    forecast_date TEXT NOT NULL,
+    horizon_days INTEGER NOT NULL,
+    forecast_type TEXT NOT NULL,
+    granularity TEXT NOT NULL,
+    forecasts TEXT NOT NULL,
+    confidence_intervals TEXT,
+    lower_bound REAL,
+    upper_bound REAL,
+    actual_values TEXT,
+    accuracy_metrics TEXT,
+    mape REAL,
+    mase REAL,
+    wape REAL,
+    factors TEXT,
+    seasonality_detected INTEGER DEFAULT 0,
+    trend TEXT,
+    status TEXT DEFAULT 'Active',
+    generated_at TEXT NOT NULL,
+    valid_until TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS anomaly_detections (
+    id TEXT PRIMARY KEY,
+    model_id TEXT,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    anomaly_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    detected_at TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    expected_value REAL NOT NULL,
+    actual_value REAL NOT NULL,
+    deviation_percent REAL NOT NULL,
+    z_score REAL,
+    confidence_score REAL NOT NULL,
+    detection_method TEXT NOT NULL,
+    context_data TEXT,
+    root_cause_analysis TEXT,
+    related_anomalies TEXT,
+    status TEXT DEFAULT 'New',
+    acknowledged_at TEXT,
+    acknowledged_by TEXT,
+    resolution_notes TEXT,
+    resolved_at TEXT,
+    false_positive INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS customer_insights (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    insight_type TEXT NOT NULL,
+    segment TEXT,
+    segment_score REAL,
+    lifetime_value REAL,
+    churn_probability REAL,
+    churn_risk_level TEXT,
+    next_best_action TEXT,
+    recommended_products TEXT,
+    cross_sell_opportunities TEXT,
+    upsell_opportunities TEXT,
+    purchase_propensity TEXT,
+    engagement_score REAL,
+    satisfaction_score REAL,
+    nps_score INTEGER,
+    sentiment TEXT,
+    behavior_patterns TEXT,
+    preferences TEXT,
+    risk_factors TEXT,
+    last_purchase_prediction TEXT,
+    predicted_order_value REAL,
+    model_version TEXT,
+    calculated_at TEXT NOT NULL,
+    valid_until TEXT,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS recommendation_engines (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    recommendation_type TEXT NOT NULL,
+    algorithm TEXT NOT NULL,
+    description TEXT,
+    model_id TEXT,
+    config TEXT,
+    fallback_strategy TEXT,
+    diversity_factor REAL DEFAULT 0.5,
+    novelty_factor REAL DEFAULT 0.3,
+    cold_start_strategy TEXT,
+    context_features TEXT,
+    ranking_strategy TEXT,
+    ab_test_enabled INTEGER DEFAULT 0,
+    ab_test_config TEXT,
+    metrics_window_days INTEGER DEFAULT 30,
+    click_through_rate REAL,
+    conversion_rate REAL,
+    average_rating REAL,
+    total_recommendations INTEGER DEFAULT 0,
+    total_clicks INTEGER DEFAULT 0,
+    total_conversions INTEGER DEFAULT 0,
+    last_optimized_at TEXT,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS recommendation_results (
+    id TEXT PRIMARY KEY,
+    engine_id TEXT NOT NULL,
+    user_id TEXT,
+    customer_id TEXT,
+    session_id TEXT,
+    context TEXT,
+    recommendations TEXT NOT NULL,
+    scores TEXT,
+    reasons TEXT,
+    diversity_score REAL,
+    novelty_score REAL,
+    displayed_at TEXT,
+    clicked_at TEXT,
+    clicked_item_id TEXT,
+    clicked_position INTEGER,
+    converted_at TEXT,
+    converted_item_id TEXT,
+    conversion_value REAL,
+    ab_test_variant TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ai_monitoring_metrics (
+    id TEXT PRIMARY KEY,
+    model_id TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    metric_type TEXT NOT NULL,
+    value REAL NOT NULL,
+    threshold_warning REAL,
+    threshold_critical REAL,
+    trend TEXT,
+    period_start TEXT NOT NULL,
+    period_end TEXT NOT NULL,
+    sample_size INTEGER,
+    details TEXT,
+    alert_triggered INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS feature_stores (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    entity_type TEXT NOT NULL,
+    features TEXT NOT NULL,
+    data_source TEXT NOT NULL,
+    refresh_schedule TEXT,
+    last_refresh_at TEXT,
+    feature_count INTEGER,
+    row_count INTEGER,
+    size_bytes INTEGER,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ml_experiments (
+    id TEXT PRIMARY KEY,
+    model_id TEXT NOT NULL,
+    experiment_name TEXT NOT NULL,
+    run_number INTEGER DEFAULT 1,
+    parameters TEXT NOT NULL,
+    metrics TEXT,
+    artifacts_path TEXT,
+    status TEXT DEFAULT 'Draft',
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    duration_seconds INTEGER,
+    notes TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- Portal Module Tables
+CREATE TABLE IF NOT EXISTS portal_users (
+    id TEXT PRIMARY KEY,
+    portal_type TEXT NOT NULL,
+    external_id TEXT,
+    username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    display_name TEXT,
+    company_name TEXT,
+    phone TEXT,
+    access_level TEXT DEFAULT 'Standard',
+    permissions TEXT,
+    preferences TEXT,
+    language TEXT DEFAULT 'en',
+    timezone TEXT DEFAULT 'UTC',
+    avatar_url TEXT,
+    last_login_at TEXT,
+    login_count INTEGER DEFAULT 0,
+    failed_login_count INTEGER DEFAULT 0,
+    locked_until TEXT,
+    password_changed_at TEXT,
+    must_change_password INTEGER DEFAULT 0,
+    two_factor_enabled INTEGER DEFAULT 0,
+    two_factor_secret TEXT,
+    api_key TEXT,
+    api_key_expires_at TEXT,
+    session_timeout_minutes INTEGER DEFAULT 30,
+    status TEXT DEFAULT 'Active',
+    invited_by TEXT,
+    invited_at TEXT,
+    accepted_at TEXT,
+    notification_preferences TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS customer_portal_access (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    customer_id TEXT NOT NULL,
+    role TEXT DEFAULT 'Viewer',
+    permissions TEXT,
+    can_view_orders INTEGER DEFAULT 1,
+    can_create_orders INTEGER DEFAULT 0,
+    can_view_invoices INTEGER DEFAULT 1,
+    can_pay_invoices INTEGER DEFAULT 0,
+    can_view_quotes INTEGER DEFAULT 1,
+    can_request_quotes INTEGER DEFAULT 0,
+    can_view_shipments INTEGER DEFAULT 1,
+    can_view_returns INTEGER DEFAULT 1,
+    can_create_returns INTEGER DEFAULT 0,
+    can_view_contracts INTEGER DEFAULT 0,
+    can_view_statements INTEGER DEFAULT 1,
+    can_download_documents INTEGER DEFAULT 1,
+    can_view_pricing INTEGER DEFAULT 1,
+    can_view_inventory INTEGER DEFAULT 0,
+    default_warehouse_id TEXT,
+    default_price_list_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    status TEXT DEFAULT 'Active'
+);
+
+CREATE TABLE IF NOT EXISTS supplier_portal_access (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    vendor_id TEXT NOT NULL,
+    role TEXT DEFAULT 'Viewer',
+    permissions TEXT,
+    can_view_pos INTEGER DEFAULT 1,
+    can_submit_quotes INTEGER DEFAULT 0,
+    can_update_orders INTEGER DEFAULT 0,
+    can_create_invoices INTEGER DEFAULT 0,
+    can_view_payments INTEGER DEFAULT 1,
+    can_view_forecasts INTEGER DEFAULT 0,
+    can_update_inventory INTEGER DEFAULT 0,
+    can_view_performance INTEGER DEFAULT 1,
+    can_upload_documents INTEGER DEFAULT 1,
+    can_manage_catalog INTEGER DEFAULT 0,
+    default_currency TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    status TEXT DEFAULT 'Active'
+);
+
+CREATE TABLE IF NOT EXISTS portal_sessions (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    session_token TEXT NOT NULL UNIQUE,
+    refresh_token TEXT NOT NULL UNIQUE,
+    ip_address TEXT,
+    user_agent TEXT,
+    device_type TEXT,
+    login_at TEXT NOT NULL,
+    last_activity_at TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    logout_at TEXT,
+    logout_reason TEXT,
+    status TEXT DEFAULT 'Active'
+);
+
+CREATE TABLE IF NOT EXISTS portal_orders (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    portal_order_number TEXT NOT NULL UNIQUE,
+    erp_order_id TEXT,
+    erp_order_number TEXT,
+    customer_id TEXT NOT NULL,
+    order_type TEXT DEFAULT 'Standard',
+    status TEXT DEFAULT 'Draft',
+    billing_address TEXT,
+    shipping_address TEXT,
+    requested_delivery_date TEXT,
+    shipping_method TEXT,
+    payment_method TEXT,
+    notes TEXT,
+    internal_notes TEXT,
+    subtotal_cents INTEGER DEFAULT 0,
+    tax_cents INTEGER DEFAULT 0,
+    shipping_cents INTEGER DEFAULT 0,
+    discount_cents INTEGER DEFAULT 0,
+    total_cents INTEGER DEFAULT 0,
+    currency TEXT DEFAULT 'USD',
+    submitted_at TEXT,
+    confirmed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS portal_order_lines (
+    id TEXT PRIMARY KEY,
+    portal_order_id TEXT NOT NULL,
+    line_number INTEGER NOT NULL,
+    product_id TEXT NOT NULL,
+    product_code TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    description TEXT,
+    quantity INTEGER NOT NULL,
+    unit_of_measure TEXT NOT NULL,
+    unit_price_cents INTEGER NOT NULL,
+    discount_percent REAL DEFAULT 0,
+    discount_cents INTEGER DEFAULT 0,
+    tax_percent REAL DEFAULT 0,
+    tax_cents INTEGER DEFAULT 0,
+    line_total_cents INTEGER NOT NULL,
+    notes TEXT,
+    erp_line_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS portal_invoices (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    erp_invoice_id TEXT NOT NULL,
+    erp_invoice_number TEXT NOT NULL,
+    customer_id TEXT NOT NULL,
+    invoice_date TEXT NOT NULL,
+    due_date TEXT NOT NULL,
+    status TEXT DEFAULT 'Sent',
+    subtotal_cents INTEGER DEFAULT 0,
+    tax_cents INTEGER DEFAULT 0,
+    total_cents INTEGER DEFAULT 0,
+    amount_paid_cents INTEGER DEFAULT 0,
+    amount_due_cents INTEGER DEFAULT 0,
+    currency TEXT DEFAULT 'USD',
+    payment_url TEXT,
+    pdf_url TEXT,
+    payments TEXT,
+    viewed_at TEXT,
+    disputed INTEGER DEFAULT 0,
+    dispute_reason TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS portal_payments (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    payment_reference TEXT NOT NULL UNIQUE,
+    erp_payment_id TEXT,
+    customer_id TEXT NOT NULL,
+    invoice_ids TEXT NOT NULL,
+    payment_method TEXT NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    currency TEXT DEFAULT 'USD',
+    status TEXT DEFAULT 'Pending',
+    payment_provider TEXT,
+    provider_transaction_id TEXT,
+    provider_response TEXT,
+    card_last_four TEXT,
+    card_brand TEXT,
+    bank_name TEXT,
+    check_number TEXT,
+    processed_at TEXT,
+    failed_at TEXT,
+    failure_reason TEXT,
+    refunded_at TEXT,
+    refund_amount_cents INTEGER,
+    notes TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS supplier_quote_submissions (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    vendor_id TEXT NOT NULL,
+    rfq_id TEXT NOT NULL,
+    quote_number TEXT NOT NULL UNIQUE,
+    erp_quote_id TEXT,
+    status TEXT DEFAULT 'Draft',
+    valid_until TEXT,
+    delivery_lead_time_days INTEGER DEFAULT 14,
+    payment_terms TEXT,
+    incoterms TEXT,
+    notes TEXT,
+    internal_notes TEXT,
+    subtotal_cents INTEGER DEFAULT 0,
+    tax_cents INTEGER DEFAULT 0,
+    total_cents INTEGER DEFAULT 0,
+    currency TEXT DEFAULT 'USD',
+    submitted_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS supplier_quote_lines (
+    id TEXT PRIMARY KEY,
+    submission_id TEXT NOT NULL,
+    rfq_line_id TEXT NOT NULL,
+    product_id TEXT,
+    product_code TEXT NOT NULL,
+    description TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit_of_measure TEXT NOT NULL,
+    unit_price_cents INTEGER NOT NULL,
+    discount_percent REAL DEFAULT 0,
+    tax_percent REAL DEFAULT 0,
+    line_total_cents INTEGER NOT NULL,
+    lead_time_days INTEGER DEFAULT 14,
+    minimum_order_quantity INTEGER DEFAULT 1,
+    notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS portal_notifications (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    notification_type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id TEXT,
+    action_url TEXT,
+    priority INTEGER DEFAULT 5,
+    read_at TEXT,
+    emailed_at TEXT,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS portal_documents (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    document_type TEXT NOT NULL,
+    document_number TEXT NOT NULL,
+    erp_entity_type TEXT NOT NULL,
+    erp_entity_id TEXT NOT NULL,
+    file_name TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size_bytes INTEGER NOT NULL,
+    mime_type TEXT NOT NULL,
+    download_count INTEGER DEFAULT 0,
+    last_downloaded_at TEXT,
+    expires_at TEXT,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS portal_activity_logs (
+    id TEXT PRIMARY KEY,
+    portal_user_id TEXT NOT NULL,
+    session_id TEXT,
+    activity_type TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id TEXT,
+    description TEXT NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    request_path TEXT,
+    request_method TEXT,
+    response_status INTEGER,
+    duration_ms INTEGER,
+    additional_data TEXT,
+    created_at TEXT NOT NULL
+);
+
+-- IoT Module Tables
+CREATE TABLE IF NOT EXISTS iot_devices (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    description TEXT,
+    device_type TEXT NOT NULL,
+    manufacturer TEXT,
+    model TEXT,
+    serial_number TEXT,
+    firmware_version TEXT,
+    hardware_version TEXT,
+    status TEXT DEFAULT 'Provisioning',
+    connectivity_type TEXT NOT NULL,
+    ip_address TEXT,
+    mac_address TEXT,
+    port INTEGER,
+    protocol_config TEXT,
+    gateway_id TEXT,
+    location_id TEXT,
+    warehouse_id TEXT,
+    zone TEXT,
+    latitude REAL,
+    longitude REAL,
+    geofence_enabled INTEGER DEFAULT 0,
+    geofence_radius_meters INTEGER,
+    last_seen_at TEXT,
+    last_heartbeat_at TEXT,
+    heartbeat_interval_seconds INTEGER DEFAULT 60,
+    battery_level INTEGER,
+    signal_strength INTEGER,
+    temperature_celsius REAL,
+    humidity_percent REAL,
+    data_format TEXT,
+    data_schema TEXT,
+    transforms TEXT,
+    alert_rules TEXT,
+    metadata TEXT,
+    tags TEXT,
+    owner_id TEXT,
+    installed_at TEXT,
+    maintenance_due_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS iot_device_groups (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    description TEXT,
+    group_type TEXT NOT NULL,
+    parent_id TEXT,
+    device_count INTEGER DEFAULT 0,
+    alert_rules TEXT,
+    metadata TEXT,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS device_group_memberships (
+    id TEXT PRIMARY KEY,
+    group_id TEXT NOT NULL,
+    device_id TEXT NOT NULL,
+    added_at TEXT NOT NULL,
+    added_by TEXT,
+    UNIQUE(group_id, device_id)
+);
+
+CREATE TABLE IF NOT EXISTS telemetry_data (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    metric_type TEXT NOT NULL,
+    value_numeric REAL,
+    value_string TEXT,
+    value_boolean INTEGER,
+    unit TEXT,
+    quality TEXT DEFAULT 'Good',
+    raw_value TEXT,
+    transformation_applied TEXT,
+    metadata TEXT,
+    received_at TEXT NOT NULL,
+    processed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS telemetry_aggregates (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    metric_name TEXT NOT NULL,
+    aggregation_type TEXT NOT NULL,
+    period TEXT NOT NULL,
+    period_start TEXT NOT NULL,
+    period_end TEXT NOT NULL,
+    value_min REAL,
+    value_max REAL,
+    value_avg REAL,
+    value_sum REAL,
+    value_count INTEGER DEFAULT 0,
+    value_stddev REAL,
+    quality_score REAL DEFAULT 1.0,
+    computed_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS iot_alerts (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    alert_rule_id TEXT,
+    alert_type TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    title TEXT NOT NULL,
+    message TEXT NOT NULL,
+    metric_name TEXT,
+    threshold_value REAL,
+    actual_value REAL,
+    trigger_condition TEXT,
+    context_data TEXT,
+    status TEXT DEFAULT 'New',
+    triggered_at TEXT NOT NULL,
+    acknowledged_at TEXT,
+    acknowledged_by TEXT,
+    resolved_at TEXT,
+    resolution_notes TEXT,
+    auto_resolved INTEGER DEFAULT 0,
+    notification_sent INTEGER DEFAULT 0,
+    escalation_level INTEGER DEFAULT 0,
+    escalated_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS iot_alert_rules (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    device_type TEXT,
+    device_group_id TEXT,
+    metric_name TEXT NOT NULL,
+    condition_type TEXT NOT NULL,
+    operator TEXT NOT NULL,
+    threshold_value REAL NOT NULL,
+    threshold_value_secondary REAL,
+    duration_seconds INTEGER DEFAULT 0,
+    aggregation_window_seconds INTEGER DEFAULT 60,
+    aggregation_type TEXT,
+    severity TEXT NOT NULL,
+    cooldown_seconds INTEGER DEFAULT 300,
+    auto_resolve INTEGER DEFAULT 0,
+    auto_resolve_after_seconds INTEGER,
+    notification_channels TEXT,
+    escalation_config TEXT,
+    suppress_duplicates INTEGER DEFAULT 1,
+    suppression_window_seconds INTEGER DEFAULT 300,
+    status TEXT DEFAULT 'Active',
+    last_triggered_at TEXT,
+    trigger_count INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS device_commands (
+    id TEXT PRIMARY KEY,
+    device_id TEXT NOT NULL,
+    command_type TEXT NOT NULL,
+    command_payload TEXT,
+    priority INTEGER DEFAULT 5,
+    status TEXT DEFAULT 'Pending',
+    retry_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    timeout_seconds INTEGER DEFAULT 30,
+    response_payload TEXT,
+    error_message TEXT,
+    sent_at TEXT,
+    acknowledged_at TEXT,
+    completed_at TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS firmware_versions (
+    id TEXT PRIMARY KEY,
+    device_type TEXT NOT NULL,
+    manufacturer TEXT,
+    model TEXT,
+    version TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_size_bytes INTEGER NOT NULL,
+    checksum TEXT NOT NULL,
+    checksum_type TEXT DEFAULT 'SHA256',
+    release_notes TEXT,
+    is_critical INTEGER DEFAULT 0,
+    rollout_strategy TEXT DEFAULT 'Manual',
+    rollout_percentage INTEGER DEFAULT 100,
+    target_device_group_id TEXT,
+    status TEXT DEFAULT 'Draft',
+    scheduled_at TEXT,
+    released_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(device_type, manufacturer, model, version)
+);
+
+CREATE TABLE IF NOT EXISTS firmware_update_jobs (
+    id TEXT PRIMARY KEY,
+    firmware_id TEXT NOT NULL,
+    device_id TEXT NOT NULL,
+    status TEXT DEFAULT 'Pending',
+    previous_version TEXT,
+    target_version TEXT NOT NULL,
+    progress_percent INTEGER DEFAULT 0,
+    started_at TEXT,
+    completed_at TEXT,
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS iot_data_exports (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    export_type TEXT NOT NULL,
+    device_ids TEXT,
+    device_group_ids TEXT,
+    metric_names TEXT,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    format TEXT DEFAULT 'CSV',
+    compression TEXT DEFAULT 'Gzip',
+    file_path TEXT,
+    file_size_bytes INTEGER,
+    row_count INTEGER,
+    status TEXT DEFAULT 'Pending',
+    error_message TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    expires_at TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS digital_twins (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    twin_type TEXT NOT NULL,
+    physical_device_id TEXT,
+    model_reference TEXT,
+    properties TEXT,
+    relationships TEXT,
+    simulation_config TEXT,
+    last_synced_at TEXT,
+    sync_status TEXT DEFAULT 'Error',
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+-- Automation Module Tables
+CREATE TABLE IF NOT EXISTS automation_workflows (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    description TEXT,
+    category TEXT NOT NULL,
+    automation_type TEXT NOT NULL,
+    trigger_config TEXT NOT NULL,
+    conditions TEXT,
+    actions TEXT NOT NULL,
+    error_handling TEXT,
+    retry_policy TEXT,
+    timeout_seconds INTEGER DEFAULT 3600,
+    max_concurrent_runs INTEGER DEFAULT 10,
+    priority INTEGER DEFAULT 5,
+    status TEXT DEFAULT 'Draft',
+    version INTEGER DEFAULT 1,
+    last_modified_by TEXT,
+    last_modified_at TEXT NOT NULL,
+    published_at TEXT,
+    published_by TEXT,
+    schedule_cron TEXT,
+    schedule_timezone TEXT DEFAULT 'UTC',
+    next_run_at TEXT,
+    last_run_at TEXT,
+    last_run_status TEXT,
+    total_runs INTEGER DEFAULT 0,
+    successful_runs INTEGER DEFAULT 0,
+    failed_runs INTEGER DEFAULT 0,
+    avg_duration_ms INTEGER,
+    tags TEXT,
+    owner_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS workflow_steps (
+    id TEXT PRIMARY KEY,
+    workflow_id TEXT NOT NULL,
+    step_number INTEGER NOT NULL,
+    step_name TEXT NOT NULL,
+    step_type TEXT NOT NULL,
+    config TEXT NOT NULL,
+    input_mapping TEXT,
+    output_mapping TEXT,
+    condition TEXT,
+    error_handler TEXT,
+    retry_count INTEGER DEFAULT 0,
+    timeout_seconds INTEGER DEFAULT 300,
+    on_success TEXT,
+    on_failure TEXT,
+    parallel_group INTEGER,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS workflow_executions (
+    id TEXT PRIMARY KEY,
+    workflow_id TEXT NOT NULL,
+    execution_number TEXT NOT NULL UNIQUE,
+    trigger_type TEXT NOT NULL,
+    trigger_data TEXT,
+    input_data TEXT,
+    output_data TEXT,
+    status TEXT DEFAULT 'Pending',
+    current_step INTEGER,
+    total_steps INTEGER DEFAULT 0,
+    completed_steps INTEGER DEFAULT 0,
+    progress_percent INTEGER DEFAULT 0,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    duration_ms INTEGER,
+    error_step INTEGER,
+    error_message TEXT,
+    error_stack TEXT,
+    retry_count INTEGER DEFAULT 0,
+    parent_execution_id TEXT,
+    correlation_id TEXT,
+    variables TEXT,
+    checkpoint_data TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS step_executions (
+    id TEXT PRIMARY KEY,
+    execution_id TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    step_number INTEGER NOT NULL,
+    status TEXT DEFAULT 'Pending',
+    input_data TEXT,
+    output_data TEXT,
+    started_at TEXT,
+    completed_at TEXT,
+    duration_ms INTEGER,
+    error_message TEXT,
+    retry_count INTEGER DEFAULT 0,
+    attempts INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS automation_triggers (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    trigger_type TEXT NOT NULL,
+    entity_type TEXT,
+    event_name TEXT,
+    condition TEXT,
+    workflow_id TEXT NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    priority INTEGER DEFAULT 5,
+    cooldown_seconds INTEGER DEFAULT 0,
+    last_triggered_at TEXT,
+    trigger_count INTEGER DEFAULT 0,
+    config TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS webhook_endpoints (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    endpoint_path TEXT NOT NULL UNIQUE,
+    workflow_id TEXT NOT NULL,
+    authentication_type TEXT DEFAULT 'None',
+    authentication_config TEXT,
+    allowed_ips TEXT,
+    rate_limit_per_minute INTEGER DEFAULT 60,
+    timeout_seconds INTEGER DEFAULT 30,
+    retry_policy TEXT,
+    is_active INTEGER DEFAULT 1,
+    verify_ssl INTEGER DEFAULT 1,
+    secret_key TEXT,
+    total_requests INTEGER DEFAULT 0,
+    successful_requests INTEGER DEFAULT 0,
+    failed_requests INTEGER DEFAULT 0,
+    last_request_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS webhook_requests (
+    id TEXT PRIMARY KEY,
+    endpoint_id TEXT NOT NULL,
+    request_id TEXT NOT NULL UNIQUE,
+    method TEXT NOT NULL,
+    headers TEXT,
+    query_params TEXT,
+    body TEXT,
+    content_type TEXT,
+    source_ip TEXT,
+    user_agent TEXT,
+    execution_id TEXT,
+    response_status INTEGER,
+    response_body TEXT,
+    processing_time_ms INTEGER,
+    error_message TEXT,
+    received_at TEXT NOT NULL,
+    processed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS scheduled_jobs (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    job_type TEXT NOT NULL,
+    description TEXT,
+    schedule_cron TEXT NOT NULL,
+    timezone TEXT DEFAULT 'UTC',
+    workflow_id TEXT,
+    job_config TEXT,
+    parameters TEXT,
+    is_active INTEGER DEFAULT 1,
+    misfire_policy TEXT DEFAULT 'RunImmediately',
+    last_run_at TEXT,
+    last_run_status TEXT,
+    last_duration_ms INTEGER,
+    next_run_at TEXT,
+    run_count INTEGER DEFAULT 0,
+    failure_count INTEGER DEFAULT 0,
+    consecutive_failures INTEGER DEFAULT 0,
+    max_consecutive_failures INTEGER DEFAULT 3,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS job_executions (
+    id TEXT PRIMARY KEY,
+    scheduled_job_id TEXT NOT NULL,
+    execution_number TEXT NOT NULL UNIQUE,
+    scheduled_at TEXT NOT NULL,
+    started_at TEXT,
+    completed_at TEXT,
+    duration_ms INTEGER,
+    status TEXT DEFAULT 'Pending',
+    trigger_type TEXT DEFAULT 'Schedule',
+    input_parameters TEXT,
+    output_data TEXT,
+    error_message TEXT,
+    error_stack TEXT,
+    retry_count INTEGER DEFAULT 0,
+    execution_node TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS action_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL,
+    description TEXT,
+    action_type TEXT NOT NULL,
+    icon TEXT,
+    input_schema TEXT,
+    output_schema TEXT,
+    config_schema TEXT,
+    default_config TEXT,
+    documentation_url TEXT,
+    is_builtin INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'Active',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS automation_queues (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    max_workers INTEGER DEFAULT 10,
+    current_workers INTEGER DEFAULT 0,
+    pending_count INTEGER DEFAULT 0,
+    processing_count INTEGER DEFAULT 0,
+    completed_count INTEGER DEFAULT 0,
+    failed_count INTEGER DEFAULT 0,
+    avg_wait_time_ms INTEGER,
+    avg_process_time_ms INTEGER,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS queue_items (
+    id TEXT PRIMARY KEY,
+    queue_id TEXT NOT NULL,
+    execution_id TEXT NOT NULL,
+    priority INTEGER DEFAULT 5,
+    status TEXT DEFAULT 'Pending',
+    enqueued_at TEXT NOT NULL,
+    started_at TEXT,
+    completed_at TEXT,
+    wait_time_ms INTEGER,
+    process_time_ms INTEGER,
+    retry_count INTEGER DEFAULT 0,
+    max_retries INTEGER DEFAULT 3,
+    error_message TEXT,
+    worker_id TEXT
+);
+
+CREATE TABLE IF NOT EXISTS automation_variables (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    variable_type TEXT DEFAULT 'String',
+    scope TEXT DEFAULT 'Global',
+    value TEXT,
+    default_value TEXT,
+    description TEXT,
+    is_encrypted INTEGER DEFAULT 0,
+    is_required INTEGER DEFAULT 0,
+    validation_regex TEXT,
+    workflow_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS automation_metrics (
+    id TEXT PRIMARY KEY,
+    metric_name TEXT NOT NULL,
+    metric_type TEXT NOT NULL,
+    workflow_id TEXT,
+    value REAL NOT NULL,
+    unit TEXT,
+    tags TEXT,
+    period_start TEXT NOT NULL,
+    period_end TEXT NOT NULL,
+    sample_count INTEGER DEFAULT 1,
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS rpa_recorders (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    script_type TEXT NOT NULL,
+    script_content TEXT NOT NULL,
+    selector_strategy TEXT,
+    variables TEXT,
+    recorded_at TEXT NOT NULL,
+    recorded_by TEXT,
+    status TEXT DEFAULT 'Active'
+);
+
+CREATE TABLE IF NOT EXISTS rpa_executions (
+    id TEXT PRIMARY KEY,
+    recorder_id TEXT NOT NULL,
+    workflow_execution_id TEXT,
+    status TEXT DEFAULT 'Pending',
+    screenshots TEXT,
+    logs TEXT,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    duration_ms INTEGER,
+    error_message TEXT
+);
+
+-- Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_ai_models_type ON ai_models(model_type);
+CREATE INDEX IF NOT EXISTS idx_ai_models_status ON ai_models(status);
+CREATE INDEX IF NOT EXISTS idx_prediction_requests_model ON prediction_requests(model_id);
+CREATE INDEX IF NOT EXISTS idx_prediction_requests_status ON prediction_requests(status);
+CREATE INDEX IF NOT EXISTS idx_demand_forecasts_product ON demand_forecasts(product_id);
+CREATE INDEX IF NOT EXISTS idx_anomaly_detections_entity ON anomaly_detections(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_anomaly_detections_status ON anomaly_detections(status);
+
+CREATE INDEX IF NOT EXISTS idx_portal_users_email ON portal_users(email);
+CREATE INDEX IF NOT EXISTS idx_portal_users_portal_type ON portal_users(portal_type);
+CREATE INDEX IF NOT EXISTS idx_portal_sessions_token ON portal_sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_portal_orders_user ON portal_orders(portal_user_id);
+CREATE INDEX IF NOT EXISTS idx_portal_invoices_customer ON portal_invoices(customer_id);
+
+CREATE INDEX IF NOT EXISTS idx_iot_devices_device_id ON iot_devices(device_id);
+CREATE INDEX IF NOT EXISTS idx_iot_devices_status ON iot_devices(status);
+CREATE INDEX IF NOT EXISTS idx_telemetry_device_time ON telemetry_data(device_id, timestamp);
+CREATE INDEX IF NOT EXISTS idx_iot_alerts_device ON iot_alerts(device_id);
+CREATE INDEX IF NOT EXISTS idx_iot_alerts_status ON iot_alerts(status);
+
+CREATE INDEX IF NOT EXISTS idx_workflows_status ON automation_workflows(status);
+CREATE INDEX IF NOT EXISTS idx_workflow_executions_workflow ON workflow_executions(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_workflow_executions_status ON workflow_executions(status);
+CREATE INDEX IF NOT EXISTS idx_scheduled_jobs_active ON scheduled_jobs(is_active, next_run_at);
+CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_path ON webhook_endpoints(endpoint_path);

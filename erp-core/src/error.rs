@@ -38,4 +38,12 @@ impl Error {
     pub fn business_rule(msg: impl Into<String>) -> Self {
         Error::BusinessRule(msg.into())
     }
+
+    pub fn unauthorized(msg: &str) -> Self {
+        Error::Validation(msg.to_string())
+    }
+
+    pub fn internal(msg: impl Into<String> + std::fmt::Display) -> Self {
+        Error::Internal(anyhow::anyhow!("{}", msg))
+    }
 }

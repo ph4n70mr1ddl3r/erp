@@ -40,6 +40,10 @@ erp-ecommerce.workspace = true
 erp-tax.workspace = true
 erp-reports.workspace = true
 erp-barcode.workspace = true
+erp-ai.workspace = true
+erp-portals.workspace = true
+erp-iot.workspace = true
+erp-automation.workspace = true
 once_cell.workspace = true
 http-body-util = "0.1"
 

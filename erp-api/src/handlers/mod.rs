@@ -20,6 +20,10 @@ pub mod ecommerce;
 pub mod tax;
 pub mod reports;
 pub mod barcode;
+pub mod ai;
+pub mod portals;
+pub mod iot;
+pub mod automation;
 
 use axum::{extract::State, Json};
 use serde_json::json;

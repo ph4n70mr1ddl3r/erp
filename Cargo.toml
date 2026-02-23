@@ -17,6 +17,10 @@ members = [
     "erp-tax",
     "erp-reports",
     "erp-barcode",
+    "erp-ai",
+    "erp-portals",
+    "erp-iot",
+    "erp-automation",
     "erp-api",
 ]
 resolver = "2"
@@ -44,7 +48,7 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 async-trait = "0.1"
 validator = { version = "0.16", features = ["derive"] }
 jsonwebtoken = "9"
-argon2 = "0.5"
+argon2 = { version = "0.5", features = ["std"] }
 rand = "0.8"
 once_cell = "1.19"
 sha2 = "0.10"
@@ -66,3 +70,7 @@ erp-ecommerce = { path = "erp-ecommerce" }
 erp-tax = { path = "erp-tax" }
 erp-reports = { path = "erp-reports" }
 erp-barcode = { path = "erp-barcode" }
+erp-ai = { path = "erp-ai" }
+erp-portals = { path = "erp-portals" }
+erp-iot = { path = "erp-iot" }
+erp-automation = { path = "erp-automation" }

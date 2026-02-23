@@ -43,6 +43,10 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/tax", handlers::tax::routes())
         .nest("/reports", handlers::reports::routes())
         .nest("/barcodes", handlers::barcode::routes())
+        .nest("/ai", handlers::ai::routes())
+        .nest("/portals", handlers::portals::routes())
+        .nest("/iot", handlers::iot::routes())
+        .nest("/automation", handlers::automation::routes())
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
         .route(
             "/workflows",
