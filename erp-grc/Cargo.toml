@@ -1,0 +1,12 @@
+[package]
+name = "erp-grc"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+erp-core = { path = "../erp-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }

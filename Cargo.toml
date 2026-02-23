@@ -21,6 +21,13 @@ members = [
     "erp-portals",
     "erp-iot",
     "erp-automation",
+    "erp-quality",
+    "erp-treasury",
+    "erp-sustainability",
+    "erp-planning",
+    "erp-expenses",
+    "erp-learning",
+    "erp-grc",
     "erp-api",
 ]
 resolver = "2"
@@ -74,3 +81,10 @@ erp-ai = { path = "erp-ai" }
 erp-portals = { path = "erp-portals" }
 erp-iot = { path = "erp-iot" }
 erp-automation = { path = "erp-automation" }
+erp-quality = { path = "erp-quality" }
+erp-treasury = { path = "erp-treasury" }
+erp-sustainability = { path = "erp-sustainability" }
+erp-planning = { path = "erp-planning" }
+erp-expenses = { path = "erp-expenses" }
+erp-learning = { path = "erp-learning" }
+erp-grc = { path = "erp-grc" }

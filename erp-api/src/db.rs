@@ -44,6 +44,7 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240101000018_enterprise_additions.sql"),
         include_str!("../../migrations/20240101000019_new_modules.sql"),
         include_str!("../../migrations/20240101000020_ai_portals_iot_automation.sql"),
+        include_str!("../../migrations/20240101000021_new_enterprise_modules.sql"),
     ];
     
     for migration in migration_queries {
