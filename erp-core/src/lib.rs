@@ -1,20 +1,26 @@
+pub mod analytics;
 pub mod audit;
 pub mod attachment;
+pub mod compliance;
 pub mod custom_field;
 pub mod db;
 pub mod error;
 pub mod models;
 pub mod pagination;
+pub mod platform;
 pub mod repository;
 pub mod workflow_models;
 pub mod workflow_service;
 
+pub use analytics::{DashboardService, KPIService, AlertService, PredictiveService};
 pub use audit::{AuditLog, AuditAction, log_audit, get_audit_logs};
 pub use attachment::{Attachment, AttachmentService};
+pub use compliance::*;
 pub use custom_field::CustomFieldService;
 pub use db::Database;
 pub use error::{Error, Result};
 pub use models::{Address, BaseEntity, ContactInfo, Currency, Money, Status, CustomFieldDefinition, CustomFieldType, CustomFieldValue};
 pub use pagination::{Pagination, Paginated};
+pub use platform::{TenantService, AutomationService, EmailService, ReportService, MobileService, APIService, TenantLimits, APIUsageStats};
 pub use workflow_models::*;
 pub use workflow_service::{WorkflowService, ApprovalService, NotificationService};

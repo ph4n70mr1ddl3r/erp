@@ -212,3 +212,384 @@ pub struct AssetDepreciation {
     pub accumulated_depreciation: i64,
     pub posted_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BankAccount {
+    pub id: Uuid,
+    pub account_id: Uuid,
+    pub bank_name: String,
+    pub account_number: String,
+    pub account_type: BankAccountType,
+    pub currency: String,
+    pub gl_code: Option<String>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum BankAccountType {
+    Checking,
+    Savings,
+    MoneyMarket,
+    CreditCard,
+    Loan,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BankStatement {
+    pub id: Uuid,
+    pub bank_account_id: Uuid,
+    pub statement_date: DateTime<Utc>,
+    pub opening_balance: i64,
+    pub closing_balance: i64,
+    pub status: Status,
+    pub reconciled_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BankTransaction {
+    pub id: Uuid,
+    pub bank_account_id: Uuid,
+    pub statement_id: Option<Uuid>,
+    pub transaction_date: DateTime<Utc>,
+    pub value_date: Option<DateTime<Utc>>,
+    pub description: Option<String>,
+    pub reference: Option<String>,
+    pub debit: i64,
+    pub credit: i64,
+    pub balance: i64,
+    pub reconciled: bool,
+    pub journal_entry_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReconciliationRule {
+    pub id: Uuid,
+    pub bank_account_id: Uuid,
+    pub rule_type: ReconciliationRuleType,
+    pub match_field: String,
+    pub match_pattern: Option<String>,
+    pub tolerance_days: i32,
+    pub tolerance_amount: i64,
+    pub auto_match: bool,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ReconciliationRuleType {
+    ExactMatch,
+    FuzzyMatch,
+    AmountRange,
+    DateRange,
+    PatternMatch,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashFlowForecast {
+    pub id: Uuid,
+    pub forecast_date: DateTime<Utc>,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+    pub opening_balance: i64,
+    pub expected_inflows: i64,
+    pub expected_outflows: i64,
+    pub closing_balance: i64,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashFlowCategory {
+    pub id: Uuid,
+    pub name: String,
+    pub category_type: CashFlowCategoryType,
+    pub parent_id: Option<Uuid>,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CashFlowCategoryType {
+    Operating,
+    Investing,
+    Financing,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashFlowItem {
+    pub id: Uuid,
+    pub forecast_id: Uuid,
+    pub category_id: Uuid,
+    pub description: String,
+    pub expected_date: Option<DateTime<Utc>>,
+    pub amount: i64,
+    pub probability: i32,
+    pub actual_amount: Option<i64>,
+    pub actual_date: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostCenter {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub department_id: Option<Uuid>,
+    pub manager_id: Option<Uuid>,
+    pub cost_center_type: CostCenterType,
+    pub allocation_method: AllocationMethod,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CostCenterType {
+    Production,
+    Service,
+    Administrative,
+    Sales,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum AllocationMethod {
+    Direct,
+    StepDown,
+    Reciprocal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostElement {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub element_type: CostElementType,
+    pub account_id: Option<Uuid>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CostElementType {
+    Material,
+    Labor,
+    Overhead,
+    Service,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostPool {
+    pub id: Uuid,
+    pub name: String,
+    pub cost_center_id: Uuid,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+    pub total_cost: i64,
+    pub allocation_base: String,
+    pub allocation_rate: f64,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostAllocation {
+    pub id: Uuid,
+    pub pool_id: Uuid,
+    pub from_cost_center_id: Uuid,
+    pub to_cost_center_id: Uuid,
+    pub allocation_base_value: f64,
+    pub allocated_amount: i64,
+    pub allocated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityType {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub cost_driver: String,
+    pub unit_of_measure: Option<String>,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivityCost {
+    pub id: Uuid,
+    pub activity_type_id: Uuid,
+    pub cost_pool_id: Uuid,
+    pub total_activities: i64,
+    pub cost_per_activity: i64,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Company {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub legal_name: Option<String>,
+    pub tax_id: Option<String>,
+    pub registration_number: Option<String>,
+    pub currency: String,
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub is_consolidation_entity: bool,
+    pub parent_company_id: Option<Uuid>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntercompanyTransaction {
+    pub id: Uuid,
+    pub transaction_number: String,
+    pub from_company_id: Uuid,
+    pub to_company_id: Uuid,
+    pub transaction_date: DateTime<Utc>,
+    pub amount: i64,
+    pub currency: String,
+    pub description: Option<String>,
+    pub reference: Option<String>,
+    pub from_journal_entry_id: Option<Uuid>,
+    pub to_journal_entry_id: Option<Uuid>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntercompanyAccount {
+    pub id: Uuid,
+    pub company_id: Uuid,
+    pub partner_company_id: Uuid,
+    pub account_id: Uuid,
+    pub due_to_account_id: Uuid,
+    pub due_from_account_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevenueSchedule {
+    pub id: Uuid,
+    pub schedule_number: String,
+    pub name: String,
+    pub recognition_method: RecognitionMethod,
+    pub total_amount: i64,
+    pub recognized_amount: i64,
+    pub deferred_amount: i64,
+    pub start_date: DateTime<Utc>,
+    pub end_date: Option<DateTime<Utc>>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum RecognitionMethod {
+    StraightLine,
+    PercentageOfCompletion,
+    CompletedContract,
+    Installment,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevenueScheduleLine {
+    pub id: Uuid,
+    pub schedule_id: Uuid,
+    pub line_number: i32,
+    pub recognition_date: DateTime<Utc>,
+    pub amount: i64,
+    pub recognized: bool,
+    pub journal_entry_id: Option<Uuid>,
+    pub recognized_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RevenueRecognitionTemplate {
+    pub id: Uuid,
+    pub name: String,
+    pub recognition_type: RecognitionType,
+    pub periods: i32,
+    pub recognition_rule: String,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum RecognitionType {
+    Monthly,
+    Quarterly,
+    Yearly,
+    Custom,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsolidationSchedule {
+    pub id: Uuid,
+    pub name: String,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+    pub parent_company_id: Uuid,
+    pub status: Status,
+    pub elimination_entries: i32,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsolidationCompany {
+    pub id: Uuid,
+    pub consolidation_id: Uuid,
+    pub company_id: Uuid,
+    pub ownership_percent: f64,
+    pub consolidation_method: ConsolidationMethod,
+    pub exchange_rate: f64,
+    pub translation_method: TranslationMethod,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ConsolidationMethod {
+    Full,
+    Equity,
+    Proportional,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum TranslationMethod {
+    Current,
+    Temporal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EliminationRule {
+    pub id: Uuid,
+    pub name: String,
+    pub from_account_pattern: String,
+    pub to_account_pattern: String,
+    pub elimination_account_id: Uuid,
+    pub description: Option<String>,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EliminationEntry {
+    pub id: Uuid,
+    pub consolidation_id: Uuid,
+    pub elimination_rule_id: Option<Uuid>,
+    pub description: String,
+    pub debit_account_id: Uuid,
+    pub credit_account_id: Uuid,
+    pub amount: i64,
+    pub journal_entry_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}

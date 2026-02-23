@@ -13,6 +13,8 @@ import Manufacturing from './pages/Manufacturing';
 import HR from './pages/HR';
 import Reports from './pages/Reports';
 import AuditLogs from './pages/AuditLogs';
+import ServiceDesk from './pages/ServiceDesk';
+import ITAssets from './pages/ITAssets';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -43,6 +45,8 @@ function AppRoutes() {
       <Route path="/purchasing" element={<PrivateRoute><Purchasing /></PrivateRoute>} />
       <Route path="/manufacturing" element={<PrivateRoute><Manufacturing /></PrivateRoute>} />
       <Route path="/hr" element={<PrivateRoute><HR /></PrivateRoute>} />
+      <Route path="/service" element={<PrivateRoute><ServiceDesk /></PrivateRoute>} />
+      <Route path="/assets" element={<PrivateRoute><ITAssets /></PrivateRoute>} />
     </Routes>
   );
 }

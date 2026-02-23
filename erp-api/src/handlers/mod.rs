@@ -10,6 +10,8 @@ pub mod purchasing;
 pub mod manufacturing;
 pub mod hr;
 pub mod workflow;
+pub mod service;
+pub mod assets;
 
 use axum::{extract::State, Json};
 use serde_json::json;

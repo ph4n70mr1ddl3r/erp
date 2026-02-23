@@ -31,6 +31,8 @@ erp-purchasing.workspace = true
 erp-manufacturing.workspace = true
 erp-hr.workspace = true
 erp-auth.workspace = true
+erp-service.workspace = true
+erp-assets.workspace = true
 once_cell.workspace = true
 http-body-util = "0.1"
 

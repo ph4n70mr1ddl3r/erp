@@ -318,3 +318,131 @@ export const data = {
       headers: { 'Content-Type': 'text/csv' }
     }),
 };
+
+// Service Desk
+export interface Ticket {
+  id: string;
+  ticket_number: string;
+  subject: string;
+  description: string;
+  customer_id?: string;
+  assigned_to?: string;
+  priority: string;
+  status: string;
+  ticket_type: string;
+  created_at: string;
+}
+
+export interface CreateTicketRequest {
+  subject: string;
+  description: string;
+  customer_id?: string;
+  priority?: string;
+  ticket_type?: string;
+  source?: string;
+}
+
+export interface KnowledgeArticle {
+  id: string;
+  title: string;
+  content: string;
+  summary?: string;
+  status: string;
+  view_count: number;
+  created_at: string;
+}
+
+export interface CreateArticleRequest {
+  title: string;
+  content: string;
+  author_id: string;
+  category_id?: string;
+  summary?: string;
+  tags?: string[];
+}
+
+export const service = {
+  getTickets: (page = 1, perPage = 20) => api.get<Paginated<Ticket>>(`/api/v1/service/tickets?page=${page}&per_page=${perPage}`),
+  getTicket: (id: string) => api.get<Ticket>(`/api/v1/service/tickets/${id}`),
+  createTicket: (data: CreateTicketRequest) => api.post<Ticket>('/api/v1/service/tickets', data),
+  assignTicket: (id: string, assigneeId: string) => api.post<Ticket>(`/api/v1/service/tickets/${id}/assign`, { assignee_id: assigneeId }),
+  updateTicketStatus: (id: string, status: string) => api.post<Ticket>(`/api/v1/service/tickets/${id}/status`, { status }),
+  getTicketStats: () => api.get('/api/v1/service/tickets/stats'),
+  getArticles: (page = 1, perPage = 20) => api.get<Paginated<KnowledgeArticle>>(`/api/v1/service/articles?page=${page}&per_page=${perPage}`),
+  searchArticles: (query: string) => api.get<KnowledgeArticle[]>(`/api/v1/service/articles/search?q=${encodeURIComponent(query)}`),
+  getArticle: (id: string) => api.get<KnowledgeArticle>(`/api/v1/service/articles/${id}`),
+  createArticle: (data: CreateArticleRequest) => api.post<KnowledgeArticle>('/api/v1/service/articles', data),
+  publishArticle: (id: string) => api.post<KnowledgeArticle>(`/api/v1/service/articles/${id}/publish`),
+  archiveArticle: (id: string) => api.post<KnowledgeArticle>(`/api/v1/service/articles/${id}/archive`),
+};
+
+// IT Assets
+export interface ITAsset {
+  id: string;
+  asset_tag: string;
+  name: string;
+  description?: string;
+  asset_type: string;
+  status: string;
+  assigned_to?: string;
+  created_at: string;
+}
+
+export interface CreateITAssetRequest {
+  asset_tag: string;
+  name: string;
+  description?: string;
+  asset_type?: string;
+  model?: string;
+  manufacturer?: string;
+  serial_number?: string;
+  purchase_date?: string;
+  purchase_cost: number;
+  currency?: string;
+  warranty_expiry?: string;
+  location_id?: string;
+}
+
+export interface SoftwareLicense {
+  id: string;
+  product_name: string;
+  vendor: string;
+  license_type: string;
+  seats_purchased: number;
+  seats_used: number;
+  seats_available: number;
+  status: string;
+  expiry_date?: string;
+}
+
+export interface CreateLicenseRequest {
+  license_key: string;
+  product_name: string;
+  vendor: string;
+  license_type?: string;
+  seats_purchased: number;
+  purchase_cost: number;
+  currency?: string;
+  purchase_date: string;
+  start_date: string;
+  expiry_date?: string;
+}
+
+export const assets = {
+  getAssets: (page = 1, perPage = 20) => api.get<Paginated<ITAsset>>(`/api/v1/assets/assets?page=${page}&per_page=${perPage}`),
+  getAsset: (id: string) => api.get<ITAsset>(`/api/v1/assets/assets/${id}`),
+  createAsset: (data: CreateITAssetRequest) => api.post<ITAsset>('/api/v1/assets/assets', data),
+  assignAsset: (id: string, userId: string, assignedBy: string) => 
+    api.post<ITAsset>(`/api/v1/assets/assets/${id}/assign`, { user_id: userId, assigned_by: assignedBy }),
+  returnAsset: (id: string, returnedBy: string) => 
+    api.post<ITAsset>(`/api/v1/assets/assets/${id}/return`, { returned_by: returnedBy }),
+  updateAssetStatus: (id: string, status: string) => 
+    api.post<ITAsset>(`/api/v1/assets/assets/${id}/status`, { status }),
+  getAssetStats: () => api.get('/api/v1/assets/assets/stats'),
+  getLicenses: (page = 1, perPage = 20) => api.get<Paginated<SoftwareLicense>>(`/api/v1/assets/licenses?page=${page}&per_page=${perPage}`),
+  getLicense: (id: string) => api.get<SoftwareLicense>(`/api/v1/assets/licenses/${id}`),
+  createLicense: (data: CreateLicenseRequest) => api.post<SoftwareLicense>('/api/v1/assets/licenses', data),
+  useLicenseSeat: (id: string) => api.post<SoftwareLicense>(`/api/v1/assets/licenses/${id}/use`),
+  releaseLicenseSeat: (id: string) => api.post<SoftwareLicense>(`/api/v1/assets/licenses/${id}/release`),
+  getExpiringLicenses: (days = 30) => api.get<SoftwareLicense[]>(`/api/v1/assets/licenses/expiring?days=${days}`),
+};

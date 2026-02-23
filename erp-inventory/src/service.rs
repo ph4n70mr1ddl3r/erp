@@ -1169,3 +1169,1373 @@ impl From<ReplenishmentOrderRow> for ReplenishmentOrder {
         }
     }
 }
+
+pub struct WMSService;
+
+impl WMSService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_zone(
+        pool: &SqlitePool,
+        warehouse_id: Uuid,
+        zone_code: &str,
+        name: &str,
+        zone_type: ZoneType,
+        temperature_controlled: bool,
+        max_capacity: Option<i64>,
+    ) -> Result<WarehouseZone> {
+        let now = chrono::Utc::now();
+        let zone = WarehouseZone {
+            id: Uuid::new_v4(),
+            warehouse_id,
+            zone_code: zone_code.to_string(),
+            name: name.to_string(),
+            zone_type: zone_type.clone(),
+            temperature_controlled,
+            max_capacity,
+            current_utilization: 0,
+            status: Status::Active,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO warehouse_zones (id, warehouse_id, zone_code, name, zone_type, temperature_controlled, max_capacity, current_utilization, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(zone.id.to_string())
+        .bind(zone.warehouse_id.to_string())
+        .bind(&zone.zone_code)
+        .bind(&zone.name)
+        .bind(format!("{:?}", zone.zone_type))
+        .bind(zone.temperature_controlled)
+        .bind(zone.max_capacity)
+        .bind(zone.current_utilization)
+        .bind("Active")
+        .bind(zone.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(zone)
+    }
+
+    pub async fn create_bin(
+        pool: &SqlitePool,
+        zone_id: Uuid,
+        bin_code: &str,
+        bin_type: BinType,
+        aisle: Option<&str>,
+        row_number: Option<i32>,
+        level_number: Option<i32>,
+        capacity: Option<i64>,
+    ) -> Result<WarehouseBin> {
+        let bin = WarehouseBin {
+            id: Uuid::new_v4(),
+            zone_id,
+            bin_code: bin_code.to_string(),
+            bin_type: bin_type.clone(),
+            aisle: aisle.map(|s| s.to_string()),
+            row_number,
+            level_number,
+            capacity,
+            current_quantity: 0,
+            status: Status::Active,
+        };
+        
+        sqlx::query(
+            "INSERT INTO warehouse_bins (id, zone_id, bin_code, bin_type, aisle, row_number, level_number, capacity, current_quantity, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(bin.id.to_string())
+        .bind(bin.zone_id.to_string())
+        .bind(&bin.bin_code)
+        .bind(format!("{:?}", bin.bin_type))
+        .bind(&bin.aisle)
+        .bind(bin.row_number)
+        .bind(bin.level_number)
+        .bind(bin.capacity)
+        .bind(bin.current_quantity)
+        .bind("Active")
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(bin)
+    }
+
+    pub async fn create_pick_list(
+        pool: &SqlitePool,
+        warehouse_id: Uuid,
+        order_id: Option<Uuid>,
+        priority: i32,
+    ) -> Result<PickList> {
+        let now = chrono::Utc::now();
+        let pick_number = format!("PL-{}", now.format("%Y%m%d%H%M%S"));
+        let pick_list = PickList {
+            id: Uuid::new_v4(),
+            pick_number: pick_number.clone(),
+            warehouse_id,
+            order_id,
+            assigned_to: None,
+            priority,
+            status: PickListStatus::Pending,
+            total_items: 0,
+            picked_items: 0,
+            created_at: now,
+            completed_at: None,
+        };
+        
+        sqlx::query(
+            "INSERT INTO pick_lists (id, pick_number, warehouse_id, order_id, assigned_to, priority, status, total_items, picked_items, created_at, completed_at)
+             VALUES (?, ?, ?, ?, NULL, ?, 'Pending', 0, 0, ?, NULL)"
+        )
+        .bind(pick_list.id.to_string())
+        .bind(&pick_list.pick_number)
+        .bind(pick_list.warehouse_id.to_string())
+        .bind(pick_list.order_id.map(|id| id.to_string()))
+        .bind(pick_list.priority)
+        .bind(pick_list.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(pick_list)
+    }
+
+    pub async fn get_pick_list(pool: &SqlitePool, id: Uuid) -> Result<PickList> {
+        let row = sqlx::query_as::<_, PickListRow>(
+            "SELECT id, pick_number, warehouse_id, order_id, assigned_to, priority, status, total_items, picked_items, created_at, completed_at
+             FROM pick_lists WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("PickList", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+
+    pub async fn pick_item(
+        pool: &SqlitePool,
+        pick_list_id: Uuid,
+        product_id: Uuid,
+        bin_id: Uuid,
+        lot_id: Option<Uuid>,
+        requested_qty: i64,
+        picked_qty: i64,
+    ) -> Result<PickListItem> {
+        let item = PickListItem {
+            id: Uuid::new_v4(),
+            pick_list_id,
+            product_id,
+            bin_id,
+            lot_id,
+            requested_qty,
+            picked_qty,
+            status: if picked_qty >= requested_qty { PickItemStatus::Picked } else { PickItemStatus::Short },
+        };
+        
+        sqlx::query(
+            "INSERT INTO pick_list_items (id, pick_list_id, product_id, bin_id, lot_id, requested_qty, picked_qty, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(item.id.to_string())
+        .bind(item.pick_list_id.to_string())
+        .bind(item.product_id.to_string())
+        .bind(item.bin_id.to_string())
+        .bind(item.lot_id.map(|id| id.to_string()))
+        .bind(item.requested_qty)
+        .bind(item.picked_qty)
+        .bind(format!("{:?}", item.status))
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        sqlx::query(
+            "UPDATE pick_lists SET total_items = total_items + 1, picked_items = picked_items + 1 WHERE id = ?"
+        )
+        .bind(pick_list_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(item)
+    }
+
+    pub async fn complete_pick(pool: &SqlitePool, id: Uuid) -> Result<PickList> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE pick_lists SET status = 'Completed', completed_at = ? WHERE id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_pick_list(pool, id).await
+    }
+
+    pub async fn create_pack_list(
+        pool: &SqlitePool,
+        pick_list_id: Uuid,
+        warehouse_id: Uuid,
+    ) -> Result<PackList> {
+        let now = chrono::Utc::now();
+        let pack_number = format!("PK-{}", now.format("%Y%m%d%H%M%S"));
+        let pack_list = PackList {
+            id: Uuid::new_v4(),
+            pack_number: pack_number.clone(),
+            pick_list_id,
+            warehouse_id,
+            packed_by: None,
+            status: PackListStatus::Pending,
+            total_weight: None,
+            tracking_number: None,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO pack_lists (id, pack_number, pick_list_id, warehouse_id, packed_by, status, total_weight, tracking_number, created_at)
+             VALUES (?, ?, ?, ?, NULL, 'Pending', NULL, NULL, ?)"
+        )
+        .bind(pack_list.id.to_string())
+        .bind(&pack_list.pack_number)
+        .bind(pack_list.pick_list_id.to_string())
+        .bind(pack_list.warehouse_id.to_string())
+        .bind(pack_list.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(pack_list)
+    }
+
+    pub async fn pack_item(
+        pool: &SqlitePool,
+        pack_list_id: Uuid,
+        product_id: Uuid,
+        quantity: i64,
+        box_number: i32,
+    ) -> Result<PackListItem> {
+        let item = PackListItem {
+            id: Uuid::new_v4(),
+            pack_list_id,
+            product_id,
+            quantity,
+            box_number,
+        };
+        
+        sqlx::query(
+            "INSERT INTO pack_list_items (id, pack_list_id, product_id, quantity, box_number)
+             VALUES (?, ?, ?, ?, ?)"
+        )
+        .bind(item.id.to_string())
+        .bind(item.pack_list_id.to_string())
+        .bind(item.product_id.to_string())
+        .bind(item.quantity)
+        .bind(item.box_number)
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(item)
+    }
+
+    pub async fn complete_pack(pool: &SqlitePool, id: Uuid) -> Result<PackList> {
+        sqlx::query(
+            "UPDATE pack_lists SET status = 'Completed' WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_pack_list(pool, id).await
+    }
+
+    async fn get_pack_list(pool: &SqlitePool, id: Uuid) -> Result<PackList> {
+        let row = sqlx::query_as::<_, PackListRow>(
+            "SELECT id, pack_number, pick_list_id, warehouse_id, packed_by, status, total_weight, tracking_number, created_at
+             FROM pack_lists WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("PackList", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+
+    pub async fn create_shipment(
+        pool: &SqlitePool,
+        warehouse_id: Uuid,
+        carrier_id: Option<Uuid>,
+        service_type: Option<&str>,
+        ship_to_name: &str,
+        ship_to_address: &str,
+        ship_to_city: &str,
+        ship_to_state: Option<&str>,
+        ship_to_postal: &str,
+        ship_to_country: &str,
+        total_weight: Option<i64>,
+        freight_charge: i64,
+        insurance_charge: i64,
+    ) -> Result<ShipmentOrder> {
+        let now = chrono::Utc::now();
+        let shipment_number = format!("SH-{}", now.format("%Y%m%d%H%M%S"));
+        let shipment = ShipmentOrder {
+            id: Uuid::new_v4(),
+            shipment_number: shipment_number.clone(),
+            warehouse_id,
+            carrier_id,
+            service_type: service_type.map(|s| s.to_string()),
+            ship_to_name: ship_to_name.to_string(),
+            ship_to_address: ship_to_address.to_string(),
+            ship_to_city: ship_to_city.to_string(),
+            ship_to_state: ship_to_state.map(|s| s.to_string()),
+            ship_to_postal: ship_to_postal.to_string(),
+            ship_to_country: ship_to_country.to_string(),
+            total_weight,
+            tracking_number: None,
+            ship_date: None,
+            estimated_delivery: None,
+            actual_delivery: None,
+            status: ShipmentStatus::Draft,
+            freight_charge,
+            insurance_charge,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO shipment_orders (id, shipment_number, warehouse_id, carrier_id, service_type, ship_to_name, ship_to_address, ship_to_city, ship_to_state, ship_to_postal, ship_to_country, total_weight, tracking_number, ship_date, estimated_delivery, actual_delivery, status, freight_charge, insurance_charge, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, 'Draft', ?, ?, ?)"
+        )
+        .bind(shipment.id.to_string())
+        .bind(&shipment.shipment_number)
+        .bind(shipment.warehouse_id.to_string())
+        .bind(shipment.carrier_id.map(|id| id.to_string()))
+        .bind(&shipment.service_type)
+        .bind(&shipment.ship_to_name)
+        .bind(&shipment.ship_to_address)
+        .bind(&shipment.ship_to_city)
+        .bind(&shipment.ship_to_state)
+        .bind(&shipment.ship_to_postal)
+        .bind(&shipment.ship_to_country)
+        .bind(shipment.total_weight)
+        .bind(shipment.freight_charge)
+        .bind(shipment.insurance_charge)
+        .bind(shipment.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(shipment)
+    }
+
+    pub async fn ship_order(pool: &SqlitePool, id: Uuid, tracking_number: &str) -> Result<ShipmentOrder> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE shipment_orders SET status = 'Shipped', tracking_number = ?, ship_date = ? WHERE id = ?"
+        )
+        .bind(tracking_number)
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_shipment(pool, id).await
+    }
+
+    async fn get_shipment(pool: &SqlitePool, id: Uuid) -> Result<ShipmentOrder> {
+        let row = sqlx::query_as::<_, ShipmentOrderRow>(
+            "SELECT id, shipment_number, warehouse_id, carrier_id, service_type, ship_to_name, ship_to_address, ship_to_city, ship_to_state, ship_to_postal, ship_to_country, total_weight, tracking_number, ship_date, estimated_delivery, actual_delivery, status, freight_charge, insurance_charge, created_at
+             FROM shipment_orders WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("ShipmentOrder", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct PickListRow {
+    id: String,
+    pick_number: String,
+    warehouse_id: String,
+    order_id: Option<String>,
+    assigned_to: Option<String>,
+    priority: i64,
+    status: String,
+    total_items: i64,
+    picked_items: i64,
+    created_at: String,
+    completed_at: Option<String>,
+}
+
+impl From<PickListRow> for PickList {
+    fn from(r: PickListRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            pick_number: r.pick_number,
+            warehouse_id: Uuid::parse_str(&r.warehouse_id).unwrap_or_default(),
+            order_id: r.order_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            assigned_to: r.assigned_to.and_then(|id| Uuid::parse_str(&id).ok()),
+            priority: r.priority as i32,
+            status: match r.status.as_str() {
+                "InProgress" => PickListStatus::InProgress,
+                "Completed" => PickListStatus::Completed,
+                "Cancelled" => PickListStatus::Cancelled,
+                _ => PickListStatus::Pending,
+            },
+            total_items: r.total_items as i32,
+            picked_items: r.picked_items as i32,
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            completed_at: r.completed_at.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct PackListRow {
+    id: String,
+    pack_number: String,
+    pick_list_id: String,
+    warehouse_id: String,
+    packed_by: Option<String>,
+    status: String,
+    total_weight: Option<i64>,
+    tracking_number: Option<String>,
+    created_at: String,
+}
+
+impl From<PackListRow> for PackList {
+    fn from(r: PackListRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            pack_number: r.pack_number,
+            pick_list_id: Uuid::parse_str(&r.pick_list_id).unwrap_or_default(),
+            warehouse_id: Uuid::parse_str(&r.warehouse_id).unwrap_or_default(),
+            packed_by: r.packed_by.and_then(|id| Uuid::parse_str(&id).ok()),
+            status: match r.status.as_str() {
+                "InProgress" => PackListStatus::InProgress,
+                "Completed" => PackListStatus::Completed,
+                "Shipped" => PackListStatus::Shipped,
+                _ => PackListStatus::Pending,
+            },
+            total_weight: r.total_weight,
+            tracking_number: r.tracking_number,
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct ShipmentOrderRow {
+    id: String,
+    shipment_number: String,
+    warehouse_id: String,
+    carrier_id: Option<String>,
+    service_type: Option<String>,
+    ship_to_name: String,
+    ship_to_address: String,
+    ship_to_city: String,
+    ship_to_state: Option<String>,
+    ship_to_postal: String,
+    ship_to_country: String,
+    total_weight: Option<i64>,
+    tracking_number: Option<String>,
+    ship_date: Option<String>,
+    estimated_delivery: Option<String>,
+    actual_delivery: Option<String>,
+    status: String,
+    freight_charge: i64,
+    insurance_charge: i64,
+    created_at: String,
+}
+
+impl From<ShipmentOrderRow> for ShipmentOrder {
+    fn from(r: ShipmentOrderRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            shipment_number: r.shipment_number,
+            warehouse_id: Uuid::parse_str(&r.warehouse_id).unwrap_or_default(),
+            carrier_id: r.carrier_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            service_type: r.service_type,
+            ship_to_name: r.ship_to_name,
+            ship_to_address: r.ship_to_address,
+            ship_to_city: r.ship_to_city,
+            ship_to_state: r.ship_to_state,
+            ship_to_postal: r.ship_to_postal,
+            ship_to_country: r.ship_to_country,
+            total_weight: r.total_weight,
+            tracking_number: r.tracking_number,
+            ship_date: r.ship_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            estimated_delivery: r.estimated_delivery.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            actual_delivery: r.actual_delivery.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            status: match r.status.as_str() {
+                "Pending" => ShipmentStatus::Pending,
+                "Shipped" => ShipmentStatus::Shipped,
+                "InTransit" => ShipmentStatus::InTransit,
+                "Delivered" => ShipmentStatus::Delivered,
+                "Cancelled" => ShipmentStatus::Cancelled,
+                _ => ShipmentStatus::Draft,
+            },
+            freight_charge: r.freight_charge,
+            insurance_charge: r.insurance_charge,
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+pub struct ShippingService;
+
+impl ShippingService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_carrier(
+        pool: &SqlitePool,
+        code: &str,
+        name: &str,
+        api_endpoint: Option<&str>,
+        api_key: Option<&str>,
+        account_number: Option<&str>,
+        supports_tracking: bool,
+        supports_label_generation: bool,
+    ) -> Result<ShippingCarrier> {
+        let now = chrono::Utc::now();
+        let carrier = ShippingCarrier {
+            id: Uuid::new_v4(),
+            code: code.to_string(),
+            name: name.to_string(),
+            api_endpoint: api_endpoint.map(|s| s.to_string()),
+            api_key: api_key.map(|s| s.to_string()),
+            account_number: account_number.map(|s| s.to_string()),
+            supports_tracking,
+            supports_label_generation,
+            status: Status::Active,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO shipping_carriers (id, code, name, api_endpoint, api_key, account_number, supports_tracking, supports_label_generation, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)"
+        )
+        .bind(carrier.id.to_string())
+        .bind(&carrier.code)
+        .bind(&carrier.name)
+        .bind(&carrier.api_endpoint)
+        .bind(&carrier.api_key)
+        .bind(&carrier.account_number)
+        .bind(carrier.supports_tracking)
+        .bind(carrier.supports_label_generation)
+        .bind(carrier.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(carrier)
+    }
+
+    pub async fn create_service(
+        pool: &SqlitePool,
+        carrier_id: Uuid,
+        service_code: &str,
+        service_name: &str,
+        delivery_days: Option<i32>,
+    ) -> Result<CarrierService> {
+        let service = CarrierService {
+            id: Uuid::new_v4(),
+            carrier_id,
+            service_code: service_code.to_string(),
+            service_name: service_name.to_string(),
+            delivery_days,
+            status: Status::Active,
+        };
+        
+        sqlx::query(
+            "INSERT INTO carrier_services (id, carrier_id, service_code, service_name, delivery_days, status)
+             VALUES (?, ?, ?, ?, ?, 'Active')"
+        )
+        .bind(service.id.to_string())
+        .bind(service.carrier_id.to_string())
+        .bind(&service.service_code)
+        .bind(&service.service_name)
+        .bind(service.delivery_days)
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(service)
+    }
+
+    pub async fn create_rate_card(
+        pool: &SqlitePool,
+        carrier_id: Uuid,
+        service_id: Uuid,
+        zone_from: &str,
+        zone_to: &str,
+        weight_from: i64,
+        weight_to: i64,
+        base_rate: i64,
+        per_kg_rate: i64,
+        effective_date: &str,
+        expiry_date: Option<&str>,
+    ) -> Result<ShippingRateCard> {
+        let now = chrono::Utc::now();
+        let rate_card = ShippingRateCard {
+            id: Uuid::new_v4(),
+            carrier_id,
+            service_id,
+            zone_from: zone_from.to_string(),
+            zone_to: zone_to.to_string(),
+            weight_from,
+            weight_to,
+            base_rate,
+            per_kg_rate,
+            effective_date: chrono::DateTime::parse_from_rfc3339(effective_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or(now),
+            expiry_date: expiry_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+        };
+        
+        sqlx::query(
+            "INSERT INTO shipping_rate_cards (id, carrier_id, service_id, zone_from, zone_to, weight_from, weight_to, base_rate, per_kg_rate, effective_date, expiry_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(rate_card.id.to_string())
+        .bind(rate_card.carrier_id.to_string())
+        .bind(rate_card.service_id.to_string())
+        .bind(&rate_card.zone_from)
+        .bind(&rate_card.zone_to)
+        .bind(rate_card.weight_from)
+        .bind(rate_card.weight_to)
+        .bind(rate_card.base_rate)
+        .bind(rate_card.per_kg_rate)
+        .bind(rate_card.effective_date.to_rfc3339())
+        .bind(rate_card.expiry_date.map(|d| d.to_rfc3339()))
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rate_card)
+    }
+
+    pub async fn calculate_shipping_rate(
+        pool: &SqlitePool,
+        carrier_id: Uuid,
+        service_id: Uuid,
+        zone_from: &str,
+        zone_to: &str,
+        weight: i64,
+    ) -> Result<i64> {
+        let row = sqlx::query_as::<_, (i64, i64)>(
+            "SELECT base_rate, per_kg_rate FROM shipping_rate_cards
+             WHERE carrier_id = ? AND service_id = ? AND zone_from = ? AND zone_to = ?
+             AND weight_from <= ? AND weight_to >= ?
+             AND effective_date <= datetime('now') AND (expiry_date IS NULL OR expiry_date > datetime('now'))
+             LIMIT 1"
+        )
+        .bind(carrier_id.to_string())
+        .bind(service_id.to_string())
+        .bind(zone_from)
+        .bind(zone_to)
+        .bind(weight)
+        .bind(weight)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("ShippingRateCard", "no matching rate"))?;
+        
+        let (base_rate, per_kg_rate) = row;
+        Ok(base_rate + (per_kg_rate * weight / 1000))
+    }
+
+    pub async fn track_shipment(pool: &SqlitePool, shipment_id: Uuid) -> Result<ShipmentOrder> {
+        let row = sqlx::query_as::<_, ShipmentOrderRow>(
+            "SELECT id, shipment_number, warehouse_id, carrier_id, service_type, ship_to_name, ship_to_address, ship_to_city, ship_to_state, ship_to_postal, ship_to_country, total_weight, tracking_number, ship_date, estimated_delivery, actual_delivery, status, freight_charge, insurance_charge, created_at
+             FROM shipment_orders WHERE id = ?"
+        )
+        .bind(shipment_id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("ShipmentOrder", &shipment_id.to_string()))?;
+        
+        Ok(row.into())
+    }
+}
+
+pub struct EDIService;
+
+impl EDIService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_partner(
+        pool: &SqlitePool,
+        partner_code: &str,
+        partner_name: &str,
+        partner_type: EDIPartnerType,
+        edi_standard: EDIStandard,
+        communication_method: CommunicationMethod,
+        ftp_host: Option<&str>,
+        ftp_username: Option<&str>,
+        ftp_password: Option<&str>,
+        api_endpoint: Option<&str>,
+        api_key: Option<&str>,
+    ) -> Result<EDIPartner> {
+        let now = chrono::Utc::now();
+        let partner = EDIPartner {
+            id: Uuid::new_v4(),
+            partner_code: partner_code.to_string(),
+            partner_name: partner_name.to_string(),
+            partner_type: partner_type.clone(),
+            edi_standard: edi_standard.clone(),
+            communication_method: communication_method.clone(),
+            ftp_host: ftp_host.map(|s| s.to_string()),
+            ftp_username: ftp_username.map(|s| s.to_string()),
+            ftp_password: ftp_password.map(|s| s.to_string()),
+            api_endpoint: api_endpoint.map(|s| s.to_string()),
+            api_key: api_key.map(|s| s.to_string()),
+            status: Status::Active,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO edi_partners (id, partner_code, partner_name, partner_type, edi_standard, communication_method, ftp_host, ftp_username, ftp_password, api_endpoint, api_key, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active', ?)"
+        )
+        .bind(partner.id.to_string())
+        .bind(&partner.partner_code)
+        .bind(&partner.partner_name)
+        .bind(format!("{:?}", partner.partner_type))
+        .bind(format!("{:?}", partner.edi_standard))
+        .bind(format!("{:?}", partner.communication_method))
+        .bind(&partner.ftp_host)
+        .bind(&partner.ftp_username)
+        .bind(&partner.ftp_password)
+        .bind(&partner.api_endpoint)
+        .bind(&partner.api_key)
+        .bind(partner.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(partner)
+    }
+
+    pub async fn create_mapping(
+        pool: &SqlitePool,
+        partner_id: Uuid,
+        document_type: &str,
+        segment_id: &str,
+        element_position: i32,
+        internal_field: &str,
+        transformation_rule: Option<&str>,
+    ) -> Result<EDIMapping> {
+        let mapping = EDIMapping {
+            id: Uuid::new_v4(),
+            partner_id,
+            document_type: document_type.to_string(),
+            segment_id: segment_id.to_string(),
+            element_position,
+            internal_field: internal_field.to_string(),
+            transformation_rule: transformation_rule.map(|s| s.to_string()),
+        };
+        
+        sqlx::query(
+            "INSERT INTO edi_mappings (id, partner_id, document_type, segment_id, element_position, internal_field, transformation_rule)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(mapping.id.to_string())
+        .bind(mapping.partner_id.to_string())
+        .bind(&mapping.document_type)
+        .bind(&mapping.segment_id)
+        .bind(mapping.element_position)
+        .bind(&mapping.internal_field)
+        .bind(&mapping.transformation_rule)
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(mapping)
+    }
+
+    pub async fn process_inbound_document(
+        pool: &SqlitePool,
+        partner_id: Uuid,
+        document_type: EDIDocumentType,
+        reference_number: Option<&str>,
+        raw_content: &str,
+    ) -> Result<EDIDocument> {
+        let now = chrono::Utc::now();
+        let document_number = format!("EDI-{}", now.format("%Y%m%d%H%M%S"));
+        let document = EDIDocument {
+            id: Uuid::new_v4(),
+            document_number: document_number.clone(),
+            partner_id,
+            document_type: document_type.clone(),
+            direction: EDIDirection::Inbound,
+            reference_number: reference_number.map(|s| s.to_string()),
+            raw_content: Some(raw_content.to_string()),
+            parsed_data: None,
+            status: EDIDocumentStatus::Pending,
+            processed_at: None,
+            error_message: None,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO edi_documents (id, document_number, partner_id, document_type, direction, reference_number, raw_content, parsed_data, status, processed_at, error_message, created_at)
+             VALUES (?, ?, ?, ?, 'Inbound', ?, ?, NULL, 'Pending', NULL, NULL, ?)"
+        )
+        .bind(document.id.to_string())
+        .bind(&document.document_number)
+        .bind(document.partner_id.to_string())
+        .bind(format!("{:?}", document.document_type))
+        .bind(&document.reference_number)
+        .bind(&document.raw_content)
+        .bind(document.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(document)
+    }
+
+    pub async fn generate_outbound_document(
+        pool: &SqlitePool,
+        partner_id: Uuid,
+        document_type: EDIDocumentType,
+        reference_number: Option<&str>,
+        parsed_data: &str,
+    ) -> Result<EDIDocument> {
+        let now = chrono::Utc::now();
+        let document_number = format!("EDI-{}", now.format("%Y%m%d%H%M%S"));
+        let document = EDIDocument {
+            id: Uuid::new_v4(),
+            document_number: document_number.clone(),
+            partner_id,
+            document_type: document_type.clone(),
+            direction: EDIDirection::Outbound,
+            reference_number: reference_number.map(|s| s.to_string()),
+            raw_content: None,
+            parsed_data: Some(parsed_data.to_string()),
+            status: EDIDocumentStatus::Pending,
+            processed_at: None,
+            error_message: None,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO edi_documents (id, document_number, partner_id, document_type, direction, reference_number, raw_content, parsed_data, status, processed_at, error_message, created_at)
+             VALUES (?, ?, ?, ?, 'Outbound', ?, NULL, ?, 'Pending', NULL, NULL, ?)"
+        )
+        .bind(document.id.to_string())
+        .bind(&document.document_number)
+        .bind(document.partner_id.to_string())
+        .bind(format!("{:?}", document.document_type))
+        .bind(&document.reference_number)
+        .bind(&document.parsed_data)
+        .bind(document.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(document)
+    }
+}
+
+pub struct SupplierPortalService;
+
+impl SupplierPortalService {
+    pub fn new() -> Self { Self }
+
+    pub async fn invite_supplier(
+        pool: &SqlitePool,
+        vendor_id: Uuid,
+        email: &str,
+    ) -> Result<SupplierInvitation> {
+        let now = chrono::Utc::now();
+        let expires_at = now + chrono::Duration::days(7);
+        let invitation_token = Uuid::new_v4().to_string();
+        
+        let invitation = SupplierInvitation {
+            id: Uuid::new_v4(),
+            vendor_id,
+            email: email.to_string(),
+            invitation_token: invitation_token.clone(),
+            expires_at,
+            accepted_at: None,
+            status: InvitationStatus::Pending,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO supplier_invitations (id, vendor_id, email, invitation_token, expires_at, accepted_at, status, created_at)
+             VALUES (?, ?, ?, ?, ?, NULL, 'Pending', ?)"
+        )
+        .bind(invitation.id.to_string())
+        .bind(invitation.vendor_id.to_string())
+        .bind(&invitation.email)
+        .bind(&invitation.invitation_token)
+        .bind(invitation.expires_at.to_rfc3339())
+        .bind(invitation.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(invitation)
+    }
+
+    pub async fn register_supplier_user(
+        pool: &SqlitePool,
+        vendor_id: Uuid,
+        username: &str,
+        email: &str,
+        password_hash: &str,
+        role: SupplierUserRole,
+    ) -> Result<SupplierUser> {
+        let now = chrono::Utc::now();
+        let user = SupplierUser {
+            id: Uuid::new_v4(),
+            vendor_id,
+            username: username.to_string(),
+            email: email.to_string(),
+            password_hash: password_hash.to_string(),
+            role: role.clone(),
+            last_login: None,
+            status: Status::Active,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO supplier_users (id, vendor_id, username, email, password_hash, role, last_login, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, NULL, 'Active', ?)"
+        )
+        .bind(user.id.to_string())
+        .bind(user.vendor_id.to_string())
+        .bind(&user.username)
+        .bind(&user.email)
+        .bind(&user.password_hash)
+        .bind(format!("{:?}", user.role))
+        .bind(user.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(user)
+    }
+
+    pub async fn upload_document(
+        pool: &SqlitePool,
+        vendor_id: Uuid,
+        document_type: SupplierDocumentType,
+        document_name: &str,
+        file_path: &str,
+        uploaded_by: Option<Uuid>,
+        expiry_date: Option<&str>,
+    ) -> Result<SupplierDocument> {
+        let now = chrono::Utc::now();
+        let document = SupplierDocument {
+            id: Uuid::new_v4(),
+            vendor_id,
+            document_type: document_type.clone(),
+            document_name: document_name.to_string(),
+            file_path: file_path.to_string(),
+            uploaded_by,
+            expiry_date: expiry_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            status: Status::Active,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO supplier_documents (id, vendor_id, document_type, document_name, file_path, uploaded_by, expiry_date, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 'Active', ?)"
+        )
+        .bind(document.id.to_string())
+        .bind(document.vendor_id.to_string())
+        .bind(format!("{:?}", document.document_type))
+        .bind(&document.document_name)
+        .bind(&document.file_path)
+        .bind(document.uploaded_by.map(|id| id.to_string()))
+        .bind(document.expiry_date.map(|d| d.to_rfc3339()))
+        .bind(document.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(document)
+    }
+
+    pub async fn get_documents(pool: &SqlitePool, vendor_id: Uuid) -> Result<Vec<SupplierDocument>> {
+        let rows = sqlx::query_as::<_, SupplierDocumentRow>(
+            "SELECT id, vendor_id, document_type, document_name, file_path, uploaded_by, expiry_date, status, created_at
+             FROM supplier_documents WHERE vendor_id = ? ORDER BY created_at DESC"
+        )
+        .bind(vendor_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct SupplierDocumentRow {
+    id: String,
+    vendor_id: String,
+    document_type: String,
+    document_name: String,
+    file_path: String,
+    uploaded_by: Option<String>,
+    expiry_date: Option<String>,
+    status: String,
+    created_at: String,
+}
+
+impl From<SupplierDocumentRow> for SupplierDocument {
+    fn from(r: SupplierDocumentRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            vendor_id: Uuid::parse_str(&r.vendor_id).unwrap_or_default(),
+            document_type: match r.document_type.as_str() {
+                "Certificate" => SupplierDocumentType::Certificate,
+                "Insurance" => SupplierDocumentType::Insurance,
+                "TaxForm" => SupplierDocumentType::TaxForm,
+                "Contract" => SupplierDocumentType::Contract,
+                _ => SupplierDocumentType::Other,
+            },
+            document_name: r.document_name,
+            file_path: r.file_path,
+            uploaded_by: r.uploaded_by.and_then(|id| Uuid::parse_str(&id).ok()),
+            expiry_date: r.expiry_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            status: match r.status.as_str() {
+                "Inactive" => Status::Inactive,
+                _ => Status::Active,
+            },
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+pub struct RFQService;
+
+impl RFQService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_rfq(
+        pool: &SqlitePool,
+        title: &str,
+        description: Option<&str>,
+        buyer_id: Uuid,
+        currency: &str,
+        submission_deadline: &str,
+        valid_until: Option<&str>,
+    ) -> Result<RFQ> {
+        let now = chrono::Utc::now();
+        let rfq_number = format!("RFQ-{}", now.format("%Y%m%d%H%M%S"));
+        let rfq = RFQ {
+            id: Uuid::new_v4(),
+            rfq_number: rfq_number.clone(),
+            title: title.to_string(),
+            description: description.map(|s| s.to_string()),
+            buyer_id,
+            currency: currency.to_string(),
+            submission_deadline: chrono::DateTime::parse_from_rfc3339(submission_deadline)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or(now),
+            valid_until: valid_until.and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            status: RFQStatus::Draft,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO rfqs (id, rfq_number, title, description, buyer_id, currency, submission_deadline, valid_until, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Draft', ?)"
+        )
+        .bind(rfq.id.to_string())
+        .bind(&rfq.rfq_number)
+        .bind(&rfq.title)
+        .bind(&rfq.description)
+        .bind(rfq.buyer_id.to_string())
+        .bind(&rfq.currency)
+        .bind(rfq.submission_deadline.to_rfc3339())
+        .bind(rfq.valid_until.map(|d| d.to_rfc3339()))
+        .bind(rfq.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rfq)
+    }
+
+    pub async fn add_vendor(
+        pool: &SqlitePool,
+        rfq_id: Uuid,
+        vendor_id: Uuid,
+    ) -> Result<RFQVendor> {
+        let now = chrono::Utc::now();
+        let rfq_vendor = RFQVendor {
+            id: Uuid::new_v4(),
+            rfq_id,
+            vendor_id,
+            invited_at: Some(now),
+            responded_at: None,
+            status: RFQVendorStatus::Invited,
+        };
+        
+        sqlx::query(
+            "INSERT INTO rfq_vendors (id, rfq_id, vendor_id, invited_at, responded_at, status)
+             VALUES (?, ?, ?, ?, NULL, 'Invited')"
+        )
+        .bind(rfq_vendor.id.to_string())
+        .bind(rfq_vendor.rfq_id.to_string())
+        .bind(rfq_vendor.vendor_id.to_string())
+        .bind(rfq_vendor.invited_at.map(|d| d.to_rfc3339()))
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rfq_vendor)
+    }
+
+    pub async fn submit_to_vendor(pool: &SqlitePool, rfq_id: Uuid) -> Result<RFQ> {
+        sqlx::query(
+            "UPDATE rfqs SET status = 'Published' WHERE id = ?"
+        )
+        .bind(rfq_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_rfq(pool, rfq_id).await
+    }
+
+    pub async fn submit_response(
+        pool: &SqlitePool,
+        rfq_id: Uuid,
+        vendor_id: Uuid,
+        payment_terms: Option<i32>,
+        delivery_terms: Option<&str>,
+        notes: Option<&str>,
+        valid_until: Option<&str>,
+    ) -> Result<RFQResponse> {
+        let now = chrono::Utc::now();
+        let response_number = format!("RSP-{}", now.format("%Y%m%d%H%M%S"));
+        let response = RFQResponse {
+            id: Uuid::new_v4(),
+            rfq_id,
+            vendor_id,
+            response_number: response_number.clone(),
+            response_date: now,
+            valid_until: valid_until.and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            payment_terms,
+            delivery_terms: delivery_terms.map(|s| s.to_string()),
+            notes: notes.map(|s| s.to_string()),
+            status: RFQResponseStatus::Submitted,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO rfq_responses (id, rfq_id, vendor_id, response_number, response_date, valid_until, payment_terms, delivery_terms, notes, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Submitted', ?)"
+        )
+        .bind(response.id.to_string())
+        .bind(response.rfq_id.to_string())
+        .bind(response.vendor_id.to_string())
+        .bind(&response.response_number)
+        .bind(response.response_date.to_rfc3339())
+        .bind(response.valid_until.map(|d| d.to_rfc3339()))
+        .bind(response.payment_terms)
+        .bind(&response.delivery_terms)
+        .bind(&response.notes)
+        .bind(response.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        sqlx::query(
+            "UPDATE rfq_vendors SET status = 'Responded', responded_at = ? WHERE rfq_id = ? AND vendor_id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(rfq_id.to_string())
+        .bind(vendor_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(response)
+    }
+
+    pub async fn compare_responses(pool: &SqlitePool, rfq_id: Uuid) -> Result<Vec<RFQResponse>> {
+        let rows = sqlx::query_as::<_, RFQResponseRow>(
+            "SELECT id, rfq_id, vendor_id, response_number, response_date, valid_until, payment_terms, delivery_terms, notes, status, created_at
+             FROM rfq_responses WHERE rfq_id = ? ORDER BY created_at"
+        )
+        .bind(rfq_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn award_rfq(pool: &SqlitePool, rfq_id: Uuid, vendor_id: Uuid) -> Result<RFQ> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE rfqs SET status = 'Awarded' WHERE id = ?"
+        )
+        .bind(rfq_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        sqlx::query(
+            "UPDATE rfq_vendors SET status = 'Awarded' WHERE rfq_id = ? AND vendor_id = ?"
+        )
+        .bind(rfq_id.to_string())
+        .bind(vendor_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        sqlx::query(
+            "UPDATE rfq_responses SET status = 'Accepted' WHERE rfq_id = ? AND vendor_id = ?"
+        )
+        .bind(rfq_id.to_string())
+        .bind(vendor_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_rfq(pool, rfq_id).await
+    }
+
+    async fn get_rfq(pool: &SqlitePool, id: Uuid) -> Result<RFQ> {
+        let row = sqlx::query_as::<_, RFQRow>(
+            "SELECT id, rfq_number, title, description, buyer_id, currency, submission_deadline, valid_until, status, created_at
+             FROM rfqs WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("RFQ", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct RFQRow {
+    id: String,
+    rfq_number: String,
+    title: String,
+    description: Option<String>,
+    buyer_id: String,
+    currency: String,
+    submission_deadline: String,
+    valid_until: Option<String>,
+    status: String,
+    created_at: String,
+}
+
+impl From<RFQRow> for RFQ {
+    fn from(r: RFQRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            rfq_number: r.rfq_number,
+            title: r.title,
+            description: r.description,
+            buyer_id: Uuid::parse_str(&r.buyer_id).unwrap_or_default(),
+            currency: r.currency,
+            submission_deadline: chrono::DateTime::parse_from_rfc3339(&r.submission_deadline)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            valid_until: r.valid_until.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            status: match r.status.as_str() {
+                "Published" => RFQStatus::Published,
+                "Closed" => RFQStatus::Closed,
+                "Awarded" => RFQStatus::Awarded,
+                "Cancelled" => RFQStatus::Cancelled,
+                _ => RFQStatus::Draft,
+            },
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct RFQResponseRow {
+    id: String,
+    rfq_id: String,
+    vendor_id: String,
+    response_number: String,
+    response_date: String,
+    valid_until: Option<String>,
+    payment_terms: Option<i64>,
+    delivery_terms: Option<String>,
+    notes: Option<String>,
+    status: String,
+    created_at: String,
+}
+
+impl From<RFQResponseRow> for RFQResponse {
+    fn from(r: RFQResponseRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            rfq_id: Uuid::parse_str(&r.rfq_id).unwrap_or_default(),
+            vendor_id: Uuid::parse_str(&r.vendor_id).unwrap_or_default(),
+            response_number: r.response_number,
+            response_date: chrono::DateTime::parse_from_rfc3339(&r.response_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            valid_until: r.valid_until.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            payment_terms: r.payment_terms.map(|t| t as i32),
+            delivery_terms: r.delivery_terms,
+            notes: r.notes,
+            status: match r.status.as_str() {
+                "UnderReview" => RFQResponseStatus::UnderReview,
+                "Accepted" => RFQResponseStatus::Accepted,
+                "Rejected" => RFQResponseStatus::Rejected,
+                _ => RFQResponseStatus::Submitted,
+            },
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}

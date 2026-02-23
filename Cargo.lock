@@ -380,6 +380,7 @@ dependencies = [
  "async-trait",
  "axum",
  "chrono",
+ "erp-assets",
  "erp-auth",
  "erp-core",
  "erp-finance",
@@ -388,6 +389,7 @@ dependencies = [
  "erp-manufacturing",
  "erp-purchasing",
  "erp-sales",
+ "erp-service",
  "http-body-util",
  "once_cell",
  "serde",
@@ -399,6 +401,23 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "uuid",
+ "validator",
+]
+
+[[package]]
+name = "erp-assets"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
  "uuid",
  "validator",
 ]
@@ -417,6 +436,7 @@ dependencies = [
  "rand",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -432,6 +452,7 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -509,6 +530,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-projects"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "erp-purchasing"
 version = "0.1.0"
 dependencies = [
@@ -535,6 +573,23 @@ dependencies = [
  "chrono",
  "erp-core",
  "erp-inventory",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
+name = "erp-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
  "serde",
  "serde_json",
  "sqlx",

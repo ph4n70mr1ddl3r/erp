@@ -35,6 +35,8 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/purchasing", purchasing_routes(state.clone()))
         .nest("/manufacturing", manufacturing_routes(state.clone()))
         .nest("/hr", hr_routes(state.clone()))
+        .nest("/service", service_routes(state.clone()))
+        .nest("/assets", assets_routes(state.clone()))
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
         .route(
             "/workflows",
@@ -345,6 +347,85 @@ fn hr_routes(state: AppState) -> Router<AppState> {
         .route(
             "/payroll",
             get(handlers::hr::list_payroll).post(handlers::hr::create_payroll),
+        )
+        .with_state(state)
+}
+
+fn service_routes(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/tickets",
+            get(handlers::service::list_tickets).post(handlers::service::create_ticket),
+        )
+        .route("/tickets/:id", get(handlers::service::get_ticket))
+        .route(
+            "/tickets/:id/assign",
+            post(handlers::service::assign_ticket),
+        )
+        .route(
+            "/tickets/:id/status",
+            post(handlers::service::update_ticket_status),
+        )
+        .route(
+            "/tickets/:id/satisfaction",
+            post(handlers::service::set_satisfaction),
+        )
+        .route("/tickets/stats", get(handlers::service::ticket_stats))
+        .route(
+            "/articles",
+            get(handlers::service::list_articles).post(handlers::service::create_article),
+        )
+        .route("/articles/search", get(handlers::service::search_articles))
+        .route("/articles/:id", get(handlers::service::get_article))
+        .route(
+            "/articles/:id/publish",
+            post(handlers::service::publish_article),
+        )
+        .route(
+            "/articles/:id/archive",
+            post(handlers::service::archive_article),
+        )
+        .route(
+            "/articles/:id/feedback",
+            post(handlers::service::article_feedback),
+        )
+        .route(
+            "/slas",
+            get(handlers::service::list_slas).post(handlers::service::create_sla),
+        )
+        .with_state(state)
+}
+
+fn assets_routes(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/assets",
+            get(handlers::assets::list_assets).post(handlers::assets::create_asset),
+        )
+        .route("/assets/:id", get(handlers::assets::get_asset))
+        .route("/assets/:id/assign", post(handlers::assets::assign_asset))
+        .route("/assets/:id/return", post(handlers::assets::return_asset))
+        .route(
+            "/assets/:id/status",
+            post(handlers::assets::update_asset_status),
+        )
+        .route("/assets/stats", get(handlers::assets::asset_stats))
+        .route(
+            "/licenses",
+            get(handlers::assets::list_licenses).post(handlers::assets::create_license),
+        )
+        .route("/licenses/:id", get(handlers::assets::get_license))
+        .route(
+            "/licenses/:id/use",
+            post(handlers::assets::use_license_seat),
+        )
+        .route(
+            "/licenses/:id/release",
+            post(handlers::assets::release_license_seat),
+        )
+        .route(
+            "/licenses/expiring",
+            get(handlers::assets::expiring_licenses),
         )
         .with_state(state)
 }

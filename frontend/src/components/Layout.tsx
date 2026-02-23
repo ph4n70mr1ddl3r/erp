@@ -11,7 +11,9 @@ import {
   Menu,
   X,
   FileBarChart,
-  ClipboardList
+  ClipboardList,
+  Headphones,
+  Monitor
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -26,6 +28,8 @@ const navItems = [
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
   { path: '/hr', icon: UserCog, label: 'HR' },
+  { path: '/service', icon: Headphones, label: 'Service Desk' },
+  { path: '/assets', icon: Monitor, label: 'IT Assets' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
