@@ -446,3 +446,153 @@ export const assets = {
   releaseLicenseSeat: (id: string) => api.post<SoftwareLicense>(`/api/v1/assets/licenses/${id}/release`),
   getExpiringLicenses: (days = 30) => api.get<SoftwareLicense[]>(`/api/v1/assets/licenses/expiring?days=${days}`),
 };
+
+export interface DataSubject {
+  id: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  verification_status: string;
+  created_at: string;
+}
+
+export interface ConsentRecord {
+  id: string;
+  data_subject_id: string;
+  consent_type: string;
+  purpose: string;
+  legal_basis: string;
+  status: string;
+  granted_at?: string;
+  withdrawn_at?: string;
+}
+
+export interface DSARRequest {
+  id: string;
+  request_number: string;
+  data_subject_id: string;
+  request_type: string;
+  description?: string;
+  status: string;
+  due_date: string;
+  received_at: string;
+}
+
+export interface DataBreach {
+  id: string;
+  breach_number: string;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  discovered_at: string;
+}
+
+export interface ComplianceStats {
+  data_subjects: number;
+  active_consents: number;
+  pending_dsars: number;
+  active_breaches: number;
+  active_processors: number;
+}
+
+export const compliance = {
+  getStats: () => api.get<ComplianceStats>('/api/v1/compliance/stats'),
+  getDataSubjects: () => api.get<DataSubject[]>('/api/v1/compliance/data-subjects'),
+  createDataSubject: (data: { email: string; first_name?: string; last_name?: string }) =>
+    api.post<DataSubject>('/api/v1/compliance/data-subjects', data),
+  getConsents: () => api.get<ConsentRecord[]>('/api/v1/compliance/consents'),
+  createConsent: (data: { data_subject_id: string; consent_type: string; purpose: string; legal_basis: string }) =>
+    api.post<ConsentRecord>('/api/v1/compliance/consents', data),
+  withdrawConsent: (id: string) => api.post<ConsentRecord>(`/api/v1/compliance/consents/${id}/withdraw`),
+  getDSARs: () => api.get<DSARRequest[]>('/api/v1/compliance/dsars'),
+  createDSAR: (data: { data_subject_id: string; request_type: string; description?: string }) =>
+    api.post<DSARRequest>('/api/v1/compliance/dsars', data),
+  completeDSAR: (id: string, response: string) =>
+    api.post<DSARRequest>(`/api/v1/compliance/dsars/${id}/complete`, { response }),
+  getBreaches: () => api.get<DataBreach[]>('/api/v1/compliance/breaches'),
+  createBreach: (data: { title: string; description: string; breach_type: string; severity: string }) =>
+    api.post<DataBreach>('/api/v1/compliance/breaches', data),
+};
+
+export interface Project {
+  id: string;
+  project_number: string;
+  name: string;
+  description?: string;
+  status: string;
+  start_date: string;
+  end_date?: string;
+  budget?: number;
+  percent_complete: number;
+}
+
+export interface ProjectTask {
+  id: string;
+  project_id: string;
+  name: string;
+  description?: string;
+  status: string;
+  percent_complete: number;
+  start_date?: string;
+  due_date?: string;
+}
+
+export interface ProjectMilestone {
+  id: string;
+  project_id: string;
+  name: string;
+  description?: string;
+  status: string;
+  planned_date?: string;
+}
+
+export interface Timesheet {
+  id: string;
+  timesheet_number: string;
+  employee_id: string;
+  period_start: string;
+  period_end: string;
+  total_hours: number;
+  status: string;
+}
+
+export const projects = {
+  getProjects: () => api.get<Project[]>('/api/v1/projects'),
+  createProject: (data: { name: string; description?: string; start_date: string; end_date?: string; budget?: number }) =>
+    api.post<Project>('/api/v1/projects', data),
+  getProject: (id: string) => api.get<Project>(`/api/v1/projects/${id}`),
+  updateStatus: (id: string, status: string) =>
+    api.post<Project>(`/api/v1/projects/${id}/status`, { status }),
+  getTasks: (projectId: string) => api.get<ProjectTask[]>(`/api/v1/projects/${projectId}/tasks`),
+  createTask: (data: { project_id: string; name: string; start_date: string }) =>
+    api.post<ProjectTask>('/api/v1/projects/tasks', data),
+  completeTask: (id: string) => api.post<ProjectTask>(`/api/v1/projects/tasks/${id}/complete`),
+  getMilestones: (projectId: string) => api.get<ProjectMilestone[]>(`/api/v1/projects/${projectId}/milestones`),
+  createMilestone: (data: { project_id: string; name: string; planned_date: string }) =>
+    api.post<ProjectMilestone>('/api/v1/projects/milestones', data),
+  completeMilestone: (id: string) => api.post<ProjectMilestone>(`/api/v1/projects/milestones/${id}/complete`),
+  getTimesheets: () => api.get<Timesheet[]>('/api/v1/projects/timesheets'),
+  createTimesheet: (data: { employee_id: string; period_start: string; period_end: string }) =>
+    api.post<Timesheet>('/api/v1/projects/timesheets', data),
+  submitTimesheet: (id: string) => api.post(`/api/v1/projects/timesheets/${id}/submit`),
+  approveTimesheet: (id: string) => api.post(`/api/v1/projects/timesheets/${id}/approve`),
+};
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  notification_type: string;
+  read: boolean;
+  entity_type?: string;
+  entity_id?: string;
+  created_at: string;
+}
+
+export const notifications = {
+  list: (unreadOnly = false) => api.get<Notification[]>(`/api/v1/notifications${unreadOnly ? '?unread_only=true' : ''}`),
+  markRead: (id: string) => api.post(`/api/v1/notifications/${id}/read`),
+  markAllRead: () => api.post('/api/v1/notifications/read'),
+  unreadCount: () => api.get<{ count: number }>('/api/v1/notifications/unread-count'),
+};

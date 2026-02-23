@@ -594,7 +594,7 @@ impl FullPayrollService {
         Ok(pg)
     }
 
-    pub async fn create_pay_component(pool: &SqlitePool, code: &str, name: &str, comp_type: PayComponentType, calc_type: CalculationType) -> Result<PayComponent> {
+    pub async fn create_pay_component(pool: &SqlitePool, code: &str, name: &str, comp_type: ComponentType, calc_type: CalculationType) -> Result<PayComponent> {
         let pc = PayComponent {
             id: Uuid::new_v4(),
             component_code: code.to_string(),
@@ -679,7 +679,7 @@ impl From<PayrollRunRow> for PayrollRun {
 pub struct BenefitsService;
 
 impl BenefitsService {
-    pub async fn create_benefit_plan(pool: &SqlitePool, code: &str, name: &str, plan_type: BenefitPlanType, employee_contrib: i64, employer_contrib: i64) -> Result<BenefitPlan> {
+    pub async fn create_benefit_plan(pool: &SqlitePool, code: &str, name: &str, plan_type: BenefitType, employee_contrib: i64, employer_contrib: i64) -> Result<BenefitPlan> {
         let now = chrono::Utc::now();
         let plan = BenefitPlan {
             id: Uuid::new_v4(), plan_code: code.to_string(), name: name.to_string(), plan_type,

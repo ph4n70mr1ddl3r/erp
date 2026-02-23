@@ -387,6 +387,7 @@ dependencies = [
  "erp-hr",
  "erp-inventory",
  "erp-manufacturing",
+ "erp-projects",
  "erp-purchasing",
  "erp-sales",
  "erp-service",

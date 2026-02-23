@@ -15,6 +15,8 @@ import Reports from './pages/Reports';
 import AuditLogs from './pages/AuditLogs';
 import ServiceDesk from './pages/ServiceDesk';
 import ITAssets from './pages/ITAssets';
+import Compliance from './pages/Compliance';
+import Projects from './pages/Projects';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -47,6 +49,8 @@ function AppRoutes() {
       <Route path="/hr" element={<PrivateRoute><HR /></PrivateRoute>} />
       <Route path="/service" element={<PrivateRoute><ServiceDesk /></PrivateRoute>} />
       <Route path="/assets" element={<PrivateRoute><ITAssets /></PrivateRoute>} />
+      <Route path="/compliance" element={<PrivateRoute><Compliance /></PrivateRoute>} />
+      <Route path="/projects" element={<PrivateRoute><Projects /></PrivateRoute>} />
     </Routes>
   );
 }

@@ -177,6 +177,76 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .route("/custom-values", post(handlers::extended::set_custom_value))
         .route("/export", get(handlers::import_export::export_csv))
         .route("/import", post(handlers::import_export::import_csv))
+        .nest("/compliance", compliance_routes(state.clone()))
+        .nest("/projects", projects_routes(state.clone()))
+}
+
+fn compliance_routes(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route("/stats", get(handlers::compliance::stats))
+        .route(
+            "/data-subjects",
+            get(handlers::compliance::list_data_subjects)
+                .post(handlers::compliance::create_data_subject),
+        )
+        .route(
+            "/consents",
+            get(handlers::compliance::list_consents).post(handlers::compliance::create_consent),
+        )
+        .route(
+            "/consents/:id/withdraw",
+            post(handlers::compliance::withdraw_consent),
+        )
+        .route(
+            "/dsars",
+            get(handlers::compliance::list_dsars).post(handlers::compliance::create_dsar),
+        )
+        .route(
+            "/dsars/:id/complete",
+            post(handlers::compliance::complete_dsar),
+        )
+        .route(
+            "/breaches",
+            get(handlers::compliance::list_breaches).post(handlers::compliance::create_breach),
+        )
+        .route("/policies", get(handlers::compliance::list_policies))
+        .route("/processors", get(handlers::compliance::list_processors))
+        .with_state(state)
+}
+
+fn projects_routes(state: AppState) -> Router<AppState> {
+    Router::new()
+        .route(
+            "/",
+            get(handlers::projects::list_projects).post(handlers::projects::create_project),
+        )
+        .route("/:id", get(handlers::projects::get_project))
+        .route("/:id/status", post(handlers::projects::update_status))
+        .route("/:id/tasks", get(handlers::projects::list_tasks))
+        .route("/tasks", post(handlers::projects::create_task))
+        .route(
+            "/tasks/:id/complete",
+            post(handlers::projects::complete_task),
+        )
+        .route("/:id/milestones", get(handlers::projects::list_milestones))
+        .route("/milestones", post(handlers::projects::create_milestone))
+        .route(
+            "/milestones/:id/complete",
+            post(handlers::projects::complete_milestone),
+        )
+        .route(
+            "/timesheets",
+            get(handlers::projects::list_timesheets).post(handlers::projects::create_timesheet),
+        )
+        .route(
+            "/timesheets/:id/submit",
+            post(handlers::projects::submit_timesheet),
+        )
+        .route(
+            "/timesheets/:id/approve",
+            post(handlers::projects::approve_timesheet),
+        )
+        .with_state(state)
 }
 
 fn finance_routes(state: AppState) -> Router<AppState> {

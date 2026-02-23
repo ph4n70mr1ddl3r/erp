@@ -2,6 +2,7 @@ pub mod analytics;
 pub mod audit;
 pub mod attachment;
 pub mod compliance;
+pub mod compliance_service;
 pub mod custom_field;
 pub mod db;
 pub mod error;
@@ -16,6 +17,7 @@ pub use analytics::{DashboardService, KPIService, AlertService, PredictiveServic
 pub use audit::{AuditLog, AuditAction, log_audit, get_audit_logs};
 pub use attachment::{Attachment, AttachmentService};
 pub use compliance::*;
+pub use compliance_service::ComplianceService;
 pub use custom_field::CustomFieldService;
 pub use db::Database;
 pub use error::{Error, Result};

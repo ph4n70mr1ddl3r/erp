@@ -13,10 +13,14 @@ import {
   FileBarChart,
   ClipboardList,
   Headphones,
-  Monitor
+  Monitor,
+  Folder,
+  Shield
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import NotificationCenter from './NotificationCenter';
+import GlobalSearch from './GlobalSearch';
 
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -28,8 +32,10 @@ const navItems = [
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
   { path: '/hr', icon: UserCog, label: 'HR' },
+  { path: '/projects', icon: Folder, label: 'Projects' },
   { path: '/service', icon: Headphones, label: 'Service Desk' },
   { path: '/assets', icon: Monitor, label: 'IT Assets' },
+  { path: '/compliance', icon: Shield, label: 'Compliance' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -94,12 +100,21 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main content */}
       <main className="flex-1 min-w-0">
+        {/* Header */}
+        <header className="hidden lg:flex items-center justify-between h-16 px-6 border-b border-gray-200 bg-white">
+          <GlobalSearch />
+          <NotificationCenter />
+        </header>
+
         {/* Mobile header */}
         <header className="lg:hidden flex items-center gap-4 h-16 px-4 border-b border-gray-200 bg-white">
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="w-6 h-6" />
           </button>
           <span className="font-bold text-blue-600">ERP System</span>
+          <div className="ml-auto flex items-center gap-2">
+            <NotificationCenter />
+          </div>
         </header>
 
         <div className="p-6">
