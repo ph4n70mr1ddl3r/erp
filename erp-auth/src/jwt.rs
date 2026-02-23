@@ -2,16 +2,23 @@ use anyhow::Result;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{de::DeserializeOwned, Serialize};
+use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
 static JWT_SECRET: OnceLock<[u8; 32]> = OnceLock::new();
 
-pub fn init_jwt_secret(secret: &str) {
-    let mut key = [0u8; 32];
-    let bytes = secret.as_bytes();
-    let len = bytes.len().min(32);
-    key[..len].copy_from_slice(&bytes[..len]);
+pub fn init_jwt_secret(secret: &str) -> Result<()> {
+    if secret.len() < 32 {
+        return Err(anyhow::anyhow!(
+            "JWT secret must be at least 32 characters, got {}",
+            secret.len()
+        ));
+    }
+    let mut hasher = Sha256::new();
+    Digest::update(&mut hasher, secret.as_bytes());
+    let key: [u8; 32] = hasher.finalize().into();
     let _ = JWT_SECRET.set(key);
+    Ok(())
 }
 
 fn get_secret() -> &'static [u8; 32] {
@@ -83,7 +90,8 @@ mod tests {
     use super::*;
 
     fn init_test() {
-        let _ = JWT_SECRET.set([0u8; 32]);
+        init_jwt_secret("test-secret-key-must-be-at-least-32-chars")
+            .expect("Failed to init JWT secret");
     }
 
     #[test]

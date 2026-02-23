@@ -7,6 +7,26 @@ use crate::models::*;
 use crate::repository::*;
 use crate::jwt;
 
+const MIN_PASSWORD_LENGTH: usize = 8;
+
+fn validate_password_strength(password: &str) -> Result<()> {
+    if password.len() < MIN_PASSWORD_LENGTH {
+        return Err(Error::validation(&format!(
+            "Password must be at least {} characters",
+            MIN_PASSWORD_LENGTH
+        )));
+    }
+    
+    let has_letter = password.chars().any(|c| c.is_alphabetic());
+    let has_digit = password.chars().any(|c| c.is_numeric());
+    
+    if !has_letter || !has_digit {
+        return Err(Error::validation("Password must contain both letters and numbers"));
+    }
+    
+    Ok(())
+}
+
 pub struct AuthService {
     repo: SqliteUserRepository,
 }
@@ -20,6 +40,8 @@ impl AuthService {
         if req.username.is_empty() || req.email.is_empty() || req.password.is_empty() {
             return Err(Error::validation("Username, email, and password are required"));
         }
+        
+        validate_password_strength(&req.password)?;
         
         if self.repo.find_by_username(pool, &req.username).await.is_ok() {
             return Err(Error::Conflict(format!("Username '{}' already exists", req.username)));
@@ -194,5 +216,25 @@ mod tests {
         assert!(has_permission("User", "finance:read"));
         assert!(has_permission("User", "inventory:read"));
         assert!(!has_permission("User", "finance:write"));
+    }
+    
+    #[test]
+    fn test_password_strength_too_short() {
+        assert!(validate_password_strength("abc1").is_err());
+    }
+    
+    #[test]
+    fn test_password_strength_no_digit() {
+        assert!(validate_password_strength("passwordonly").is_err());
+    }
+    
+    #[test]
+    fn test_password_strength_no_letter() {
+        assert!(validate_password_strength("12345678").is_err());
+    }
+    
+    #[test]
+    fn test_password_strength_valid() {
+        assert!(validate_password_strength("password1").is_ok());
     }
 }

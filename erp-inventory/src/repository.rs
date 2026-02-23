@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
+use anyhow;
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 
@@ -18,7 +19,7 @@ impl ProductRepository for SqliteProductRepository {
         .await?
         .ok_or_else(|| Error::not_found("Product", &id.to_string()))?;
         
-        Ok(row.into_product())
+        Ok(row.into_product()?)
     }
 
     async fn find_by_sku(&self, pool: &SqlitePool, sku: &str) -> Result<Product> {
@@ -32,7 +33,7 @@ impl ProductRepository for SqliteProductRepository {
         .await?
         .ok_or_else(|| Error::not_found("Product", sku))?;
         
-        Ok(row.into_product())
+        Ok(row.into_product()?)
     }
 
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<Product>> {
@@ -53,8 +54,8 @@ impl ProductRepository for SqliteProductRepository {
         .fetch_all(pool)
         .await?;
         
-        let items: Vec<Product> = rows.into_iter().map(|r| r.into_product()).collect();
-        Ok(Paginated::new(items, count.0 as u64, pagination))
+        let items: Result<Vec<Product>> = rows.into_iter().map(|r| r.into_product()).collect();
+        Ok(Paginated::new(items?, count.0 as u64, pagination))
     }
 
     async fn create(&self, pool: &SqlitePool, product: Product) -> Result<Product> {
@@ -143,16 +144,19 @@ struct ProductRow {
 }
 
 impl ProductRow {
-    fn into_product(self) -> Product {
-        Product {
+    fn into_product(self) -> Result<Product> {
+        let id = Uuid::parse_str(&self.id)
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid UUID '{}': {}", self.id, e)))?;
+        
+        Ok(Product {
             base: BaseEntity {
-                id: Uuid::parse_str(&self.id).unwrap_or_default(),
+                id,
                 created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
                     .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid datetime: {}", e)))?,
                 updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at)
                     .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid datetime: {}", e)))?,
                 created_by: self.created_by.and_then(|s| Uuid::parse_str(&s).ok()),
                 updated_by: self.updated_by.and_then(|s| Uuid::parse_str(&s).ok()),
             },
@@ -170,7 +174,7 @@ impl ProductRow {
                 "Inactive" => Status::Inactive,
                 _ => Status::Active,
             },
-        }
+        })
     }
 }
 
@@ -219,17 +223,20 @@ struct WarehouseRow {
 }
 
 impl WarehouseRow {
-    fn into_warehouse(self) -> Warehouse {
+    fn into_warehouse(self) -> Result<Warehouse> {
         use erp_core::Address;
-        Warehouse {
+        let id = Uuid::parse_str(&self.id)
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid UUID '{}': {}", self.id, e)))?;
+        
+        Ok(Warehouse {
             base: BaseEntity {
-                id: Uuid::parse_str(&self.id).unwrap_or_default(),
+                id,
                 created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
                     .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid datetime: {}", e)))?,
                 updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at)
                     .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid datetime: {}", e)))?,
                 created_by: None,
                 updated_by: None,
             },
@@ -246,7 +253,7 @@ impl WarehouseRow {
                 "Inactive" => Status::Inactive,
                 _ => Status::Active,
             },
-        }
+        })
     }
 }
 
@@ -263,7 +270,7 @@ impl WarehouseRepository for SqliteWarehouseRepository {
         .await?
         .ok_or_else(|| Error::not_found("Warehouse", &id.to_string()))?;
         
-        Ok(row.into_warehouse())
+        Ok(row.into_warehouse()?)
     }
 
     async fn find_all(&self, pool: &SqlitePool) -> Result<Vec<Warehouse>> {
@@ -275,7 +282,7 @@ impl WarehouseRepository for SqliteWarehouseRepository {
         .fetch_all(pool)
         .await?;
         
-        Ok(rows.into_iter().map(|r| r.into_warehouse()).collect())
+        Ok(rows.into_iter().map(|r| r.into_warehouse()).collect::<Result<Vec<_>>>()?)
     }
 
     async fn create(&self, pool: &SqlitePool, warehouse: Warehouse) -> Result<Warehouse> {
@@ -343,15 +350,22 @@ struct StockLevelRow {
 }
 
 impl StockLevelRow {
-    fn into_stock_level(self) -> StockLevel {
-        StockLevel {
-            id: Uuid::parse_str(&self.id).unwrap_or_default(),
-            product_id: Uuid::parse_str(&self.product_id).unwrap_or_default(),
-            location_id: Uuid::parse_str(&self.location_id).unwrap_or_default(),
+    fn into_stock_level(self) -> Result<StockLevel> {
+        let id = Uuid::parse_str(&self.id)
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid UUID '{}': {}", self.id, e)))?;
+        let product_id = Uuid::parse_str(&self.product_id)
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid UUID '{}': {}", self.product_id, e)))?;
+        let location_id = Uuid::parse_str(&self.location_id)
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Invalid UUID '{}': {}", self.location_id, e)))?;
+        
+        Ok(StockLevel {
+            id,
+            product_id,
+            location_id,
             quantity: self.quantity,
             reserved_quantity: self.reserved_quantity,
             available_quantity: self.available_quantity,
-        }
+        })
     }
 }
 
@@ -432,7 +446,7 @@ impl StockMovementRepository for SqliteStockMovementRepository {
         .await?
         .ok_or_else(|| Error::not_found("StockLevel", &format!("{}/{}", product_id, location_id)))?;
         
-        Ok(row.into_stock_level())
+        Ok(row.into_stock_level()?)
     }
 
     async fn get_product_stock(&self, pool: &SqlitePool, product_id: Uuid) -> Result<Vec<StockLevel>> {
@@ -444,6 +458,6 @@ impl StockMovementRepository for SqliteStockMovementRepository {
         .fetch_all(pool)
         .await?;
         
-        Ok(rows.into_iter().map(|r| r.into_stock_level()).collect())
+        Ok(rows.into_iter().map(|r| r.into_stock_level()).collect::<Result<Vec<_>>>()?)
     }
 }

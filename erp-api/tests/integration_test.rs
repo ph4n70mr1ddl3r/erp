@@ -14,7 +14,7 @@ static INIT: Once = Once::new();
 
 fn init_test_env() {
     INIT.call_once(|| {
-        init_jwt_secret("test-secret-key-for-integration-tests");
+        init_jwt_secret("test-secret-key-for-integration-tests").expect("Failed to init JWT secret");
     });
 }
 

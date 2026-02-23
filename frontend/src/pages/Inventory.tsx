@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { inventory } from '../api/client';
+import type { CreateProductRequest } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
@@ -17,7 +18,7 @@ export default function Inventory() {
   const [showWarehouseModal, setShowWarehouseModal] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'product' | 'warehouse'; id: string; name: string } | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [newProduct, setNewProduct] = useState({ sku: '', name: '', unit_of_measure: 'PCS' });
+  const [newProduct, setNewProduct] = useState<CreateProductRequest>({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
   const [newWarehouse, setNewWarehouse] = useState({ code: '', name: '' });
 
   useEffect(() => { loadData(); }, []);
@@ -42,7 +43,7 @@ export default function Inventory() {
       await inventory.createProduct(newProduct);
       toast.success('Product created successfully');
       setShowProductModal(false);
-      setNewProduct({ sku: '', name: '', unit_of_measure: 'PCS' });
+      setNewProduct({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
       loadData();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to create product');
@@ -60,7 +61,7 @@ export default function Inventory() {
       toast.success('Product updated successfully');
       setShowProductModal(false);
       setEditingProduct(null);
-      setNewProduct({ sku: '', name: '', unit_of_measure: 'PCS' });
+      setNewProduct({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
       loadData();
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to update product');
@@ -100,14 +101,19 @@ export default function Inventory() {
 
   const openEditProduct = (product: Product) => {
     setEditingProduct(product);
-    setNewProduct({ sku: product.sku, name: product.name, unit_of_measure: product.unit_of_measure });
+    setNewProduct({ 
+      sku: product.sku, 
+      name: product.name, 
+      product_type: (product.product_type as CreateProductRequest['product_type']) || 'Goods', 
+      unit_of_measure: product.unit_of_measure 
+    });
     setShowProductModal(true);
   };
 
   const closeProductModal = () => {
     setShowProductModal(false);
     setEditingProduct(null);
-    setNewProduct({ sku: '', name: '', unit_of_measure: 'PCS' });
+    setNewProduct({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
   };
 
   const filteredProducts = products.filter(p => 

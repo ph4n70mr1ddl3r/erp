@@ -10,7 +10,7 @@ async fn main() -> Result<()> {
 
     let config = erp_api::Config::from_env();
     
-    erp_auth::init_jwt_secret(&config.jwt_secret);
+    erp_auth::init_jwt_secret(&config.jwt_secret)?;
     
     let state = erp_api::AppState::new(config.clone()).await?;
     let app = erp_api::routes::create_router(state);

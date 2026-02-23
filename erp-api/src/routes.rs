@@ -5,6 +5,9 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use tower_http::limit::RequestBodyLimitLayer;
+
+const MAX_REQUEST_BODY_SIZE: usize = 1024 * 1024;
 
 pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new()
@@ -18,7 +21,8 @@ pub fn create_router(state: AppState) -> Router {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             handlers::auth::auth_middleware,
-        ));
+        ))
+        .layer(RequestBodyLimitLayer::new(MAX_REQUEST_BODY_SIZE));
 
     public_routes.merge(protected_routes).with_state(state)
 }

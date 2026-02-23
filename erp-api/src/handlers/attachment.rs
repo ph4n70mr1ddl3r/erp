@@ -8,6 +8,36 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{Attachment, AttachmentService};
 
+const ALLOWED_ENTITY_TYPES: &[&str] = &[
+    "products", "customers", "vendors", "orders", "invoices", 
+    "accounts", "journal_entries", "employees"
+];
+
+const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
+
+fn sanitize_filename(filename: &str) -> String {
+    let sanitized: String = filename
+        .chars()
+        .filter(|c| c.is_alphanumeric() || *c == '.' || *c == '-' || *c == '_')
+        .collect();
+    if sanitized.is_empty() {
+        "file".to_string()
+    } else {
+        sanitized
+    }
+}
+
+fn validate_entity_type(entity_type: &str) -> Result<(), erp_core::Error> {
+    if !ALLOWED_ENTITY_TYPES.contains(&entity_type) {
+        return Err(erp_core::Error::validation(&format!(
+            "Invalid entity_type: '{}'. Allowed types: {}",
+            entity_type,
+            ALLOWED_ENTITY_TYPES.join(", ")
+        )));
+    }
+    Ok(())
+}
+
 #[derive(Debug, Deserialize)]
 pub struct AttachmentQuery {
     pub entity_type: String,
@@ -59,19 +89,30 @@ pub async fn upload_attachment(
     Query(query): Query<AttachmentQuery>,
     mut multipart: Multipart,
 ) -> ApiResult<Json<AttachmentResponse>> {
+    validate_entity_type(&query.entity_type)?;
+    
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         erp_core::Error::validation(&format!("Failed to read multipart: {}", e))
     })? {
-        let original_filename = field.file_name().unwrap_or("unknown").to_string();
+        let original_filename = sanitize_filename(field.file_name().unwrap_or("unknown"));
         let mime_type = field.content_type().unwrap_or("application/octet-stream").to_string();
         let data = field.bytes().await.map_err(|e| {
             erp_core::Error::validation(&format!("Failed to read file data: {}", e))
         })?;
         
+        if data.len() > MAX_FILE_SIZE {
+            return Err(erp_core::Error::validation(&format!(
+                "File too large. Maximum size is {} bytes",
+                MAX_FILE_SIZE
+            )).into());
+        }
+        
         let file_size = data.len() as i64;
         
         let upload_dir = std::path::PathBuf::from("uploads").join(&query.entity_type);
-        std::fs::create_dir_all(&upload_dir).ok();
+        std::fs::create_dir_all(&upload_dir).map_err(|e| {
+            erp_core::Error::validation(&format!("Failed to create upload directory: {}", e))
+        })?;
         
         let attachment = Attachment::new(
             &query.entity_type,

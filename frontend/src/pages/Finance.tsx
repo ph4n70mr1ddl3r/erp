@@ -4,6 +4,7 @@ import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
 import type { Account, JournalEntry } from '../types';
+import type { CreateAccountRequest } from '../api/client';
 
 export default function Finance() {
   const toast = useToast();
@@ -16,7 +17,7 @@ export default function Finance() {
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [showJEModal, setShowJEModal] = useState(false);
 
-  const [newAccount, setNewAccount] = useState({ code: '', name: '', account_type: 'Asset' });
+  const [newAccount, setNewAccount] = useState<CreateAccountRequest>({ code: '', name: '', account_type: 'Asset' });
   const [newEntry, setNewEntry] = useState({ 
     description: '', 
     reference: '', 
@@ -70,6 +71,7 @@ export default function Finance() {
     try {
       setSaving(true);
       await finance.createJournalEntry({
+        date: new Date().toISOString().split('T')[0],
         description: newEntry.description,
         reference: newEntry.reference,
         lines: newEntry.lines.map(l => ({
@@ -240,7 +242,7 @@ export default function Finance() {
               </div>
               <div>
                 <label className="label">Type</label>
-                <select className="input" value={newAccount.account_type} onChange={(e) => setNewAccount({ ...newAccount, account_type: e.target.value })}>
+                <select className="input" value={newAccount.account_type} onChange={(e) => setNewAccount({ ...newAccount, account_type: e.target.value as CreateAccountRequest['account_type'] })}>
                   <option>Asset</option>
                   <option>Liability</option>
                   <option>Equity</option>

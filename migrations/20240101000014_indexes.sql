@@ -1,0 +1,18 @@
+CREATE INDEX IF NOT EXISTS idx_journal_lines_account ON journal_lines(account_id);
+CREATE INDEX IF NOT EXISTS idx_journal_lines_entry ON journal_lines(entry_id);
+CREATE INDEX IF NOT EXISTS idx_stock_levels_product ON stock_levels(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_levels_location ON stock_levels(location_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_product ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_stock_movements_to_location ON stock_movements(to_location_id);
+CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_customers_code ON customers(code);
+CREATE INDEX IF NOT EXISTS idx_vendors_code ON vendors(code);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+CREATE INDEX IF NOT EXISTS idx_order_lines_order ON order_lines(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_lines_product ON order_lines(product_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_orders_vendor ON purchase_orders(vendor_id);
+CREATE INDEX IF NOT EXISTS idx_po_lines_po ON purchase_order_lines(po_id);
+CREATE INDEX IF NOT EXISTS idx_po_lines_product ON purchase_order_lines(product_id);
+CREATE INDEX IF NOT EXISTS idx_employees_department ON employees(department_id);
+CREATE INDEX IF NOT EXISTS idx_attachments_entity ON attachments(entity_type, entity_id);
