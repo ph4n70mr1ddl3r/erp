@@ -10,7 +10,12 @@ use crate::error::ApiResult;
 use erp_core::{BaseEntity, Status, Currency, Money, Pagination};
 use erp_finance::{Account, AccountType, JournalEntry, JournalLine, FiscalYear,
                  AccountService, JournalEntryService, FiscalYearService, FinancialReportingService,
-                 BalanceSheet, ProfitAndLoss, TrialBalance};
+                 BalanceSheet, ProfitAndLoss, TrialBalance,
+                 DunningService, PeriodManagementService, RecurringJournalService,
+                 DunningPolicy, DunningLevel, DunningLevelConfig, DunningRun,
+                 CollectionCase, CollectionPriority, CollectionActivityType,
+                 AccountingPeriod, PeriodLockType, RecurringJournal, RecurringFrequency,
+                 AgingReport};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateAccountRequest {
@@ -460,3 +465,436 @@ pub async fn get_trial_balance(
     let tb = service.get_trial_balance(&state.pool).await?;
     Ok(Json(TrialBalanceResponse::from(tb)))
 }
+
+#[derive(Deserialize)]
+pub struct CreateDunningPolicyRequest {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct DunningPolicyResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub status: String,
+}
+
+pub async fn create_dunning_policy(
+    State(state): State<AppState>,
+    Json(req): Json<CreateDunningPolicyRequest>,
+) -> ApiResult<Json<DunningPolicyResponse>> {
+    let policy = DunningService::create_policy(&state.pool, &req.name, req.description.as_deref()).await?;
+    Ok(Json(DunningPolicyResponse {
+        id: policy.id,
+        name: policy.name,
+        status: format!("{:?}", policy.status),
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct AddDunningLevelRequest {
+    pub level: String,
+    pub days_overdue: i32,
+    pub fee_percent: f64,
+    pub fee_fixed: i64,
+    pub stop_services: bool,
+    pub send_email: bool,
+}
+
+pub async fn add_dunning_level(
+    State(state): State<AppState>,
+    Path(policy_id): Path<Uuid>,
+    Json(req): Json<AddDunningLevelRequest>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let level = match req.level.as_str() {
+        "FirstNotice" => DunningLevel::FirstNotice,
+        "SecondNotice" => DunningLevel::SecondNotice,
+        "FinalNotice" => DunningLevel::FinalNotice,
+        "Collection" => DunningLevel::Collection,
+        "Legal" => DunningLevel::Legal,
+        _ => DunningLevel::Reminder,
+    };
+    
+    DunningService::add_level(
+        &state.pool,
+        policy_id,
+        level,
+        req.days_overdue,
+        req.fee_percent,
+        req.fee_fixed,
+        req.stop_services,
+        req.send_email,
+    ).await?;
+    
+    Ok(Json(serde_json::json!({ "status": "added" })))
+}
+
+#[derive(Deserialize)]
+pub struct CreateDunningRunRequest {
+    pub policy_id: Uuid,
+}
+
+#[derive(Serialize)]
+pub struct DunningRunResponse {
+    pub id: Uuid,
+    pub run_number: String,
+    pub status: String,
+}
+
+pub async fn create_dunning_run(
+    State(state): State<AppState>,
+    Json(req): Json<CreateDunningRunRequest>,
+) -> ApiResult<Json<DunningRunResponse>> {
+    let run = DunningService::create_run(&state.pool, req.policy_id).await?;
+    Ok(Json(DunningRunResponse {
+        id: run.id,
+        run_number: run.run_number,
+        status: format!("{:?}", run.status),
+    }))
+}
+
+pub async fn execute_dunning_run(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let letters = DunningService::execute_run(&state.pool, id).await?;
+    Ok(Json(serde_json::json!({ "letters_generated": letters.len() })))
+}
+
+#[derive(Serialize)]
+pub struct AgingReportResponse {
+    pub as_of_date: String,
+    pub customers: Vec<AgingLineResponse>,
+}
+
+#[derive(Serialize)]
+pub struct AgingLineResponse {
+    pub customer_id: Uuid,
+    pub customer_name: String,
+    pub current: f64,
+    pub days_31_60: f64,
+    pub days_61_90: f64,
+    pub over_90: f64,
+    pub total: f64,
+}
+
+pub async fn get_aging_report(
+    State(state): State<AppState>,
+) -> ApiResult<Json<AgingReportResponse>> {
+    let report = DunningService::get_aging_report(&state.pool).await?;
+    Ok(Json(AgingReportResponse {
+        as_of_date: report.as_of_date.to_rfc3339(),
+        customers: report.customers.into_iter().map(|c| AgingLineResponse {
+            customer_id: c.customer_id,
+            customer_name: c.customer_name,
+            current: c.current as f64 / 100.0,
+            days_31_60: c.days_31_60 as f64 / 100.0,
+            days_61_90: c.days_61_90 as f64 / 100.0,
+            over_90: c.over_90 as f64 / 100.0,
+            total: c.total as f64 / 100.0,
+        }).collect(),
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct CreateCollectionCaseRequest {
+    pub customer_id: Uuid,
+    pub dunning_letter_id: Option<Uuid>,
+    pub total_amount: i64,
+    pub priority: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct CollectionCaseResponse {
+    pub id: Uuid,
+    pub case_number: String,
+    pub status: String,
+}
+
+pub async fn create_collection_case(
+    State(state): State<AppState>,
+    Json(req): Json<CreateCollectionCaseRequest>,
+) -> ApiResult<Json<CollectionCaseResponse>> {
+    let priority = match req.priority.as_deref() {
+        Some("Low") => CollectionPriority::Low,
+        Some("High") => CollectionPriority::High,
+        Some("Critical") => CollectionPriority::Critical,
+        _ => CollectionPriority::Medium,
+    };
+    
+    let case = DunningService::create_collection_case(
+        &state.pool,
+        req.customer_id,
+        req.dunning_letter_id,
+        req.total_amount,
+        priority,
+    ).await?;
+    
+    Ok(Json(CollectionCaseResponse {
+        id: case.id,
+        case_number: case.case_number,
+        status: format!("{:?}", case.status),
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct AddCollectionActivityRequest {
+    pub activity_type: String,
+    pub description: String,
+    pub result: Option<String>,
+    pub next_action: Option<String>,
+}
+
+pub async fn add_collection_activity(
+    State(state): State<AppState>,
+    Path(case_id): Path<Uuid>,
+    Json(req): Json<AddCollectionActivityRequest>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let activity_type = match req.activity_type.as_str() {
+        "Phone" => CollectionActivityType::Phone,
+        "Email" => CollectionActivityType::Email,
+        "Letter" => CollectionActivityType::Letter,
+        "Meeting" => CollectionActivityType::Meeting,
+        "PaymentPlan" => CollectionActivityType::PaymentPlan,
+        "Settlement" => CollectionActivityType::Settlement,
+        "Legal" => CollectionActivityType::Legal,
+        _ => CollectionActivityType::Note,
+    };
+    
+    DunningService::add_collection_activity(
+        &state.pool,
+        case_id,
+        activity_type,
+        &req.description,
+        None,
+        req.result.as_deref(),
+        req.next_action.as_deref(),
+        None,
+    ).await?;
+    
+    Ok(Json(serde_json::json!({ "status": "added" })))
+}
+
+#[derive(Deserialize)]
+pub struct ListPeriodsQuery {
+    pub fiscal_year_id: Option<Uuid>,
+}
+
+#[derive(Serialize)]
+pub struct PeriodResponse {
+    pub id: Uuid,
+    pub period_number: i32,
+    pub name: String,
+    pub start_date: String,
+    pub end_date: String,
+    pub lock_type: String,
+}
+
+pub async fn list_periods(
+    State(state): State<AppState>,
+    Query(query): Query<ListPeriodsQuery>,
+) -> ApiResult<Json<Vec<PeriodResponse>>> {
+    let fiscal_year_id = query.fiscal_year_id
+        .ok_or_else(|| erp_core::Error::validation("fiscal_year_id is required"))?;
+    
+    let periods = PeriodManagementService::list_periods(&state.pool, fiscal_year_id).await?;
+    Ok(Json(periods.into_iter().map(|p| PeriodResponse {
+        id: p.id,
+        period_number: p.period_number,
+        name: p.name,
+        start_date: p.start_date.to_rfc3339(),
+        end_date: p.end_date.to_rfc3339(),
+        lock_type: format!("{:?}", p.lock_type),
+    }).collect()))
+}
+
+pub async fn create_periods(
+    State(state): State<AppState>,
+    Path(fiscal_year_id): Path<Uuid>,
+) -> ApiResult<Json<Vec<PeriodResponse>>> {
+    let periods = PeriodManagementService::create_periods_for_fiscal_year(&state.pool, fiscal_year_id).await?;
+    Ok(Json(periods.into_iter().map(|p| PeriodResponse {
+        id: p.id,
+        period_number: p.period_number,
+        name: p.name,
+        start_date: p.start_date.to_rfc3339(),
+        end_date: p.end_date.to_rfc3339(),
+        lock_type: format!("{:?}", p.lock_type),
+    }).collect()))
+}
+
+#[derive(Deserialize)]
+pub struct LockPeriodRequest {
+    pub lock_type: String,
+}
+
+pub async fn lock_period(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+    Json(req): Json<LockPeriodRequest>,
+) -> ApiResult<Json<PeriodResponse>> {
+    let lock_type = match req.lock_type.as_str() {
+        "HardClose" => PeriodLockType::HardClose,
+        _ => PeriodLockType::SoftClose,
+    };
+    
+    let period = PeriodManagementService::lock_period(&state.pool, id, lock_type, None).await?;
+    Ok(Json(PeriodResponse {
+        id: period.id,
+        period_number: period.period_number,
+        name: period.name,
+        start_date: period.start_date.to_rfc3339(),
+        end_date: period.end_date.to_rfc3339(),
+        lock_type: format!("{:?}", period.lock_type),
+    }))
+}
+
+pub async fn unlock_period(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<PeriodResponse>> {
+    let period = PeriodManagementService::unlock_period(&state.pool, id).await?;
+    Ok(Json(PeriodResponse {
+        id: period.id,
+        period_number: period.period_number,
+        name: period.name,
+        start_date: period.start_date.to_rfc3339(),
+        end_date: period.end_date.to_rfc3339(),
+        lock_type: format!("{:?}", period.lock_type),
+    }))
+}
+
+#[derive(Deserialize)]
+pub struct CreateChecklistRequest {
+    pub tasks: Vec<ChecklistTaskRequest>,
+}
+
+#[derive(Deserialize)]
+pub struct ChecklistTaskRequest {
+    pub task_name: String,
+    pub description: Option<String>,
+    pub is_required: bool,
+}
+
+pub async fn create_close_checklist(
+    State(state): State<AppState>,
+    Path(period_id): Path<Uuid>,
+    Json(req): Json<CreateChecklistRequest>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let tasks: Vec<(&str, Option<&str>, bool)> = req.tasks.into_iter()
+        .map(|t| (t.task_name.leak(), t.description.as_deref(), t.is_required))
+        .collect();
+    
+    let items = PeriodManagementService::create_close_checklist(&state.pool, period_id, tasks).await?;
+    Ok(Json(serde_json::json!({ "tasks_created": items.len() })))
+}
+
+pub async fn complete_checklist_task(
+    State(state): State<AppState>,
+    Path(task_id): Path<Uuid>,
+) -> ApiResult<Json<serde_json::Value>> {
+    PeriodManagementService::complete_checklist_task(&state.pool, task_id, None).await?;
+    Ok(Json(serde_json::json!({ "status": "completed" })))
+}
+
+#[derive(Deserialize)]
+pub struct CreateRecurringJournalRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub frequency: String,
+    pub interval_value: i32,
+    pub start_date: String,
+    pub end_date: Option<String>,
+    pub auto_post: bool,
+    pub lines: Vec<RecurringLineRequest>,
+}
+
+#[derive(Deserialize)]
+pub struct RecurringLineRequest {
+    pub account_id: Uuid,
+    pub debit: i64,
+    pub credit: i64,
+    pub description: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct RecurringJournalResponse {
+    pub id: Uuid,
+    pub name: String,
+    pub frequency: String,
+    pub next_run_date: Option<String>,
+    pub status: String,
+}
+
+pub async fn list_recurring_journals(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<RecurringJournalResponse>>> {
+    let journals = RecurringJournalService::list(&state.pool).await?;
+    Ok(Json(journals.into_iter().map(|j| RecurringJournalResponse {
+        id: j.id,
+        name: j.name,
+        frequency: format!("{:?}", j.frequency),
+        next_run_date: j.next_run_date.map(|d| d.to_rfc3339()),
+        status: format!("{:?}", j.status),
+    }).collect()))
+}
+
+pub async fn create_recurring_journal(
+    State(state): State<AppState>,
+    Json(req): Json<CreateRecurringJournalRequest>,
+) -> ApiResult<Json<RecurringJournalResponse>> {
+    let frequency = match req.frequency.as_str() {
+        "Daily" => RecurringFrequency::Daily,
+        "Weekly" => RecurringFrequency::Weekly,
+        "Biweekly" => RecurringFrequency::Biweekly,
+        "Quarterly" => RecurringFrequency::Quarterly,
+        "Yearly" => RecurringFrequency::Yearly,
+        _ => RecurringFrequency::Monthly,
+    };
+    
+    let start_date = chrono::DateTime::parse_from_rfc3339(&req.start_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| erp_core::Error::validation("Invalid start date format"))?;
+    
+    let end_date = req.end_date.and_then(|d| {
+        chrono::DateTime::parse_from_rfc3339(&d).ok().map(|d| d.with_timezone(&Utc))
+    });
+    
+    let lines: Vec<(Uuid, i64, i64, Option<&str>)> = req.lines.into_iter()
+        .map(|l| (l.account_id, l.debit, l.credit, None))
+        .collect();
+    
+    let journal = RecurringJournalService::create(
+        &state.pool,
+        &req.name,
+        req.description.as_deref(),
+        frequency,
+        req.interval_value,
+        start_date,
+        end_date,
+        req.auto_post,
+        lines,
+    ).await?;
+    
+    Ok(Json(RecurringJournalResponse {
+        id: journal.id,
+        name: journal.name,
+        frequency: format!("{:?}", journal.frequency),
+        next_run_date: journal.next_run_date.map(|d| d.to_rfc3339()),
+        status: format!("{:?}", journal.status),
+    }))
+}
+
+pub async fn process_recurring_journals(
+    State(state): State<AppState>,
+) -> ApiResult<Json<serde_json::Value>> {
+    let processed = RecurringJournalService::process_due(&state.pool).await?;
+    Ok(Json(serde_json::json!({ "processed": processed.len() })))
+}
+
+pub async fn deactivate_recurring_journal(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<serde_json::Value>> {
+    RecurringJournalService::deactivate(&state.pool, id).await?;
+    Ok(Json(serde_json::json!({ "status": "deactivated" })))

@@ -37,6 +37,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/hr", hr_routes(state.clone()))
         .nest("/service", service_routes(state.clone()))
         .nest("/assets", assets_routes(state.clone()))
+        .nest("/returns", handlers::returns::routes())
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
         .route(
             "/workflows",
@@ -289,6 +290,59 @@ fn finance_routes(state: AppState) -> Router<AppState> {
         .route(
             "/reports/trial-balance",
             get(handlers::finance::get_trial_balance),
+        )
+        .route(
+            "/dunning/policies",
+            post(handlers::finance::create_dunning_policy),
+        )
+        .route(
+            "/dunning/policies/:policy_id/levels",
+            post(handlers::finance::add_dunning_level),
+        )
+        .route("/dunning/runs", post(handlers::finance::create_dunning_run))
+        .route(
+            "/dunning/runs/:id/execute",
+            post(handlers::finance::execute_dunning_run),
+        )
+        .route("/dunning/aging", get(handlers::finance::get_aging_report))
+        .route(
+            "/collections",
+            post(handlers::finance::create_collection_case),
+        )
+        .route(
+            "/collections/:id/activities",
+            post(handlers::finance::add_collection_activity),
+        )
+        .route("/periods", get(handlers::finance::list_periods))
+        .route(
+            "/periods/create/:fiscal_year_id",
+            post(handlers::finance::create_periods),
+        )
+        .route("/periods/:id/lock", post(handlers::finance::lock_period))
+        .route(
+            "/periods/:id/unlock",
+            post(handlers::finance::unlock_period),
+        )
+        .route(
+            "/periods/:id/checklist",
+            post(handlers::finance::create_close_checklist),
+        )
+        .route(
+            "/periods/checklist/:task_id/complete",
+            post(handlers::finance::complete_checklist_task),
+        )
+        .route(
+            "/recurring-journals",
+            get(handlers::finance::list_recurring_journals)
+                .post(handlers::finance::create_recurring_journal),
+        )
+        .route(
+            "/recurring-journals/process",
+            post(handlers::finance::process_recurring_journals),
+        )
+        .route(
+            "/recurring-journals/:id/deactivate",
+            post(handlers::finance::deactivate_recurring_journal),
         )
         .with_state(state)
 }

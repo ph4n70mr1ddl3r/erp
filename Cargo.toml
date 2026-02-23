@@ -11,6 +11,7 @@ members = [
     "erp-projects",
     "erp-service",
     "erp-assets",
+    "erp-returns",
     "erp-api",
 ]
 resolver = "2"
@@ -54,3 +55,4 @@ erp-auth = { path = "erp-auth" }
 erp-projects = { path = "erp-projects" }
 erp-service = { path = "erp-service" }
 erp-assets = { path = "erp-assets" }
+erp-returns = { path = "erp-returns" }

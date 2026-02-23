@@ -2325,6 +2325,1032 @@ pub struct ConsolidatedIncomeStatement {
     pub net_income_attributable_to_nci: i64,
 }
 
+pub struct DunningService;
+
+impl DunningService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_policy(
+        pool: &SqlitePool,
+        name: &str,
+        description: Option<&str>,
+    ) -> Result<DunningPolicy> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        
+        let policy = DunningPolicy {
+            id,
+            name: name.to_string(),
+            description: description.map(|s| s.to_string()),
+            levels: vec![],
+            status: Status::Active,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO dunning_policies (id, name, description, status, created_at)
+             VALUES (?, ?, ?, 'Active', ?)"
+        )
+        .bind(policy.id.to_string())
+        .bind(&policy.name)
+        .bind(&policy.description)
+        .bind(policy.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(policy)
+    }
+
+    pub async fn add_level(
+        pool: &SqlitePool,
+        policy_id: Uuid,
+        level: DunningLevel,
+        days_overdue: i32,
+        fee_percent: f64,
+        fee_fixed: i64,
+        stop_services: bool,
+        send_email: bool,
+    ) -> Result<DunningLevelConfig> {
+        let id = Uuid::new_v4();
+        
+        let config = DunningLevelConfig {
+            id,
+            policy_id,
+            level,
+            days_overdue,
+            fee_percent,
+            fee_fixed,
+            template_id: None,
+            stop_services,
+            send_email,
+        };
+        
+        sqlx::query(
+            "INSERT INTO dunning_level_configs (id, policy_id, level, days_overdue, fee_percent, fee_fixed, template_id, stop_services, send_email)
+             VALUES (?, ?, ?, ?, ?, ?, NULL, ?, ?)"
+        )
+        .bind(config.id.to_string())
+        .bind(config.policy_id.to_string())
+        .bind(format!("{:?}", config.level))
+        .bind(config.days_overdue)
+        .bind(config.fee_percent)
+        .bind(config.fee_fixed)
+        .bind(config.stop_services as i32)
+        .bind(config.send_email as i32)
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(config)
+    }
+
+    pub async fn create_run(
+        pool: &SqlitePool,
+        policy_id: Uuid,
+    ) -> Result<DunningRun> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        let run_number = format!("DUN-{}", now.format("%Y%m%d%H%M%S"));
+        
+        let run = DunningRun {
+            id,
+            run_number,
+            policy_id,
+            run_date: now,
+            status: DunningRunStatus::Draft,
+            customers_processed: 0,
+            total_amount: 0,
+            total_fees: 0,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO dunning_runs (id, run_number, policy_id, run_date, status, customers_processed, total_amount, total_fees, created_at)
+             VALUES (?, ?, ?, ?, 'Draft', 0, 0, 0, ?)"
+        )
+        .bind(run.id.to_string())
+        .bind(&run.run_number)
+        .bind(run.policy_id.to_string())
+        .bind(run.run_date.to_rfc3339())
+        .bind(run.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(run)
+    }
+
+    pub async fn execute_run(pool: &SqlitePool, run_id: Uuid) -> Result<Vec<DunningLetter>> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE dunning_runs SET status = 'Running' WHERE id = ?"
+        )
+        .bind(run_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let overdue_invoices: Vec<OverdueInvoiceRow> = sqlx::query_as(
+            "SELECT i.id as invoice_id, i.customer_id, i.total, i.due_date,
+                    CAST((julianday('now') - julianday(i.due_date)) AS INTEGER) as days_overdue
+             FROM invoices i
+             WHERE i.status = 'Issued' AND i.due_date < datetime('now')
+             ORDER BY i.due_date ASC"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let mut letters = Vec::new();
+        let mut total_amount = 0i64;
+        let mut total_fees = 0i64;
+        let mut customers: std::collections::HashSet<String> = std::collections::HashSet::new();
+        
+        for invoice in overdue_invoices {
+            let level = Self::determine_level(pool, invoice.days_overdue).await?;
+            let customer_id = Uuid::parse_str(&invoice.customer_id).unwrap_or_default();
+            let invoice_id = Uuid::parse_str(&invoice.invoice_id).unwrap_or_default();
+            
+            let letter = DunningLetter {
+                id: Uuid::new_v4(),
+                run_id,
+                customer_id,
+                level: level.clone(),
+                letter_date: now,
+                invoice_ids: vec![invoice_id],
+                invoice_amount: invoice.total,
+                fee_amount: 0,
+                total_amount: invoice.total,
+                sent_at: None,
+                acknowledged_at: None,
+                status: DunningLetterStatus::Generated,
+                created_at: now,
+            };
+            
+            sqlx::query(
+                "INSERT INTO dunning_letters (id, run_id, customer_id, level, letter_date, invoice_amount, fee_amount, total_amount, status, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Generated', ?)"
+            )
+            .bind(letter.id.to_string())
+            .bind(letter.run_id.to_string())
+            .bind(letter.customer_id.to_string())
+            .bind(format!("{:?}", letter.level))
+            .bind(letter.letter_date.to_rfc3339())
+            .bind(letter.invoice_amount)
+            .bind(letter.fee_amount)
+            .bind(letter.total_amount)
+            .bind(letter.created_at.to_rfc3339())
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+            
+            sqlx::query(
+                "INSERT INTO dunning_letter_invoices (letter_id, invoice_id) VALUES (?, ?)"
+            )
+            .bind(letter.id.to_string())
+            .bind(invoice.invoice_id.to_string())
+            .execute(pool)
+            .await
+            .ok();
+            
+            total_amount += invoice.total;
+            customers.insert(invoice.customer_id.to_string());
+            letters.push(letter);
+        }
+        
+        sqlx::query(
+            "UPDATE dunning_runs SET status = 'Completed', customers_processed = ?, total_amount = ?, total_fees = ? WHERE id = ?"
+        )
+        .bind(customers.len() as i32)
+        .bind(total_amount)
+        .bind(total_fees)
+        .bind(run_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(letters)
+    }
+
+    async fn determine_level(pool: &SqlitePool, days_overdue: i64) -> Result<DunningLevel> {
+        let level_row: Option<(String,)> = sqlx::query_as(
+            "SELECT level FROM dunning_level_configs WHERE days_overdue <= ? ORDER BY days_overdue DESC LIMIT 1"
+        )
+        .bind(days_overdue as i32)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(match level_row {
+            Some((level,)) => match level.as_str() {
+                "FirstNotice" => DunningLevel::FirstNotice,
+                "SecondNotice" => DunningLevel::SecondNotice,
+                "FinalNotice" => DunningLevel::FinalNotice,
+                "Collection" => DunningLevel::Collection,
+                "Legal" => DunningLevel::Legal,
+                _ => DunningLevel::Reminder,
+            },
+            None => DunningLevel::Reminder,
+        })
+    }
+
+    pub async fn create_collection_case(
+        pool: &SqlitePool,
+        customer_id: Uuid,
+        dunning_letter_id: Option<Uuid>,
+        total_amount: i64,
+        priority: CollectionPriority,
+    ) -> Result<CollectionCase> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        let case_number = format!("COL-{}", now.format("%Y%m%d%H%M%S"));
+        
+        let case = CollectionCase {
+            id,
+            case_number,
+            customer_id,
+            dunning_letter_id,
+            assigned_to: None,
+            open_date: now,
+            close_date: None,
+            total_amount,
+            collected_amount: 0,
+            status: CollectionCaseStatus::Open,
+            priority,
+            notes: None,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO collection_cases (id, case_number, customer_id, dunning_letter_id, assigned_to, open_date, close_date, total_amount, collected_amount, status, priority, notes, created_at)
+             VALUES (?, ?, ?, ?, NULL, ?, NULL, ?, 0, 'Open', ?, NULL, ?)"
+        )
+        .bind(case.id.to_string())
+        .bind(&case.case_number)
+        .bind(case.customer_id.to_string())
+        .bind(case.dunning_letter_id.map(|id| id.to_string()))
+        .bind(case.open_date.to_rfc3339())
+        .bind(case.total_amount)
+        .bind(format!("{:?}", case.priority))
+        .bind(case.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(case)
+    }
+
+    pub async fn add_collection_activity(
+        pool: &SqlitePool,
+        case_id: Uuid,
+        activity_type: CollectionActivityType,
+        description: &str,
+        performed_by: Option<Uuid>,
+        result: Option<&str>,
+        next_action: Option<&str>,
+        next_action_date: Option<DateTime<Utc>>,
+    ) -> Result<CollectionActivity> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        
+        let activity = CollectionActivity {
+            id,
+            case_id,
+            activity_type,
+            description: description.to_string(),
+            performed_by,
+            performed_at: now,
+            result: result.map(|s| s.to_string()),
+            next_action: next_action.map(|s| s.to_string()),
+            next_action_date,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO collection_activities (id, case_id, activity_type, description, performed_by, performed_at, result, next_action, next_action_date, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(activity.id.to_string())
+        .bind(activity.case_id.to_string())
+        .bind(format!("{:?}", activity.activity_type))
+        .bind(&activity.description)
+        .bind(activity.performed_by.map(|id| id.to_string()))
+        .bind(activity.performed_at.to_rfc3339())
+        .bind(&activity.result)
+        .bind(&activity.next_action)
+        .bind(activity.next_action_date.map(|d| d.to_rfc3339()))
+        .bind(activity.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(activity)
+    }
+
+    pub async fn get_aging_report(pool: &SqlitePool) -> Result<AgingReport> {
+        let rows: Vec<AgingRow> = sqlx::query_as(
+            "SELECT c.id as customer_id, c.name as customer_name,
+                    SUM(CASE WHEN julianday('now') - julianday(i.due_date) BETWEEN 0 AND 30 THEN i.total ELSE 0 END) as current,
+                    SUM(CASE WHEN julianday('now') - julianday(i.due_date) BETWEEN 31 AND 60 THEN i.total ELSE 0 END) as days_31_60,
+                    SUM(CASE WHEN julianday('now') - julianday(i.due_date) BETWEEN 61 AND 90 THEN i.total ELSE 0 END) as days_61_90,
+                    SUM(CASE WHEN julianday('now') - julianday(i.due_date) > 90 THEN i.total ELSE 0 END) as over_90
+             FROM customers c
+             LEFT JOIN invoices i ON c.id = i.customer_id AND i.status = 'Issued' AND i.due_date < datetime('now')
+             GROUP BY c.id, c.name
+             HAVING SUM(i.total) > 0"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(AgingReport {
+            as_of_date: chrono::Utc::now(),
+            customers: rows.into_iter().map(|r| AgingLine {
+                customer_id: Uuid::parse_str(&r.customer_id).unwrap_or_default(),
+                customer_name: r.customer_name,
+                current: r.current,
+                days_31_60: r.days_31_60,
+                days_61_90: r.days_61_90,
+                over_90: r.over_90,
+                total: r.current + r.days_31_60 + r.days_61_90 + r.over_90,
+            }).collect(),
+        })
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct OverdueInvoiceRow {
+    invoice_id: String,
+    customer_id: String,
+    total: i64,
+    due_date: String,
+    days_overdue: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgingReport {
+    pub as_of_date: DateTime<Utc>,
+    pub customers: Vec<AgingLine>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgingLine {
+    pub customer_id: Uuid,
+    pub customer_name: String,
+    pub current: i64,
+    pub days_31_60: i64,
+    pub days_61_90: i64,
+    pub over_90: i64,
+    pub total: i64,
+}
+
+#[derive(sqlx::FromRow)]
+struct AgingRow {
+    customer_id: String,
+    customer_name: String,
+    current: i64,
+    days_31_60: i64,
+    days_61_90: i64,
+    over_90: i64,
+}
+
+pub struct PeriodManagementService;
+
+impl PeriodManagementService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_periods_for_fiscal_year(
+        pool: &SqlitePool,
+        fiscal_year_id: Uuid,
+    ) -> Result<Vec<AccountingPeriod>> {
+        let fy_row: (String, String) = sqlx::query_as(
+            "SELECT start_date, end_date FROM fiscal_years WHERE id = ?"
+        )
+        .bind(fiscal_year_id.to_string())
+        .fetch_one(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let start = chrono::DateTime::parse_from_rfc3339(&fy_row.0)
+            .map(|d| d.with_timezone(&chrono::Utc))
+            .map_err(|_| Error::validation("Invalid start date"))?;
+        let end = chrono::DateTime::parse_from_rfc3339(&fy_row.1)
+            .map(|d| d.with_timezone(&chrono::Utc))
+            .map_err(|_| Error::validation("Invalid end date"))?;
+        
+        let mut periods = Vec::new();
+        let mut period_start = start;
+        let mut period_num = 1;
+        
+        while period_start < end {
+            let period_end = (period_start + chrono::Months::new(1)).min(end);
+            let now = chrono::Utc::now();
+            let id = Uuid::new_v4();
+            
+            let period = AccountingPeriod {
+                id,
+                fiscal_year_id,
+                period_number: period_num,
+                name: format!("Period {} - {}", period_num, period_start.format("%b %Y")),
+                start_date: period_start,
+                end_date: period_end,
+                lock_type: PeriodLockType::Open,
+                locked_at: None,
+                locked_by: None,
+                created_at: now,
+            };
+            
+            sqlx::query(
+                "INSERT INTO accounting_periods (id, fiscal_year_id, period_number, name, start_date, end_date, lock_type, locked_at, locked_by, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, 'Open', NULL, NULL, ?)"
+            )
+            .bind(period.id.to_string())
+            .bind(period.fiscal_year_id.to_string())
+            .bind(period.period_number)
+            .bind(&period.name)
+            .bind(period.start_date.to_rfc3339())
+            .bind(period.end_date.to_rfc3339())
+            .bind(period.created_at.to_rfc3339())
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+            
+            periods.push(period);
+            period_start = period_end;
+            period_num += 1;
+        }
+        
+        Ok(periods)
+    }
+
+    pub async fn lock_period(
+        pool: &SqlitePool,
+        period_id: Uuid,
+        lock_type: PeriodLockType,
+        locked_by: Option<Uuid>,
+    ) -> Result<AccountingPeriod> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE accounting_periods SET lock_type = ?, locked_at = ?, locked_by = ? WHERE id = ?"
+        )
+        .bind(format!("{:?}", lock_type))
+        .bind(now.to_rfc3339())
+        .bind(locked_by.map(|id| id.to_string()))
+        .bind(period_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_period(pool, period_id).await
+    }
+
+    pub async fn unlock_period(pool: &SqlitePool, period_id: Uuid) -> Result<AccountingPeriod> {
+        sqlx::query(
+            "UPDATE accounting_periods SET lock_type = 'Open', locked_at = NULL, locked_by = NULL WHERE id = ?"
+        )
+        .bind(period_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Self::get_period(pool, period_id).await
+    }
+
+    pub async fn get_period(pool: &SqlitePool, id: Uuid) -> Result<AccountingPeriod> {
+        let row = sqlx::query_as::<_, PeriodRow>(
+            "SELECT id, fiscal_year_id, period_number, name, start_date, end_date, lock_type, locked_at, locked_by, created_at
+             FROM accounting_periods WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("AccountingPeriod", &id.to_string()))?;
+        
+        Ok(row.into())
+    }
+
+    pub async fn list_periods(pool: &SqlitePool, fiscal_year_id: Uuid) -> Result<Vec<AccountingPeriod>> {
+        let rows = sqlx::query_as::<_, PeriodRow>(
+            "SELECT id, fiscal_year_id, period_number, name, start_date, end_date, lock_type, locked_at, locked_by, created_at
+             FROM accounting_periods WHERE fiscal_year_id = ? ORDER BY period_number"
+        )
+        .bind(fiscal_year_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn is_period_locked(pool: &SqlitePool, date: DateTime<Utc>) -> Result<bool> {
+        let lock_type: Option<(String,)> = sqlx::query_as(
+            "SELECT lock_type FROM accounting_periods WHERE date(?) >= date(start_date) AND date(?) <= date(end_date)"
+        )
+        .bind(date.to_rfc3339())
+        .bind(date.to_rfc3339())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(match lock_type {
+            Some((lt,)) => lt == "HardClose",
+            None => false,
+        })
+    }
+
+    pub async fn create_close_checklist(
+        pool: &SqlitePool,
+        period_id: Uuid,
+        tasks: Vec<(&str, Option<&str>, bool)>,
+    ) -> Result<Vec<PeriodCloseChecklist>> {
+        let now = chrono::Utc::now();
+        let mut items = Vec::new();
+        
+        for (idx, (task_name, description, is_required)) in tasks.into_iter().enumerate() {
+            let id = Uuid::new_v4();
+            
+            let item = PeriodCloseChecklist {
+                id,
+                period_id,
+                task_name: task_name.to_string(),
+                description: description.map(|s| s.to_string()),
+                task_order: idx as i32 + 1,
+                is_required,
+                completed: false,
+                completed_at: None,
+                completed_by: None,
+                created_at: now,
+            };
+            
+            sqlx::query(
+                "INSERT INTO period_close_checklists (id, period_id, task_name, description, task_order, is_required, completed, completed_at, completed_by, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, 0, NULL, NULL, ?)"
+            )
+            .bind(item.id.to_string())
+            .bind(item.period_id.to_string())
+            .bind(&item.task_name)
+            .bind(&item.description)
+            .bind(item.task_order)
+            .bind(item.is_required as i32)
+            .bind(item.created_at.to_rfc3339())
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+            
+            items.push(item);
+        }
+        
+        Ok(items)
+    }
+
+    pub async fn complete_checklist_task(
+        pool: &SqlitePool,
+        task_id: Uuid,
+        completed_by: Option<Uuid>,
+    ) -> Result<PeriodCloseChecklist> {
+        let now = chrono::Utc::now();
+        
+        sqlx::query(
+            "UPDATE period_close_checklists SET completed = 1, completed_at = ?, completed_by = ? WHERE id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(completed_by.map(|id| id.to_string()))
+        .bind(task_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let row = sqlx::query_as::<_, ChecklistRow>(
+            "SELECT id, period_id, task_name, description, task_order, is_required, completed, completed_at, completed_by, created_at
+             FROM period_close_checklists WHERE id = ?"
+        )
+        .bind(task_id.to_string())
+        .fetch_one(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(row.into())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct PeriodRow {
+    id: String,
+    fiscal_year_id: String,
+    period_number: i64,
+    name: String,
+    start_date: String,
+    end_date: String,
+    lock_type: String,
+    locked_at: Option<String>,
+    locked_by: Option<String>,
+    created_at: String,
+}
+
+impl From<PeriodRow> for AccountingPeriod {
+    fn from(r: PeriodRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            fiscal_year_id: Uuid::parse_str(&r.fiscal_year_id).unwrap_or_default(),
+            period_number: r.period_number as i32,
+            name: r.name,
+            start_date: chrono::DateTime::parse_from_rfc3339(&r.start_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            end_date: chrono::DateTime::parse_from_rfc3339(&r.end_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            lock_type: match r.lock_type.as_str() {
+                "SoftClose" => PeriodLockType::SoftClose,
+                "HardClose" => PeriodLockType::HardClose,
+                _ => PeriodLockType::Open,
+            },
+            locked_at: r.locked_at.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            locked_by: r.locked_by.and_then(|id| Uuid::parse_str(&id).ok()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct ChecklistRow {
+    id: String,
+    period_id: String,
+    task_name: String,
+    description: Option<String>,
+    task_order: i64,
+    is_required: i64,
+    completed: i64,
+    completed_at: Option<String>,
+    completed_by: Option<String>,
+    created_at: String,
+}
+
+impl From<ChecklistRow> for PeriodCloseChecklist {
+    fn from(r: ChecklistRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            period_id: Uuid::parse_str(&r.period_id).unwrap_or_default(),
+            task_name: r.task_name,
+            description: r.description,
+            task_order: r.task_order as i32,
+            is_required: r.is_required != 0,
+            completed: r.completed != 0,
+            completed_at: r.completed_at.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            completed_by: r.completed_by.and_then(|id| Uuid::parse_str(&id).ok()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+pub struct RecurringJournalService;
+
+impl RecurringJournalService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create(
+        pool: &SqlitePool,
+        name: &str,
+        description: Option<&str>,
+        frequency: RecurringFrequency,
+        interval_value: i32,
+        start_date: DateTime<Utc>,
+        end_date: Option<DateTime<Utc>>,
+        auto_post: bool,
+        lines: Vec<(Uuid, i64, i64, Option<&str>)>,
+    ) -> Result<RecurringJournal> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        
+        let journal = RecurringJournal {
+            id,
+            name: name.to_string(),
+            description: description.map(|s| s.to_string()),
+            frequency,
+            interval_value,
+            day_of_month: None,
+            day_of_week: None,
+            start_date,
+            end_date,
+            next_run_date: Some(start_date),
+            last_run_date: None,
+            lines: vec![],
+            auto_post,
+            status: Status::Active,
+            created_at: now,
+            updated_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO recurring_journals (id, name, description, frequency, interval_value, day_of_month, day_of_week, start_date, end_date, next_run_date, last_run_date, auto_post, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, NULL, NULL, ?, ?, ?, NULL, ?, 'Active', ?, ?)"
+        )
+        .bind(journal.id.to_string())
+        .bind(&journal.name)
+        .bind(&journal.description)
+        .bind(format!("{:?}", journal.frequency))
+        .bind(journal.interval_value)
+        .bind(journal.start_date.to_rfc3339())
+        .bind(journal.end_date.map(|d| d.to_rfc3339()))
+        .bind(journal.next_run_date.map(|d| d.to_rfc3339()))
+        .bind(journal.auto_post as i32)
+        .bind(journal.created_at.to_rfc3339())
+        .bind(journal.updated_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let mut journal_lines = Vec::new();
+        for (account_id, debit, credit, line_desc) in lines {
+            let line_id = Uuid::new_v4();
+            let line = RecurringJournalLine {
+                id: line_id,
+                recurring_journal_id: id,
+                account_id,
+                debit,
+                credit,
+                description: line_desc.map(|s| s.to_string()),
+            };
+            
+            sqlx::query(
+                "INSERT INTO recurring_journal_lines (id, recurring_journal_id, account_id, debit, credit, description)
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            )
+            .bind(line.id.to_string())
+            .bind(line.recurring_journal_id.to_string())
+            .bind(line.account_id.to_string())
+            .bind(line.debit)
+            .bind(line.credit)
+            .bind(&line.description)
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+            
+            journal_lines.push(line);
+        }
+        
+        let mut journal = journal;
+        journal.lines = journal_lines;
+        Ok(journal)
+    }
+
+    pub async fn get(pool: &SqlitePool, id: Uuid) -> Result<RecurringJournal> {
+        let row = sqlx::query_as::<_, RecurringJournalRow>(
+            "SELECT id, name, description, frequency, interval_value, day_of_month, day_of_week, start_date, end_date, next_run_date, last_run_date, auto_post, status, created_at, updated_at
+             FROM recurring_journals WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("RecurringJournal", &id.to_string()))?;
+        
+        let lines = Self::get_lines(pool, id).await?;
+        Ok(row.into_journal(lines))
+    }
+
+    async fn get_lines(pool: &SqlitePool, journal_id: Uuid) -> Result<Vec<RecurringJournalLine>> {
+        let rows = sqlx::query_as::<_, RecurringJournalLineRow>(
+            "SELECT id, recurring_journal_id, account_id, debit, credit, description FROM recurring_journal_lines WHERE recurring_journal_id = ?"
+        )
+        .bind(journal_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn list(pool: &SqlitePool) -> Result<Vec<RecurringJournal>> {
+        let rows = sqlx::query_as::<_, RecurringJournalRow>(
+            "SELECT id, name, description, frequency, interval_value, day_of_month, day_of_week, start_date, end_date, next_run_date, last_run_date, auto_post, status, created_at, updated_at
+             FROM recurring_journals WHERE status = 'Active' ORDER BY name"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let mut journals = Vec::new();
+        for row in rows {
+            let lines = Self::get_lines(pool, Uuid::parse_str(&row.id).unwrap_or_default()).await?;
+            journals.push(row.into_journal(lines));
+        }
+        
+        Ok(journals)
+    }
+
+    pub async fn process_due(pool: &SqlitePool) -> Result<Vec<(Uuid, Uuid)>> {
+        let now = chrono::Utc::now();
+        
+        let due_journals: Vec<(String, String)> = sqlx::query_as(
+            "SELECT id, next_run_date FROM recurring_journals WHERE status = 'Active' AND date(next_run_date) <= date('now') AND (end_date IS NULL OR date(end_date) >= date('now'))"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        let mut processed = Vec::new();
+        
+        for (journal_id_str, next_run_str) in due_journals {
+            let journal_id = Uuid::parse_str(&journal_id_str).unwrap_or_default();
+            let journal = Self::get(pool, journal_id).await?;
+            
+            let je_id = Self::create_journal_entry(pool, &journal).await?;
+            processed.push((journal_id, je_id));
+            
+            let next_run = Self::calculate_next_run(&journal);
+            sqlx::query(
+                "UPDATE recurring_journals SET last_run_date = next_run_date, next_run_date = ?, updated_at = ? WHERE id = ?"
+            )
+            .bind(next_run.to_rfc3339())
+            .bind(now.to_rfc3339())
+            .bind(journal_id.to_string())
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+        }
+        
+        Ok(processed)
+    }
+
+    async fn create_journal_entry(pool: &SqlitePool, journal: &RecurringJournal) -> Result<Uuid> {
+        let now = chrono::Utc::now();
+        let je_id = Uuid::new_v4();
+        let entry_number = format!("JE-{}", now.format("%Y%m%d%H%M%S"));
+        
+        let description = format!("Recurring: {}", journal.name);
+        
+        sqlx::query(
+            "INSERT INTO journal_entries (id, entry_number, date, description, reference, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, NULL, ?, ?, ?)"
+        )
+        .bind(je_id.to_string())
+        .bind(&entry_number)
+        .bind(now.to_rfc3339())
+        .bind(&description)
+        .bind(if journal.auto_post { "Completed" } else { "Draft" })
+        .bind(now.to_rfc3339())
+        .bind(now.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        for line in &journal.lines {
+            let line_id = Uuid::new_v4();
+            sqlx::query(
+                "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            )
+            .bind(line_id.to_string())
+            .bind(je_id.to_string())
+            .bind(line.account_id.to_string())
+            .bind(line.debit)
+            .bind(line.credit)
+            .bind(&line.description)
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+        }
+        
+        let run_id = Uuid::new_v4();
+        sqlx::query(
+            "INSERT INTO recurring_journal_runs (id, recurring_journal_id, run_date, journal_entry_id, status, created_at)
+             VALUES (?, ?, ?, ?, 'Active', ?)"
+        )
+        .bind(run_id.to_string())
+        .bind(journal.id.to_string())
+        .bind(now.to_rfc3339())
+        .bind(je_id.to_string())
+        .bind(now.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(je_id)
+    }
+
+    fn calculate_next_run(journal: &RecurringJournal) -> DateTime<Utc> {
+        let current = journal.next_run_date.unwrap_or_else(chrono::Utc::now);
+        
+        match journal.frequency {
+            RecurringFrequency::Daily => current + chrono::Duration::days(journal.interval_value as i64),
+            RecurringFrequency::Weekly => current + chrono::Duration::weeks(journal.interval_value as i64),
+            RecurringFrequency::Biweekly => current + chrono::Duration::weeks(2 * journal.interval_value as i64),
+            RecurringFrequency::Monthly => current + chrono::Months::new(journal.interval_value as u32),
+            RecurringFrequency::Quarterly => current + chrono::Months::new(3 * journal.interval_value as u32),
+            RecurringFrequency::Yearly => {
+                let months = journal.interval_value as i32 * 12;
+                current + chrono::Duration::days((months * 30) as i64)
+            }
+        }
+    }
+
+    pub async fn deactivate(pool: &SqlitePool, id: Uuid) -> Result<()> {
+        let now = chrono::Utc::now();
+        sqlx::query(
+            "UPDATE recurring_journals SET status = 'Inactive', updated_at = ? WHERE id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+        
+        Ok(())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct RecurringJournalRow {
+    id: String,
+    name: String,
+    description: Option<String>,
+    frequency: String,
+    interval_value: i64,
+    day_of_month: Option<i64>,
+    day_of_week: Option<i64>,
+    start_date: String,
+    end_date: Option<String>,
+    next_run_date: Option<String>,
+    last_run_date: Option<String>,
+    auto_post: i64,
+    status: String,
+    created_at: String,
+    updated_at: String,
+}
+
+impl RecurringJournalRow {
+    fn into_journal(self, lines: Vec<RecurringJournalLine>) -> RecurringJournal {
+        RecurringJournal {
+            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+            name: self.name,
+            description: self.description,
+            frequency: match self.frequency.as_str() {
+                "Weekly" => RecurringFrequency::Weekly,
+                "Biweekly" => RecurringFrequency::Biweekly,
+                "Monthly" => RecurringFrequency::Monthly,
+                "Quarterly" => RecurringFrequency::Quarterly,
+                "Yearly" => RecurringFrequency::Yearly,
+                _ => RecurringFrequency::Daily,
+            },
+            interval_value: self.interval_value as i32,
+            day_of_month: self.day_of_month.map(|d| d as i32),
+            day_of_week: self.day_of_week.map(|d| d as i32),
+            start_date: chrono::DateTime::parse_from_rfc3339(&self.start_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            end_date: self.end_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            next_run_date: self.next_run_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            last_run_date: self.last_run_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+                .map(|d| d.with_timezone(&chrono::Utc)),
+            lines,
+            auto_post: self.auto_post != 0,
+            status: if self.status == "Inactive" { Status::Inactive } else { Status::Active },
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct RecurringJournalLineRow {
+    id: String,
+    recurring_journal_id: String,
+    account_id: String,
+    debit: i64,
+    credit: i64,
+    description: Option<String>,
+}
+
+impl From<RecurringJournalLineRow> for RecurringJournalLine {
+    fn from(r: RecurringJournalLineRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            recurring_journal_id: Uuid::parse_str(&r.recurring_journal_id).unwrap_or_default(),
+            account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),
+            debit: r.debit,
+            credit: r.credit,
+            description: r.description,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

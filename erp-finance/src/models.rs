@@ -593,3 +593,239 @@ pub struct EliminationEntry {
     pub journal_entry_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum DunningLevel {
+    Reminder,
+    FirstNotice,
+    SecondNotice,
+    FinalNotice,
+    Collection,
+    Legal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningPolicy {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub levels: Vec<DunningLevelConfig>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningLevelConfig {
+    pub id: Uuid,
+    pub policy_id: Uuid,
+    pub level: DunningLevel,
+    pub days_overdue: i32,
+    pub fee_percent: f64,
+    pub fee_fixed: i64,
+    pub template_id: Option<Uuid>,
+    pub stop_services: bool,
+    pub send_email: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningRun {
+    pub id: Uuid,
+    pub run_number: String,
+    pub policy_id: Uuid,
+    pub run_date: DateTime<Utc>,
+    pub status: DunningRunStatus,
+    pub customers_processed: i32,
+    pub total_amount: i64,
+    pub total_fees: i64,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum DunningRunStatus {
+    Draft,
+    Running,
+    Completed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DunningLetter {
+    pub id: Uuid,
+    pub run_id: Uuid,
+    pub customer_id: Uuid,
+    pub level: DunningLevel,
+    pub letter_date: DateTime<Utc>,
+    pub invoice_ids: Vec<Uuid>,
+    pub invoice_amount: i64,
+    pub fee_amount: i64,
+    pub total_amount: i64,
+    pub sent_at: Option<DateTime<Utc>>,
+    pub acknowledged_at: Option<DateTime<Utc>>,
+    pub status: DunningLetterStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum DunningLetterStatus {
+    Generated,
+    Sent,
+    Acknowledged,
+    Paid,
+    Escalated,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionCase {
+    pub id: Uuid,
+    pub case_number: String,
+    pub customer_id: Uuid,
+    pub dunning_letter_id: Option<Uuid>,
+    pub assigned_to: Option<Uuid>,
+    pub open_date: DateTime<Utc>,
+    pub close_date: Option<DateTime<Utc>>,
+    pub total_amount: i64,
+    pub collected_amount: i64,
+    pub status: CollectionCaseStatus,
+    pub priority: CollectionPriority,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CollectionCaseStatus {
+    Open,
+    InProgress,
+    Negotiating,
+    PartialPayment,
+    Settled,
+    WrittenOff,
+    LegalAction,
+    Closed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CollectionPriority {
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CollectionActivity {
+    pub id: Uuid,
+    pub case_id: Uuid,
+    pub activity_type: CollectionActivityType,
+    pub description: String,
+    pub performed_by: Option<Uuid>,
+    pub performed_at: DateTime<Utc>,
+    pub result: Option<String>,
+    pub next_action: Option<String>,
+    pub next_action_date: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CollectionActivityType {
+    Phone,
+    Email,
+    Letter,
+    Meeting,
+    PaymentPlan,
+    Settlement,
+    Legal,
+    Note,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountingPeriod {
+    pub id: Uuid,
+    pub fiscal_year_id: Uuid,
+    pub period_number: i32,
+    pub name: String,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub lock_type: PeriodLockType,
+    pub locked_at: Option<DateTime<Utc>>,
+    pub locked_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum PeriodLockType {
+    Open,
+    SoftClose,
+    HardClose,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PeriodCloseChecklist {
+    pub id: Uuid,
+    pub period_id: Uuid,
+    pub task_name: String,
+    pub description: Option<String>,
+    pub task_order: i32,
+    pub is_required: bool,
+    pub completed: bool,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub completed_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecurringJournal {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub frequency: RecurringFrequency,
+    pub interval_value: i32,
+    pub day_of_month: Option<i32>,
+    pub day_of_week: Option<i32>,
+    pub start_date: DateTime<Utc>,
+    pub end_date: Option<DateTime<Utc>>,
+    pub next_run_date: Option<DateTime<Utc>>,
+    pub last_run_date: Option<DateTime<Utc>>,
+    pub lines: Vec<RecurringJournalLine>,
+    pub auto_post: bool,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum RecurringFrequency {
+    Daily,
+    Weekly,
+    Biweekly,
+    Monthly,
+    Quarterly,
+    Yearly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecurringJournalLine {
+    pub id: Uuid,
+    pub recurring_journal_id: Uuid,
+    pub account_id: Uuid,
+    pub debit: i64,
+    pub credit: i64,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecurringJournalRun {
+    pub id: Uuid,
+    pub recurring_journal_id: Uuid,
+    pub run_date: DateTime<Utc>,
+    pub journal_entry_id: Uuid,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}

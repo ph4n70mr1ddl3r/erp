@@ -389,6 +389,7 @@ dependencies = [
  "erp-manufacturing",
  "erp-projects",
  "erp-purchasing",
+ "erp-returns",
  "erp-sales",
  "erp-service",
  "http-body-util",
@@ -563,6 +564,22 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-returns"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
