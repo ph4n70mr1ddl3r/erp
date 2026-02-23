@@ -15,7 +15,9 @@ import {
   Headphones,
   Monitor,
   Folder,
-  Shield
+  Shield,
+  CreditCard,
+  Globe
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -36,6 +38,8 @@ const navItems = [
   { path: '/service', icon: Headphones, label: 'Service Desk' },
   { path: '/assets', icon: Monitor, label: 'IT Assets' },
   { path: '/compliance', icon: Shield, label: 'Compliance' },
+  { path: '/pos', icon: CreditCard, label: 'POS' },
+  { path: '/ecommerce', icon: Globe, label: 'E-Commerce' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

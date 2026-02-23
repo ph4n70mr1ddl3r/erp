@@ -15,6 +15,11 @@ pub mod service;
 pub mod assets;
 pub mod projects;
 pub mod returns;
+pub mod pos;
+pub mod ecommerce;
+pub mod tax;
+pub mod reports;
+pub mod barcode;
 
 use axum::{extract::State, Json};
 use serde_json::json;

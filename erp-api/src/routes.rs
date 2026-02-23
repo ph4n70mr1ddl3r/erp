@@ -38,6 +38,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/service", service_routes(state.clone()))
         .nest("/assets", assets_routes(state.clone()))
         .nest("/returns", handlers::returns::routes())
+        .nest("/pos", handlers::pos::routes())
+        .nest("/ecommerce", handlers::ecommerce::routes())
+        .nest("/tax", handlers::tax::routes())
+        .nest("/reports", handlers::reports::routes())
+        .nest("/barcodes", handlers::barcode::routes())
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
         .route(
             "/workflows",

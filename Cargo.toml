@@ -12,6 +12,11 @@ members = [
     "erp-service",
     "erp-assets",
     "erp-returns",
+    "erp-pos",
+    "erp-ecommerce",
+    "erp-tax",
+    "erp-reports",
+    "erp-barcode",
     "erp-api",
 ]
 resolver = "2"
@@ -56,3 +61,8 @@ erp-projects = { path = "erp-projects" }
 erp-service = { path = "erp-service" }
 erp-assets = { path = "erp-assets" }
 erp-returns = { path = "erp-returns" }
+erp-pos = { path = "erp-pos" }
+erp-ecommerce = { path = "erp-ecommerce" }
+erp-tax = { path = "erp-tax" }
+erp-reports = { path = "erp-reports" }
+erp-barcode = { path = "erp-barcode" }

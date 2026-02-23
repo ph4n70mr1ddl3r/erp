@@ -35,6 +35,11 @@ erp-service.workspace = true
 erp-assets.workspace = true
 erp-projects.workspace = true
 erp-returns.workspace = true
+erp-pos.workspace = true
+erp-ecommerce.workspace = true
+erp-tax.workspace = true
+erp-reports.workspace = true
+erp-barcode.workspace = true
 once_cell.workspace = true
 http-body-util = "0.1"
 

@@ -17,6 +17,8 @@ import ServiceDesk from './pages/ServiceDesk';
 import ITAssets from './pages/ITAssets';
 import Compliance from './pages/Compliance';
 import Projects from './pages/Projects';
+import POS from './pages/POS';
+import Ecommerce from './pages/Ecommerce';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -51,6 +53,8 @@ function AppRoutes() {
       <Route path="/assets" element={<PrivateRoute><ITAssets /></PrivateRoute>} />
       <Route path="/compliance" element={<PrivateRoute><Compliance /></PrivateRoute>} />
       <Route path="/projects" element={<PrivateRoute><Projects /></PrivateRoute>} />
+      <Route path="/pos" element={<PrivateRoute><POS /></PrivateRoute>} />
+      <Route path="/ecommerce" element={<PrivateRoute><Ecommerce /></PrivateRoute>} />
     </Routes>
   );
 }
