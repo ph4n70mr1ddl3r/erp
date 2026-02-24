@@ -50,6 +50,12 @@ pub mod bulk_operations;
 pub mod archival;
 pub mod websocket;
 pub mod rbac;
+pub mod cpq;
+pub mod clm;
+pub mod commission;
+pub mod aps;
+pub mod spend_analytics;
+pub mod compensation;
 
 use axum::{extract::State, Json};
 use serde_json::json;

@@ -224,6 +224,12 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/backup", handlers::backup::routes())
         .nest("/monitoring", handlers::monitoring::routes())
         .nest("/rbac", handlers::rbac::routes())
+        .nest("/cpq", handlers::cpq::routes())
+        .nest("/clm", handlers::clm::routes())
+        .nest("/commission", handlers::commission::routes())
+        .nest("/aps", handlers::aps::routes())
+        .nest("/spend-analytics", handlers::spend_analytics::routes())
+        .nest("/compensation", handlers::compensation::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

@@ -49,6 +49,12 @@ members = [
     "erp-keys",
     "erp-backup",
     "erp-monitoring",
+    "erp-cpq",
+    "erp-clm",
+    "erp-commission",
+    "erp-aps",
+    "erp-spend-analytics",
+    "erp-compensation",
     "erp-api",
 ]
 resolver = "2"
@@ -130,6 +136,12 @@ erp-features = { path = "erp-features" }
 erp-keys = { path = "erp-keys" }
 erp-backup = { path = "erp-backup" }
 erp-monitoring = { path = "erp-monitoring" }
+erp-cpq = { path = "erp-cpq" }
+erp-clm = { path = "erp-clm" }
+erp-commission = { path = "erp-commission" }
+erp-aps = { path = "erp-aps" }
+erp-spend-analytics = { path = "erp-spend-analytics" }
+erp-compensation = { path = "erp-compensation" }
 reqwest = { version = "0.11", features = ["json"] }
 hmac = "0.12"
 hex = "0.4"
