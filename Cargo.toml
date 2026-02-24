@@ -28,6 +28,11 @@ members = [
     "erp-expenses",
     "erp-learning",
     "erp-grc",
+    "erp-notifications",
+    "erp-webhooks",
+    "erp-jobs",
+    "erp-integration",
+    "erp-templates",
     "erp-api",
 ]
 resolver = "2"
@@ -88,3 +93,15 @@ erp-planning = { path = "erp-planning" }
 erp-expenses = { path = "erp-expenses" }
 erp-learning = { path = "erp-learning" }
 erp-grc = { path = "erp-grc" }
+erp-notifications = { path = "erp-notifications" }
+erp-webhooks = { path = "erp-webhooks" }
+erp-jobs = { path = "erp-jobs" }
+erp-integration = { path = "erp-integration" }
+erp-templates = { path = "erp-templates" }
+reqwest = { version = "0.11", features = ["json"] }
+hmac = "0.12"
+hex = "0.4"
+cron = "0.12"
+base64 = "0.22"
+regex = "1.10"
+handlebars = "5.1"

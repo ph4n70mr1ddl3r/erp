@@ -24,6 +24,11 @@ pub mod ai;
 pub mod portals;
 pub mod iot;
 pub mod automation;
+pub mod notifications;
+pub mod webhooks;
+pub mod jobs;
+pub mod integration;
+pub mod templates;
 
 use axum::{extract::State, Json};
 use serde_json::json;

@@ -59,7 +59,7 @@ pub enum DifficultyLevel {
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "TEXT")]
 pub enum EnrollmentType {
-    Self,
+    SelfDirected,
     Manager,
     Admin,
     Automatic,

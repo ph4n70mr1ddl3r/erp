@@ -189,6 +189,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .route("/import", post(handlers::import_export::import_csv))
         .nest("/compliance", compliance_routes(state.clone()))
         .nest("/projects", projects_routes(state.clone()))
+        .nest("/notifications", handlers::notifications::routes())
+        .nest("/webhooks", handlers::webhooks::routes())
+        .nest("/jobs", handlers::jobs::routes())
+        .nest("/integration", handlers::integration::routes())
+        .nest("/templates", handlers::templates::routes())
 }
 
 fn compliance_routes(state: AppState) -> Router<AppState> {

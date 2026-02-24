@@ -44,6 +44,11 @@ erp-ai.workspace = true
 erp-portals.workspace = true
 erp-iot.workspace = true
 erp-automation.workspace = true
+erp-notifications.workspace = true
+erp-webhooks.workspace = true
+erp-jobs.workspace = true
+erp-integration.workspace = true
+erp-templates.workspace = true
 once_cell.workspace = true
 http-body-util = "0.1"
 
