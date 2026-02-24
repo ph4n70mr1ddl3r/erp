@@ -60,6 +60,13 @@ members = [
     "erp-mdm",
     "erp-fsm",
     "erp-tpm",
+    "erp-wms",
+    "erp-demand",
+    "erp-edi",
+    "erp-tenant",
+    "erp-revrec",
+    "erp-intercompany",
+    "erp-lms",
     "erp-api",
 ]
 resolver = "2"
@@ -152,6 +159,13 @@ erp-plm = { path = "erp-plm" }
 erp-mdm = { path = "erp-mdm" }
 erp-fsm = { path = "erp-fsm" }
 erp-tpm = { path = "erp-tpm" }
+erp-wms = { path = "erp-wms" }
+erp-demand = { path = "erp-demand" }
+erp-edi = { path = "erp-edi" }
+erp-tenant = { path = "erp-tenant" }
+erp-revrec = { path = "erp-revrec" }
+erp-intercompany = { path = "erp-intercompany" }
+erp-lms = { path = "erp-lms" }
 reqwest = { version = "0.11", features = ["json"] }
 hmac = "0.12"
 hex = "0.4"

@@ -235,6 +235,13 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/mdm", mdm_routes())
         .nest("/fsm", fsm_routes())
         .nest("/tpm", tpm_routes())
+        .nest("/wms", handlers::wms::routes())
+        .nest("/demand", handlers::demand::routes())
+        .nest("/edi", handlers::edi::routes())
+        .nest("/tenants", handlers::tenant::routes())
+        .nest("/revrec", handlers::revrec::routes())
+        .nest("/intercompany", handlers::intercompany::routes())
+        .nest("/lms", handlers::lms::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

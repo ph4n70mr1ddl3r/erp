@@ -61,6 +61,13 @@ pub mod plm;
 pub mod mdm;
 pub mod fsm;
 pub mod tpm;
+pub mod wms;
+pub mod demand;
+pub mod edi;
+pub mod tenant;
+pub mod revrec;
+pub mod intercompany;
+pub mod lms;
 
 use axum::{extract::State, Json};
 use serde_json::json;

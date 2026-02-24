@@ -449,18 +449,22 @@ dependencies = [
  "erp-config",
  "erp-core",
  "erp-cpq",
+ "erp-demand",
  "erp-documents",
  "erp-ecommerce",
+ "erp-edi",
  "erp-enterprise",
  "erp-features",
  "erp-finance",
  "erp-fsm",
  "erp-hr",
  "erp-integration",
+ "erp-intercompany",
  "erp-inventory",
  "erp-iot",
  "erp-jobs",
  "erp-keys",
+ "erp-lms",
  "erp-manufacturing",
  "erp-mdm",
  "erp-monitoring",
@@ -474,6 +478,7 @@ dependencies = [
  "erp-purchasing",
  "erp-reports",
  "erp-returns",
+ "erp-revrec",
  "erp-risk",
  "erp-rules",
  "erp-sales",
@@ -485,9 +490,11 @@ dependencies = [
  "erp-subscription",
  "erp-tax",
  "erp-templates",
+ "erp-tenant",
  "erp-tms",
  "erp-tpm",
  "erp-webhooks",
+ "erp-wms",
  "futures",
  "http-body-util",
  "once_cell",
@@ -730,6 +737,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-demand"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-documents"
 version = "0.1.0"
 dependencies = [
@@ -748,6 +771,22 @@ dependencies = [
 
 [[package]]
 name = "erp-ecommerce"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-edi"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -893,6 +932,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-intercompany"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-inventory"
 version = "0.1.0"
 dependencies = [
@@ -971,6 +1026,22 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "uuid",
+]
+
+[[package]]
+name = "erp-lms"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
  "uuid",
 ]
 
@@ -1225,6 +1296,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-revrec"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-risk"
 version = "0.1.0"
 dependencies = [
@@ -1427,6 +1514,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-tenant"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-tms"
 version = "0.1.0"
 dependencies = [
@@ -1485,6 +1588,22 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-wms"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
