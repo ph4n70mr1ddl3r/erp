@@ -1,0 +1,21 @@
+[package]
+name = "erp-payments"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+erp-core.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+reqwest.workspace = true
+sha2.workspace = true
+hmac.workspace = true
+hex.workspace = true
+base64.workspace = true
+anyhow.workspace = true

@@ -34,6 +34,11 @@ pub mod integration;
 pub mod templates;
 pub mod rules;
 pub mod sourcing;
+pub mod company;
+pub mod subscription;
+pub mod shipping;
+pub mod payments;
+pub mod risk;
 
 use axum::{extract::State, Json};
 use serde_json::json;

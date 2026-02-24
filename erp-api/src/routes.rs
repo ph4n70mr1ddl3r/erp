@@ -199,6 +199,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/sourcing", handlers::sourcing::routes())
         .nest("/config", handlers::config::routes())
         .nest("/rules", handlers::rules::routes())
+        .nest("/company", handlers::company::routes())
+        .nest("/subscription", handlers::subscription::routes())
+        .nest("/shipping", handlers::shipping::routes())
+        .nest("/payments", handlers::payments::routes())
+        .nest("/risk", handlers::risk::routes())
 }
 
 fn compliance_routes(state: AppState) -> Router<AppState> {

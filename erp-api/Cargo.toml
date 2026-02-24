@@ -54,6 +54,11 @@ erp-pricing.workspace = true
 erp-sourcing.workspace = true
 erp-config.workspace = true
 erp-rules.workspace = true
+erp-company.workspace = true
+erp-subscription.workspace = true
+erp-shipping.workspace = true
+erp-payments.workspace = true
+erp-risk.workspace = true
 once_cell.workspace = true
 http-body-util = "0.1"
 

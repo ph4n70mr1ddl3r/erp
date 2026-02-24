@@ -440,6 +440,7 @@ dependencies = [
  "erp-auth",
  "erp-automation",
  "erp-barcode",
+ "erp-company",
  "erp-config",
  "erp-core",
  "erp-documents",
@@ -452,6 +453,7 @@ dependencies = [
  "erp-jobs",
  "erp-manufacturing",
  "erp-notifications",
+ "erp-payments",
  "erp-portals",
  "erp-pos",
  "erp-pricing",
@@ -459,10 +461,13 @@ dependencies = [
  "erp-purchasing",
  "erp-reports",
  "erp-returns",
+ "erp-risk",
  "erp-rules",
  "erp-sales",
  "erp-service",
+ "erp-shipping",
  "erp-sourcing",
+ "erp-subscription",
  "erp-tax",
  "erp-templates",
  "erp-webhooks",
@@ -545,6 +550,22 @@ dependencies = [
  "chrono",
  "erp-core",
  "rand",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-company"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
  "serde",
  "serde_json",
  "sqlx",
@@ -796,6 +817,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-payments"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "chrono",
+ "erp-core",
+ "hex",
+ "hmac",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-planning"
 version = "0.1.0"
 dependencies = [
@@ -941,6 +983,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-risk"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-rules"
 version = "0.1.0"
 dependencies = [
@@ -993,6 +1051,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-shipping"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-sourcing"
 version = "0.1.0"
 dependencies = [
@@ -1007,6 +1081,22 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-subscription"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
