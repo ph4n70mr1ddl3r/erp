@@ -39,6 +39,12 @@ pub mod subscription;
 pub mod shipping;
 pub mod payments;
 pub mod risk;
+pub mod security;
+pub mod search;
+pub mod email_templates;
+pub mod bulk_operations;
+pub mod archival;
+pub mod websocket;
 
 use axum::{extract::State, Json};
 use serde_json::json;

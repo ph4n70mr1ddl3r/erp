@@ -2,7 +2,7 @@ use crate::db::AppState;
 use crate::handlers;
 use axum::{
     middleware,
-    routing::{get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use tower_http::limit::RequestBodyLimitLayer;
@@ -13,7 +13,17 @@ pub fn create_router(state: AppState) -> Router {
     let public_routes = Router::new()
         .route("/health", get(handlers::health))
         .route("/auth/register", post(handlers::auth::register))
-        .route("/auth/login", post(handlers::auth::login));
+        .route("/auth/login", post(handlers::auth::login))
+        .route("/ws", get(handlers::websocket::websocket_handler))
+        .route(
+            "/oauth/authorize",
+            get(handlers::security::get_oauth_authorize_url),
+        )
+        .route("/oauth/callback", get(handlers::security::oauth_callback))
+        .route(
+            "/oauth/providers",
+            get(handlers::security::list_oauth_providers),
+        );
 
     let protected_routes = Router::new()
         .route("/auth/me", get(handlers::auth::me))
@@ -204,6 +214,12 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/shipping", handlers::shipping::routes())
         .nest("/payments", handlers::payments::routes())
         .nest("/risk", handlers::risk::routes())
+        .nest("/security", security_routes())
+        .nest("/search", search_routes())
+        .nest("/email", email_routes())
+        .nest("/bulk", bulk_routes())
+        .nest("/archival", archival_routes())
+        .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
 fn compliance_routes(state: AppState) -> Router<AppState> {
@@ -576,4 +592,116 @@ fn assets_routes(state: AppState) -> Router<AppState> {
             get(handlers::assets::expiring_licenses),
         )
         .with_state(state)
+}
+
+fn security_routes() -> Router<AppState> {
+    Router::new()
+        .route("/2fa/setup", post(handlers::security::setup_two_factor))
+        .route("/2fa/verify", post(handlers::security::verify_two_factor))
+        .route(
+            "/2fa/status",
+            get(handlers::security::get_two_factor_status),
+        )
+        .route("/2fa/disable", post(handlers::security::disable_two_factor))
+        .route(
+            "/2fa/backup-codes",
+            post(handlers::security::regenerate_backup_codes),
+        )
+        .route("/oauth/link", post(handlers::security::link_oauth_account))
+        .route(
+            "/oauth/connections",
+            get(handlers::security::get_oauth_connections),
+        )
+        .route(
+            "/oauth/connections/:id",
+            delete(handlers::security::unlink_oauth_account),
+        )
+        .route("/sessions", get(handlers::security::get_user_sessions))
+        .route("/sessions/:id", delete(handlers::security::revoke_session))
+        .route(
+            "/sessions/all",
+            delete(handlers::security::revoke_all_sessions),
+        )
+}
+
+fn search_routes() -> Router<AppState> {
+    Router::new()
+        .route("/", get(handlers::search::search))
+        .route("/index", post(handlers::search::index_entity))
+        .route(
+            "/index/:entity_type/:entity_id",
+            delete(handlers::search::remove_from_index),
+        )
+        .route("/rebuild", post(handlers::search::rebuild_index))
+        .route("/stats", get(handlers::search::search_stats))
+}
+
+fn email_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/templates",
+            get(handlers::email_templates::list_templates)
+                .post(handlers::email_templates::create_template),
+        )
+        .route(
+            "/templates/:name",
+            get(handlers::email_templates::get_template)
+                .put(handlers::email_templates::update_template)
+                .delete(handlers::email_templates::delete_template),
+        )
+        .route("/queue", post(handlers::email_templates::queue_email))
+        .route(
+            "/queue/pending",
+            get(handlers::email_templates::get_pending_emails),
+        )
+        .route(
+            "/queue/stats",
+            get(handlers::email_templates::get_email_queue_stats),
+        )
+}
+
+fn bulk_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/",
+            get(handlers::bulk_operations::list_operations)
+                .post(handlers::bulk_operations::create_operation),
+        )
+        .route(
+            "/:id",
+            get(handlers::bulk_operations::get_operation)
+                .delete(handlers::bulk_operations::cancel_operation),
+        )
+        .route(
+            "/cleanup",
+            delete(handlers::bulk_operations::cleanup_operations),
+        )
+}
+
+fn archival_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/policies",
+            get(handlers::archival::list_retention_policies)
+                .post(handlers::archival::create_retention_policy),
+        )
+        .route(
+            "/policies/:entity_type",
+            get(handlers::archival::get_retention_policy),
+        )
+        .route(
+            "/records",
+            get(handlers::archival::list_archived_records).post(handlers::archival::archive_record),
+        )
+        .route(
+            "/records/:id",
+            get(handlers::archival::get_archived_record)
+                .delete(handlers::archival::delete_archived_record),
+        )
+        .route(
+            "/records/:id/restore",
+            post(handlers::archival::restore_record),
+        )
+        .route("/purge", post(handlers::archival::purge_expired))
+        .route("/stats", get(handlers::archival::archival_stats))
 }

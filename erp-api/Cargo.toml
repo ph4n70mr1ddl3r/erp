@@ -59,7 +59,10 @@ erp-subscription.workspace = true
 erp-shipping.workspace = true
 erp-payments.workspace = true
 erp-risk.workspace = true
+erp-security.workspace = true
+erp-enterprise.workspace = true
 once_cell.workspace = true
+futures = "0.3"
 http-body-util = "0.1"
 
 [dev-dependencies]

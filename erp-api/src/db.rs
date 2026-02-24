@@ -1,11 +1,13 @@
 use sqlx::SqlitePool;
 use std::sync::Arc;
 use crate::Config;
+use crate::handlers::websocket::WebSocketManager;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
     pub config: Arc<Config>,
+    pub ws_manager: WebSocketManager,
 }
 
 impl AppState {
@@ -17,6 +19,7 @@ impl AppState {
         Ok(Self {
             pool,
             config: Arc::new(config),
+            ws_manager: WebSocketManager::new(),
         })
     }
 }
@@ -48,6 +51,7 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240101000022_enterprise_integration_features.sql"),
         include_str!("../../migrations/20240101000023_new_enterprise_features.sql"),
         include_str!("../../migrations/20240101000024_enterprise_features_expansion.sql"),
+        include_str!("../../migrations/20240101000025_enterprise_security_features.sql"),
     ];
     
     for migration in migration_queries {
