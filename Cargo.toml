@@ -33,6 +33,11 @@ members = [
     "erp-jobs",
     "erp-integration",
     "erp-templates",
+    "erp-documents",
+    "erp-pricing",
+    "erp-sourcing",
+    "erp-config",
+    "erp-rules",
     "erp-api",
 ]
 resolver = "2"
@@ -98,6 +103,11 @@ erp-webhooks = { path = "erp-webhooks" }
 erp-jobs = { path = "erp-jobs" }
 erp-integration = { path = "erp-integration" }
 erp-templates = { path = "erp-templates" }
+erp-documents = { path = "erp-documents" }
+erp-pricing = { path = "erp-pricing" }
+erp-sourcing = { path = "erp-sourcing" }
+erp-config = { path = "erp-config" }
+erp-rules = { path = "erp-rules" }
 reqwest = { version = "0.11", features = ["json"] }
 hmac = "0.12"
 hex = "0.4"

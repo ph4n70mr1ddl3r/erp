@@ -194,6 +194,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/jobs", handlers::jobs::routes())
         .nest("/integration", handlers::integration::routes())
         .nest("/templates", handlers::templates::routes())
+        .nest("/documents", handlers::documents::routes())
+        .nest("/pricing", handlers::pricing::routes())
+        .nest("/sourcing", handlers::sourcing::routes())
+        .nest("/config", handlers::config::routes())
+        .nest("/rules", handlers::rules::routes())
 }
 
 fn compliance_routes(state: AppState) -> Router<AppState> {

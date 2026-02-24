@@ -19,6 +19,11 @@ import Compliance from './pages/Compliance';
 import Projects from './pages/Projects';
 import POS from './pages/POS';
 import Ecommerce from './pages/Ecommerce';
+import Documents from './pages/Documents';
+import Pricing from './pages/Pricing';
+import Sourcing from './pages/Sourcing';
+import ConfigPage from './pages/Config';
+import RulesPage from './pages/Rules';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -55,6 +60,11 @@ function AppRoutes() {
       <Route path="/projects" element={<PrivateRoute><Projects /></PrivateRoute>} />
       <Route path="/pos" element={<PrivateRoute><POS /></PrivateRoute>} />
       <Route path="/ecommerce" element={<PrivateRoute><Ecommerce /></PrivateRoute>} />
+      <Route path="/documents" element={<PrivateRoute><Documents /></PrivateRoute>} />
+      <Route path="/pricing" element={<PrivateRoute><Pricing /></PrivateRoute>} />
+      <Route path="/sourcing" element={<PrivateRoute><Sourcing /></PrivateRoute>} />
+      <Route path="/config" element={<PrivateRoute><ConfigPage /></PrivateRoute>} />
+      <Route path="/rules" element={<PrivateRoute><RulesPage /></PrivateRoute>} />
     </Routes>
   );
 }

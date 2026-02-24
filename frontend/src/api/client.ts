@@ -596,3 +596,109 @@ export const notifications = {
   markAllRead: () => api.post('/api/v1/notifications/read'),
   unreadCount: () => api.get<{ count: number }>('/api/v1/notifications/unread-count'),
 };
+
+// Documents
+export const documents = {
+  listFolders: (parentId?: string | null) => 
+    api.get(`/api/v1/documents/folders${parentId ? `?parent_id=${parentId}` : ''}`),
+  createFolder: (data: { name: string; parent_id?: string | null; description?: string }) =>
+    api.post('/api/v1/documents/folders', data),
+  listDocuments: (folderId?: string | null) =>
+    api.get(`/api/v1/documents/documents${folderId ? `?folder_id=${folderId}` : ''}`),
+  createDocument: (data: { title: string; file_name: string; file_path: string; file_size: number; mime_type: string; checksum: string; folder_id?: string | null }) =>
+    api.post('/api/v1/documents/documents', data),
+  checkout: (id: string, userId: string) =>
+    api.post(`/api/v1/documents/documents/${id}/checkout`, { user_id: userId }),
+  checkin: (checkoutId: string) =>
+    api.post('/api/v1/documents/documents/checkin', { checkout_id: checkoutId }),
+  requestReview: (documentId: string, version: number, reviewerId: string) =>
+    api.post('/api/v1/documents/documents/review', { document_id: documentId, version, reviewer_id: reviewerId }),
+  createRetentionPolicy: (data: { name: string; retention_years: number; disposition: string }) =>
+    api.post('/api/v1/documents/retention-policies', data),
+};
+
+// Pricing
+export const pricing = {
+  listPriceBooks: () => api.get('/api/v1/pricing/price-books'),
+  createPriceBook: (data: { name: string; code: string; currency: string }) =>
+    api.post('/api/v1/pricing/price-books', data),
+  setProductPrice: (data: { price_book_id: string; product_id: string; unit_price: number; currency: string }) =>
+    api.post('/api/v1/pricing/prices', data),
+  calculatePrice: (data: { price_book_id: string; product_id: string; quantity: number }) =>
+    api.post('/api/v1/pricing/prices/calculate', data),
+  listDiscounts: () => api.get('/api/v1/pricing/discounts'),
+  createDiscount: (data: { name: string; code: string; discount_type: string; value: number; requires_code: boolean }) =>
+    api.post('/api/v1/pricing/discounts', data),
+  validateDiscount: (code: string) =>
+    api.post('/api/v1/pricing/discounts/validate', { code }),
+  createCoupon: (data: { code: string; discount_id: string }) =>
+    api.post('/api/v1/pricing/coupons', data),
+  listPromotions: () => api.get('/api/v1/pricing/promotions'),
+  createPromotion: (data: { name: string; code: string; start_date: string; end_date: string; rules: string; rewards: string }) =>
+    api.post('/api/v1/pricing/promotions', data),
+  createPriceTier: (data: { product_id: string; min_quantity: number; max_quantity?: number; unit_price: number; currency: string }) =>
+    api.post('/api/v1/pricing/price-tiers', data),
+};
+
+// Sourcing
+export const sourcing = {
+  listEvents: () => api.get('/api/v1/sourcing/events'),
+  createEvent: (data: { title: string; event_type: string; start_date: string; end_date: string; currency: string; estimated_value: number }) =>
+    api.post('/api/v1/sourcing/events', data),
+  getEvent: (id: string) => api.get(`/api/v1/sourcing/events/${id}`),
+  publishEvent: (id: string) => api.post(`/api/v1/sourcing/events/${id}/publish`),
+  addItem: (data: { event_id: string; name: string; quantity: number; unit_of_measure: string; target_price?: number }) =>
+    api.post('/api/v1/sourcing/items', data),
+  submitBid: (data: { event_id: string; vendor_id: string; total_amount: number; currency: string }) =>
+    api.post('/api/v1/sourcing/bids', data),
+  listBids: (eventId: string) => api.get(`/api/v1/sourcing/bids/${eventId}`),
+  acceptBid: (id: string) => api.post(`/api/v1/sourcing/bids/${id}/accept`),
+  awardBid: (data: { event_id: string; bid_id: string; vendor_id: string; total_value: number; currency: string }) =>
+    api.post('/api/v1/sourcing/award', data),
+  inviteSupplier: (data: { event_id: string; vendor_id: string }) =>
+    api.post('/api/v1/sourcing/invite', data),
+};
+
+// Config
+export const config = {
+  listConfigs: (category?: string) =>
+    api.get(`/api/v1/config/configs${category ? `?category=${category}` : ''}`),
+  setConfig: (data: { category: string; key: string; value: string }) =>
+    api.post('/api/v1/config/configs', data),
+  getConfig: (category: string, key: string) =>
+    api.get(`/api/v1/config/configs/${category}/${key}`),
+  deleteConfig: (id: string) => api.delete(`/api/v1/config/configs/${id}`),
+  getCompanySettings: () => api.get('/api/v1/config/company'),
+  updateCompanySettings: (data: { company_name: string; currency: string; timezone: string }) =>
+    api.post('/api/v1/config/company', data),
+  createSequence: (data: { name: string; code: string; prefix?: string; padding: number }) =>
+    api.post('/api/v1/config/sequences', data),
+  getNextNumber: (code: string) => api.get(`/api/v1/config/sequences/${code}/next`),
+  getAuditSettings: () => api.get('/api/v1/config/audit'),
+  updateAuditSettings: (data: { log_retention_days: number; max_login_attempts: number; require_mfa: boolean }) =>
+    api.post('/api/v1/config/audit', data),
+  listIntegrations: () => api.get('/api/v1/config/integrations'),
+};
+
+// Rules
+export const rules = {
+  listRules: (entityType?: string) =>
+    api.get(`/api/v1/rules/rules${entityType ? `?entity_type=${entityType}` : ''}`),
+  createRule: (data: { name: string; code: string; entity_type: string; conditions: string; actions: string; rule_type?: string }) =>
+    api.post('/api/v1/rules/rules', data),
+  getRule: (id: string) => api.get(`/api/v1/rules/rules/${id}`),
+  deleteRule: (id: string) => api.delete(`/api/v1/rules/rules/${id}`),
+  executeRules: (data: { entity_type: string; entity_id: string; context: Record<string, unknown> }) =>
+    api.post('/api/v1/rules/rules/execute', data),
+  listRulesets: () => api.get('/api/v1/rules/rulesets'),
+  createRuleset: (data: { name: string; code: string; entity_type: string; execution_mode?: string }) =>
+    api.post('/api/v1/rules/rulesets', data),
+  addRuleToRuleset: (data: { ruleset_id: string; rule_id: string; sort_order: number }) =>
+    api.post('/api/v1/rules/rulesets/add-rule', data),
+  createDecisionTable: (data: { name: string; code: string; entity_type: string; input_columns: string; output_columns: string }) =>
+    api.post('/api/v1/rules/decision-tables', data),
+  addDecisionRow: (data: { table_id: string; row_number: number; inputs: string; outputs: string }) =>
+    api.post('/api/v1/rules/decision-tables/rows', data),
+  evaluateTable: (data: { table_id: string; inputs: Record<string, unknown> }) =>
+    api.post('/api/v1/rules/decision-tables/evaluate', data),
+};

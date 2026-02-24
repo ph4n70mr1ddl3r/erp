@@ -440,7 +440,9 @@ dependencies = [
  "erp-auth",
  "erp-automation",
  "erp-barcode",
+ "erp-config",
  "erp-core",
+ "erp-documents",
  "erp-ecommerce",
  "erp-finance",
  "erp-hr",
@@ -452,12 +454,15 @@ dependencies = [
  "erp-notifications",
  "erp-portals",
  "erp-pos",
+ "erp-pricing",
  "erp-projects",
  "erp-purchasing",
  "erp-reports",
  "erp-returns",
+ "erp-rules",
  "erp-sales",
  "erp-service",
+ "erp-sourcing",
  "erp-tax",
  "erp-templates",
  "erp-webhooks",
@@ -549,6 +554,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-config"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "erp-core"
 version = "0.1.0"
 dependencies = [
@@ -558,6 +580,23 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
+name = "erp-documents"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
@@ -806,6 +845,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-pricing"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "erp-projects"
 version = "0.1.0"
 dependencies = [
@@ -885,6 +941,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-rules"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
 name = "erp-sales"
 version = "0.1.0"
 dependencies = [
@@ -904,6 +977,23 @@ dependencies = [
 
 [[package]]
 name = "erp-service"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+ "validator",
+]
+
+[[package]]
+name = "erp-sourcing"
 version = "0.1.0"
 dependencies = [
  "anyhow",

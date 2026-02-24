@@ -17,7 +17,12 @@ import {
   Folder,
   Shield,
   CreditCard,
-  Globe
+  Globe,
+  FileText,
+  DollarSign,
+  Gavel,
+  Settings,
+  Zap
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -40,6 +45,11 @@ const navItems = [
   { path: '/compliance', icon: Shield, label: 'Compliance' },
   { path: '/pos', icon: CreditCard, label: 'POS' },
   { path: '/ecommerce', icon: Globe, label: 'E-Commerce' },
+  { path: '/documents', icon: FileText, label: 'Documents' },
+  { path: '/pricing', icon: DollarSign, label: 'Pricing' },
+  { path: '/sourcing', icon: Gavel, label: 'Sourcing' },
+  { path: '/config', icon: Settings, label: 'Settings' },
+  { path: '/rules', icon: Zap, label: 'Rules' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

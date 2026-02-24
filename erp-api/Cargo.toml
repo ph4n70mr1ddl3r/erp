@@ -49,6 +49,11 @@ erp-webhooks.workspace = true
 erp-jobs.workspace = true
 erp-integration.workspace = true
 erp-templates.workspace = true
+erp-documents.workspace = true
+erp-pricing.workspace = true
+erp-sourcing.workspace = true
+erp-config.workspace = true
+erp-rules.workspace = true
 once_cell.workspace = true
 http-body-util = "0.1"
 
