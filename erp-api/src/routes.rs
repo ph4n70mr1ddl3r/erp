@@ -219,6 +219,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/email", email_routes())
         .nest("/bulk", bulk_routes())
         .nest("/archival", archival_routes())
+        .nest("/features", handlers::features::routes())
+        .nest("/keys", handlers::keys::routes())
+        .nest("/backup", handlers::backup::routes())
+        .nest("/monitoring", handlers::monitoring::routes())
+        .nest("/rbac", handlers::rbac::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

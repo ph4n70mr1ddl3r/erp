@@ -1,13 +1,17 @@
 pub mod audit;
 pub mod attachment;
 pub mod auth;
+pub mod backup;
 pub mod compliance;
 pub mod config;
 pub mod documents;
 pub mod extended;
+pub mod features;
 pub mod finance;
 pub mod import_export;
 pub mod inventory;
+pub mod keys;
+pub mod monitoring;
 pub mod pricing;
 pub mod purchasing;
 pub mod manufacturing;
@@ -45,6 +49,7 @@ pub mod email_templates;
 pub mod bulk_operations;
 pub mod archival;
 pub mod websocket;
+pub mod rbac;
 
 use axum::{extract::State, Json};
 use serde_json::json;
