@@ -55,6 +55,11 @@ members = [
     "erp-aps",
     "erp-spend-analytics",
     "erp-compensation",
+    "erp-tms",
+    "erp-plm",
+    "erp-mdm",
+    "erp-fsm",
+    "erp-tpm",
     "erp-api",
 ]
 resolver = "2"
@@ -142,6 +147,11 @@ erp-commission = { path = "erp-commission" }
 erp-aps = { path = "erp-aps" }
 erp-spend-analytics = { path = "erp-spend-analytics" }
 erp-compensation = { path = "erp-compensation" }
+erp-tms = { path = "erp-tms" }
+erp-plm = { path = "erp-plm" }
+erp-mdm = { path = "erp-mdm" }
+erp-fsm = { path = "erp-fsm" }
+erp-tpm = { path = "erp-tpm" }
 reqwest = { version = "0.11", features = ["json"] }
 hmac = "0.12"
 hex = "0.4"

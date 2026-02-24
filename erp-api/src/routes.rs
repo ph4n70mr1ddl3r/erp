@@ -230,6 +230,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/aps", handlers::aps::routes())
         .nest("/spend-analytics", handlers::spend_analytics::routes())
         .nest("/compensation", handlers::compensation::routes())
+        .nest("/tms", tms_routes())
+        .nest("/plm", plm_routes())
+        .nest("/mdm", mdm_routes())
+        .nest("/fsm", fsm_routes())
+        .nest("/tpm", tpm_routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
@@ -715,4 +720,136 @@ fn archival_routes() -> Router<AppState> {
         )
         .route("/purge", post(handlers::archival::purge_expired))
         .route("/stats", get(handlers::archival::archival_stats))
+}
+
+fn tms_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/vehicles",
+            get(handlers::tms::list_vehicles).post(handlers::tms::create_vehicle),
+        )
+        .route("/vehicles/:id", get(handlers::tms::get_vehicle))
+        .route(
+            "/drivers",
+            get(handlers::tms::list_drivers).post(handlers::tms::create_driver),
+        )
+        .route("/drivers/:id", get(handlers::tms::get_driver))
+        .route(
+            "/loads",
+            get(handlers::tms::list_loads).post(handlers::tms::create_load),
+        )
+        .route("/loads/:id", get(handlers::tms::get_load))
+        .route("/loads/:id/assign", post(handlers::tms::assign_load))
+        .route("/loads/:id/dispatch", post(handlers::tms::dispatch_load))
+        .route("/loads/:id/deliver", post(handlers::tms::deliver_load))
+        .route("/routes/optimize", post(handlers::tms::optimize_route))
+        .route(
+            "/freight-invoices/:id/audit",
+            post(handlers::tms::audit_freight_invoice),
+        )
+}
+
+fn plm_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/items",
+            get(handlers::plm::list_items).post(handlers::plm::create_item),
+        )
+        .route("/items/:id", get(handlers::plm::get_item))
+        .route("/items/:id/release", post(handlers::plm::release_item))
+        .route("/ecrs", post(handlers::plm::create_ecr))
+        .route("/ecrs/:id/submit", post(handlers::plm::submit_ecr))
+        .route("/ecrs/:id/approve", post(handlers::plm::approve_ecr))
+        .route("/ecrs/:id/reject", post(handlers::plm::reject_ecr))
+        .route("/boms", post(handlers::plm::create_bom))
+        .route("/specifications", post(handlers::plm::create_specification))
+        .route("/design-reviews", post(handlers::plm::create_design_review))
+}
+
+fn mdm_routes() -> Router<AppState> {
+    Router::new()
+        .route("/golden-records", post(handlers::mdm::create_golden_record))
+        .route("/golden-records/:id", get(handlers::mdm::get_golden_record))
+        .route("/quality-rules", post(handlers::mdm::create_quality_rule))
+        .route("/quality-check/:id", post(handlers::mdm::run_quality_check))
+        .route(
+            "/violations/:id/resolve",
+            post(handlers::mdm::resolve_violation),
+        )
+        .route("/duplicates/find", post(handlers::mdm::find_duplicates))
+        .route("/merge", post(handlers::mdm::merge_records))
+        .route(
+            "/dashboard/:entity_type",
+            get(handlers::mdm::get_quality_dashboard),
+        )
+        .route("/import-jobs", post(handlers::mdm::create_import_job))
+        .route(
+            "/import-jobs/:id/start",
+            post(handlers::mdm::start_import_job),
+        )
+}
+
+fn fsm_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/orders",
+            get(handlers::fsm::list_service_orders).post(handlers::fsm::create_service_order),
+        )
+        .route("/orders/:id", get(handlers::fsm::get_service_order))
+        .route("/orders/dispatch", post(handlers::fsm::dispatch_order))
+        .route("/orders/:id/start", post(handlers::fsm::start_service))
+        .route(
+            "/orders/:id/complete",
+            post(handlers::fsm::complete_service),
+        )
+        .route("/orders/:id/feedback", post(handlers::fsm::record_feedback))
+        .route(
+            "/technicians",
+            get(handlers::fsm::list_technicians).post(handlers::fsm::create_technician),
+        )
+        .route("/routes/optimize", post(handlers::fsm::optimize_route))
+        .route(
+            "/technicians/find",
+            post(handlers::fsm::find_available_technician),
+        )
+}
+
+fn tpm_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/promotions",
+            get(handlers::tpm::list_promotions).post(handlers::tpm::create_promotion),
+        )
+        .route("/promotions/:id", get(handlers::tpm::get_promotion))
+        .route(
+            "/promotions/:id/activate",
+            post(handlers::tpm::activate_promotion),
+        )
+        .route(
+            "/promotions/:id/performance",
+            post(handlers::tpm::calculate_promotion_performance),
+        )
+        .route(
+            "/rebate-agreements",
+            post(handlers::tpm::create_rebate_agreement),
+        )
+        .route(
+            "/rebate-agreements/:id",
+            get(handlers::tpm::get_rebate_agreement),
+        )
+        .route(
+            "/rebate-agreements/:id/calculate",
+            post(handlers::tpm::calculate_rebate),
+        )
+        .route(
+            "/rebate-agreements/:id/payment",
+            post(handlers::tpm::process_rebate_payment),
+        )
+        .route("/chargebacks", post(handlers::tpm::submit_chargeback))
+        .route(
+            "/chargebacks/:id/review",
+            post(handlers::tpm::review_chargeback),
+        )
+        .route("/funds", post(handlers::tpm::create_trade_fund))
+        .route("/funds/:id/commit", post(handlers::tpm::commit_fund))
 }

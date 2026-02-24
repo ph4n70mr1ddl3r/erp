@@ -56,6 +56,11 @@ pub mod commission;
 pub mod aps;
 pub mod spend_analytics;
 pub mod compensation;
+pub mod tms;
+pub mod plm;
+pub mod mdm;
+pub mod fsm;
+pub mod tpm;
 
 use axum::{extract::State, Json};
 use serde_json::json;

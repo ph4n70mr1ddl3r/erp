@@ -454,6 +454,7 @@ dependencies = [
  "erp-enterprise",
  "erp-features",
  "erp-finance",
+ "erp-fsm",
  "erp-hr",
  "erp-integration",
  "erp-inventory",
@@ -461,9 +462,11 @@ dependencies = [
  "erp-jobs",
  "erp-keys",
  "erp-manufacturing",
+ "erp-mdm",
  "erp-monitoring",
  "erp-notifications",
  "erp-payments",
+ "erp-plm",
  "erp-portals",
  "erp-pos",
  "erp-pricing",
@@ -482,6 +485,8 @@ dependencies = [
  "erp-subscription",
  "erp-tax",
  "erp-templates",
+ "erp-tms",
+ "erp-tpm",
  "erp-webhooks",
  "futures",
  "http-body-util",
@@ -823,6 +828,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-fsm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-grc"
 version = "0.1.0"
 dependencies = [
@@ -972,6 +993,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-mdm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "regex",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-monitoring"
 version = "0.1.0"
 dependencies = [
@@ -1034,6 +1072,22 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "uuid",
+]
+
+[[package]]
+name = "erp-plm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
  "uuid",
 ]
 
@@ -1364,6 +1418,38 @@ dependencies = [
  "erp-core",
  "handlebars",
  "regex",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-tms"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-tpm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
  "serde",
  "serde_json",
  "sqlx",
