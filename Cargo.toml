@@ -81,6 +81,12 @@ members = [
     "erp-predictive",
     "erp-mrp",
     "erp-eam",
+    "erp-budgeting",
+    "erp-grant",
+    "erp-abc",
+    "erp-knowledge",
+    "erp-helpdesk",
+    "erp-dataquality",
     "erp-api",
 ]
 resolver = "2"

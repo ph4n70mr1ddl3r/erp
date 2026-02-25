@@ -410,6 +410,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
+name = "erp-abc"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
 name = "erp-ai"
 version = "0.1.0"
 dependencies = [
@@ -648,6 +662,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-budgeting"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
 name = "erp-calendar"
 version = "0.1.0"
 dependencies = [
@@ -796,6 +824,21 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-dataquality"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "regex",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "uuid",
 ]
 
 [[package]]
@@ -976,6 +1019,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-grant"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "uuid",
+]
+
+[[package]]
 name = "erp-grc"
 version = "0.1.0"
 dependencies = [
@@ -984,6 +1041,20 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "uuid",
+]
+
+[[package]]
+name = "erp-helpdesk"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
@@ -1107,6 +1178,20 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-knowledge"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
  "uuid",
 ]
 
