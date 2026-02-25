@@ -68,6 +68,11 @@ pub mod tenant;
 pub mod revrec;
 pub mod intercompany;
 pub mod lms;
+pub mod reportscheduling;
+pub mod chat;
+pub mod calendar;
+pub mod signing;
+pub mod email;
 
 use axum::{extract::State, Json};
 use serde_json::json;

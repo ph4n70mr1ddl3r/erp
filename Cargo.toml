@@ -67,6 +67,11 @@ members = [
     "erp-revrec",
     "erp-intercompany",
     "erp-lms",
+    "erp-reportscheduling",
+    "erp-chat",
+    "erp-calendar",
+    "erp-signing",
+    "erp-email",
     "erp-api",
 ]
 resolver = "2"
@@ -166,6 +171,11 @@ erp-tenant = { path = "erp-tenant" }
 erp-revrec = { path = "erp-revrec" }
 erp-intercompany = { path = "erp-intercompany" }
 erp-lms = { path = "erp-lms" }
+erp-reportscheduling = { path = "erp-reportscheduling" }
+erp-chat = { path = "erp-chat" }
+erp-calendar = { path = "erp-calendar" }
+erp-signing = { path = "erp-signing" }
+erp-email = { path = "erp-email" }
 reqwest = { version = "0.11", features = ["json"] }
 hmac = "0.12"
 hex = "0.4"

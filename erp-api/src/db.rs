@@ -54,6 +54,13 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240101000025_enterprise_security_features.sql"),
         include_str!("../../migrations/20240101000026_enterprise_infrastructure_features.sql"),
         include_str!("../../migrations/20240101000027_enterprise_cpq_clm_commission_aps_spend_compensation.sql"),
+        include_str!("../../migrations/20240101200000_tms.sql"),
+        include_str!("../../migrations/20240101200100_plm.sql"),
+        include_str!("../../migrations/20240101200200_mdm.sql"),
+        include_str!("../../migrations/20240101200300_fsm.sql"),
+        include_str!("../../migrations/20240101200400_tpm.sql"),
+        include_str!("../../migrations/20240101200500_enterprise_wms_demand_edi_tenant_revrec_intercompany_lms.sql"),
+        include_str!("../../migrations/20240101200600_reportscheduling_chat_calendar_signing_email.sql"),
     ];
     
     for migration in migration_queries {

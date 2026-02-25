@@ -442,6 +442,8 @@ dependencies = [
  "erp-automation",
  "erp-backup",
  "erp-barcode",
+ "erp-calendar",
+ "erp-chat",
  "erp-clm",
  "erp-commission",
  "erp-company",
@@ -453,6 +455,7 @@ dependencies = [
  "erp-documents",
  "erp-ecommerce",
  "erp-edi",
+ "erp-email",
  "erp-enterprise",
  "erp-features",
  "erp-finance",
@@ -477,6 +480,7 @@ dependencies = [
  "erp-projects",
  "erp-purchasing",
  "erp-reports",
+ "erp-reportscheduling",
  "erp-returns",
  "erp-revrec",
  "erp-risk",
@@ -485,6 +489,7 @@ dependencies = [
  "erp-security",
  "erp-service",
  "erp-shipping",
+ "erp-signing",
  "erp-sourcing",
  "erp-spend-analytics",
  "erp-subscription",
@@ -609,6 +614,38 @@ dependencies = [
  "chrono",
  "erp-core",
  "rand",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-calendar"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-chat"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
  "serde",
  "serde_json",
  "sqlx",
@@ -793,6 +830,23 @@ dependencies = [
  "async-trait",
  "chrono",
  "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-email"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "handlebars",
  "serde",
  "serde_json",
  "sqlx",
@@ -1280,6 +1334,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-reportscheduling"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "cron",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-returns"
 version = "0.1.0"
 dependencies = [
@@ -1411,6 +1482,24 @@ dependencies = [
  "erp-core",
  "serde",
  "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
+name = "erp-signing"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sha2",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",

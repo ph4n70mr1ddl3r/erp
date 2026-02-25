@@ -242,6 +242,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/revrec", handlers::revrec::routes())
         .nest("/intercompany", handlers::intercompany::routes())
         .nest("/lms", handlers::lms::routes())
+        .nest("/reportscheduling", handlers::reportscheduling::routes())
+        .nest("/chat", handlers::chat::routes())
+        .nest("/calendar", handlers::calendar::routes())
+        .nest("/signing", handlers::signing::routes())
+        .nest("/email-marketing", handlers::email::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
