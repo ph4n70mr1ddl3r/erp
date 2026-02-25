@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, State, Extension},
     http::StatusCode,
     Json,
 };
@@ -7,6 +7,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::db::AppState;
+use crate::handlers::auth::AuthUser;
 use erp_signing::*;
 
 #[derive(Deserialize)]
@@ -57,10 +58,11 @@ pub struct DeclineRequest {
 }
 
 pub async fn create_document(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateDocumentRequest>,
 ) -> Result<Json<SigningDocument>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = SigningService::new();
     let doc = service
         .create_document(
@@ -82,9 +84,10 @@ pub async fn create_document(
 }
 
 pub async fn list_documents(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
 ) -> Result<Json<Vec<SigningDocument>>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = SigningService::new();
     let docs = service
         .list(&state.pool, Some(user_id), None)

@@ -8,11 +8,13 @@ use axum::{
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_auth::{AuthService, LoginRequest, RegisterRequest, AuthResponse, UserInfo};
+use validator::Validate;
 
 pub async fn register(
     State(state): State<AppState>,
     Json(req): Json<RegisterRequest>,
 ) -> ApiResult<Json<AuthResponse>> {
+    req.validate().map_err(|e| erp_core::Error::Validation(e.to_string()))?;
     let svc = AuthService::new();
     let res = svc.register(&state.pool, req).await?;
     Ok(Json(res))
@@ -22,6 +24,7 @@ pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> ApiResult<Json<AuthResponse>> {
+    req.validate().map_err(|e| erp_core::Error::Validation(e.to_string()))?;
     let svc = AuthService::new();
     let res = svc.login(&state.pool, req).await?;
     Ok(Json(res))

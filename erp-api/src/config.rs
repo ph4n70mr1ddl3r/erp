@@ -1,5 +1,16 @@
 use std::env;
 
+const MIN_JWT_SECRET_LENGTH: usize = 32;
+
+fn generate_dev_secret() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    format!("dev-secret-{}-please-change-in-production", timestamp)
+}
+
 #[derive(Debug, Clone)]
 pub struct Config {
     pub database_url: String,
@@ -15,7 +26,7 @@ impl Default for Config {
             database_url: "sqlite:erp.db?mode=rwc".to_string(),
             server_host: "127.0.0.1".to_string(),
             server_port: 3000,
-            jwt_secret: "your-super-secret-jwt-key-change-in-production".to_string(),
+            jwt_secret: generate_dev_secret(),
             jwt_expiration: 24,
         }
     }
@@ -29,8 +40,21 @@ impl Config {
             if production_mode {
                 panic!("JWT_SECRET environment variable must be set in production mode");
             }
-            "your-super-secret-jwt-key-change-in-production".to_string()
+            generate_dev_secret()
         });
+
+        if jwt_secret.len() < MIN_JWT_SECRET_LENGTH {
+            if production_mode {
+                panic!(
+                    "JWT_SECRET must be at least {} characters long in production mode",
+                    MIN_JWT_SECRET_LENGTH
+                );
+            }
+            eprintln!(
+                "WARNING: JWT_SECRET is shorter than {} characters. This is insecure for production.",
+                MIN_JWT_SECRET_LENGTH
+            );
+        }
 
         Self {
             database_url: env::var("DATABASE_URL")

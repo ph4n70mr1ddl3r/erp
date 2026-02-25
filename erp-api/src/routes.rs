@@ -1,15 +1,18 @@
 use crate::db::AppState;
 use crate::handlers;
+use crate::middleware::{rate_limit_middleware, RateLimiter};
 use axum::{
     middleware,
     routing::{delete, get, post, put},
-    Router,
+    Extension, Router,
 };
 use tower_http::limit::RequestBodyLimitLayer;
 
 const MAX_REQUEST_BODY_SIZE: usize = 1024 * 1024;
 
 pub fn create_router(state: AppState) -> Router {
+    let rate_limiter = RateLimiter::new();
+
     let public_routes = Router::new()
         .route("/health", get(handlers::health))
         .route("/auth/register", post(handlers::auth::register))
@@ -23,7 +26,9 @@ pub fn create_router(state: AppState) -> Router {
         .route(
             "/oauth/providers",
             get(handlers::security::list_oauth_providers),
-        );
+        )
+        .layer(middleware::from_fn(rate_limit_middleware))
+        .layer(Extension(rate_limiter.clone()));
 
     let protected_routes = Router::new()
         .route("/auth/me", get(handlers::auth::me))
@@ -246,6 +251,11 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/predictive", handlers::predictive::routes())
         .nest("/mrp", handlers::mrp::routes())
         .nest("/eam", handlers::eam::routes())
+        .nest("/bi", handlers::bi::routes())
+        .nest("/i18n", handlers::i18n::routes())
+        .nest("/push", handlers::push::routes())
+        .nest("/bpm", handlers::bpm::routes())
+        .nest("/graphql", handlers::graphql::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

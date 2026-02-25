@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Extension},
     http::StatusCode,
     Json,
 };
@@ -7,6 +7,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::db::AppState;
+use crate::handlers::auth::AuthUser;
 use erp_email::*;
 
 #[derive(Deserialize)]
@@ -53,10 +54,11 @@ pub struct ListQuery {
 }
 
 pub async fn create_template(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateTemplateRequest>,
 ) -> Result<Json<EmailTemplate>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = EmailTemplateService::new();
     let template = service
         .create(
@@ -111,10 +113,11 @@ pub async fn delete_template(
 }
 
 pub async fn create_campaign(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateCampaignRequest>,
 ) -> Result<Json<EmailCampaign>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = EmailCampaignService::new();
     let campaign = service
         .create(
@@ -196,10 +199,11 @@ pub async fn get_campaign_stats(
 }
 
 pub async fn create_list(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateListRequest>,
 ) -> Result<Json<EmailList>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = EmailListService::new();
     let list = service
         .create(&state.pool, req.name, req.description, req.list_type, user_id)

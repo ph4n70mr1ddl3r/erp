@@ -7,6 +7,11 @@ pub mod bank;
 pub mod predictive;
 pub mod mrp;
 pub mod eam;
+pub mod bi;
+pub mod i18n;
+pub mod push;
+pub mod bpm;
+pub mod graphql;
 
 use axum::{extract::State, Json};
 use serde_json::json;

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Extension},
     http::StatusCode,
     Json,
 };
@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::db::AppState;
+use crate::handlers::auth::AuthUser;
 use erp_chat::*;
 
 #[derive(Deserialize)]
@@ -49,10 +50,11 @@ impl From<ChatChannel> for ChannelResponse {
 }
 
 pub async fn create_channel(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateChannelRequest>,
 ) -> Result<Json<ChannelResponse>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = ChatChannelService::new();
     let channel = service
         .create(&state.pool, req.name, req.description, req.channel_type, req.is_private, user_id)
@@ -79,31 +81,34 @@ pub struct ListChannelsQuery {
 }
 
 pub async fn join_channel(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = ChatChannelService::new();
     service.join(&state.pool, id, user_id).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn leave_channel(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = ChatChannelService::new();
     service.leave(&state.pool, id, user_id).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(StatusCode::OK)
 }
 
 pub async fn send_message(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Path(channel_id): Path<Uuid>,
     Json(req): Json<SendMessageRequest>,
 ) -> Result<Json<ChatMessage>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = ChatMessageService::new();
     let message = service
         .send(&state.pool, channel_id, user_id, req.content, req.parent_message_id)
@@ -126,10 +131,11 @@ pub async fn list_messages(
 }
 
 pub async fn delete_message(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = ChatMessageService::new();
     service.delete(&state.pool, id, user_id).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     Ok(StatusCode::OK)
@@ -142,10 +148,11 @@ pub struct SendDMRequest {
 }
 
 pub async fn send_direct_message(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<SendDMRequest>,
 ) -> Result<Json<DirectMessage>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = DirectMessageService::new();
     let dm = service
         .send(&state.pool, user_id, req.recipient_id, req.content)

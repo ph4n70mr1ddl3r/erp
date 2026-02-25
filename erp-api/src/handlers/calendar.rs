@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Extension},
     http::StatusCode,
     Json,
 };
@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::db::AppState;
+use crate::handlers::auth::AuthUser;
 use erp_calendar::*;
 
 #[derive(Deserialize)]
@@ -63,10 +64,11 @@ impl From<CalendarEvent> for EventResponse {
 }
 
 pub async fn create_event(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateEventRequest>,
 ) -> Result<Json<EventResponse>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = CalendarEventService::new();
     let event = service
         .create(
@@ -162,10 +164,11 @@ pub struct CreateCalendarRequest {
 }
 
 pub async fn create_calendar(
+    Extension(auth_user): Extension<AuthUser>,
     State(state): State<AppState>,
     Json(req): Json<CreateCalendarRequest>,
 ) -> Result<Json<Calendar>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = CalendarService::new();
     let calendar = service
         .create(&state.pool, req.name, req.description, req.color, user_id, false)
@@ -174,8 +177,11 @@ pub async fn create_calendar(
     Ok(Json(calendar))
 }
 
-pub async fn list_calendars(State(state): State<AppState>) -> Result<Json<Vec<Calendar>>, StatusCode> {
-    let user_id = Uuid::parse_str("00000000-0000-0000-0000-000000000001").unwrap();
+pub async fn list_calendars(
+    Extension(auth_user): Extension<AuthUser>,
+    State(state): State<AppState>,
+) -> Result<Json<Vec<Calendar>>, StatusCode> {
+    let user_id = Uuid::parse_str(&auth_user.0.user_id).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let service = CalendarService::new();
     let calendars = service
         .list_for_user(&state.pool, user_id)

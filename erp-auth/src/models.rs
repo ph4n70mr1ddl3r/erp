@@ -1,6 +1,9 @@
 use chrono::{DateTime, Utc};
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use validator::Validate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
@@ -92,17 +95,44 @@ pub struct AuthClaims {
     pub iat: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+static USERNAME_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-zA-Z0-9_]+$").unwrap());
+
+static PASSWORD_REGEX: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^(?=.*[a-zA-Z])(?=.*[0-9]).+$").unwrap());
+
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct LoginRequest {
+    #[validate(length(min = 1, message = "Username is required"))]
     pub username: String,
+    #[validate(length(min = 1, message = "Password is required"))]
     pub password: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct RegisterRequest {
+    #[validate(length(
+        min = 3,
+        max = 50,
+        message = "Username must be between 3 and 50 characters"
+    ))]
+    #[validate(regex(
+        path = "USERNAME_REGEX",
+        message = "Username can only contain letters, numbers, and underscores"
+    ))]
     pub username: String,
+    #[validate(email(message = "Invalid email address"))]
     pub email: String,
+    #[validate(length(min = 8, message = "Password must be at least 8 characters"))]
+    #[validate(regex(
+        path = "PASSWORD_REGEX",
+        message = "Password must contain at least one letter and one number"
+    ))]
     pub password: String,
+    #[validate(length(
+        min = 1,
+        max = 100,
+        message = "Full name must be between 1 and 100 characters"
+    ))]
     pub full_name: String,
 }
 

@@ -87,6 +87,11 @@ members = [
     "erp-knowledge",
     "erp-helpdesk",
     "erp-dataquality",
+    "erp-bi",
+    "erp-i18n",
+    "erp-push",
+    "erp-bpm",
+    "erp-graphql",
     "erp-api",
 ]
 resolver = "2"
@@ -207,3 +212,10 @@ cron = "0.12"
 base64 = "0.22"
 regex = "1.10"
 handlebars = "5.1"
+async-graphql = "7"
+
+erp-bi = { path = "erp-bi" }
+erp-i18n = { path = "erp-i18n" }
+erp-push = { path = "erp-push" }
+erp-bpm = { path = "erp-bpm" }
+erp-graphql = { path = "erp-graphql" }
