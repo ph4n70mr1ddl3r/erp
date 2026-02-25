@@ -2865,7 +2865,7 @@ impl PeriodManagementService {
     pub async fn create_close_checklist(
         pool: &SqlitePool,
         period_id: Uuid,
-        tasks: Vec<(&str, Option<&str>, bool)>,
+        tasks: Vec<(String, Option<String>, bool)>,
     ) -> Result<Vec<PeriodCloseChecklist>> {
         let now = chrono::Utc::now();
         let mut items = Vec::new();
@@ -2876,8 +2876,8 @@ impl PeriodManagementService {
             let item = PeriodCloseChecklist {
                 id,
                 period_id,
-                task_name: task_name.to_string(),
-                description: description.map(|s| s.to_string()),
+                task_name,
+                description,
                 task_order: idx as i32 + 1,
                 is_required,
                 completed: false,

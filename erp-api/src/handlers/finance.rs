@@ -781,8 +781,8 @@ pub async fn create_close_checklist(
     Path(period_id): Path<Uuid>,
     Json(req): Json<CreateChecklistRequest>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let tasks: Vec<(&str, Option<&str>, bool)> = req.tasks.into_iter()
-        .map(|t| (t.task_name.leak(), t.description.as_deref(), t.is_required))
+    let tasks: Vec<(String, Option<String>, bool)> = req.tasks.into_iter()
+        .map(|t| (t.task_name, t.description, t.is_required))
         .collect();
     
     let items = PeriodManagementService::create_close_checklist(&state.pool, period_id, tasks).await?;

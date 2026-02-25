@@ -3,6 +3,7 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
+use erp_auth::AuthUser;
 use erp_core::Pagination;
 use erp_finance::{CurrencyDef, ExchangeRate, BudgetWithVariance, CurrencyService, BudgetService};
 use erp_inventory::{Lot, LotService};
@@ -340,9 +341,10 @@ pub async fn list_pending_leave(
 
 pub async fn approve_leave(
     State(state): State<AppState>,
+    axum::Extension(AuthUser(user)): axum::Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<LeaveRequestResponse>> {
-    let approver_id = Uuid::nil();
+    let approver_id = Uuid::parse_str(&user.user_id).map_err(|_| erp_core::Error::Unauthorized)?;
     let lr = LeaveService::approve_leave_request(&state.pool, id, approver_id).await?;
     Ok(Json(LeaveRequestResponse::from(lr)))
 }
@@ -466,9 +468,10 @@ pub async fn submit_expense(
 
 pub async fn approve_expense(
     State(state): State<AppState>,
+    axum::Extension(AuthUser(user)): axum::Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<ExpenseReportResponse>> {
-    let approver_id = Uuid::nil();
+    let approver_id = Uuid::parse_str(&user.user_id).map_err(|_| erp_core::Error::Unauthorized)?;
     let report = ExpenseService::approve_expense_report(&state.pool, id, approver_id).await?;
     Ok(Json(ExpenseReportResponse::from(report)))
 }

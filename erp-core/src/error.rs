@@ -40,7 +40,8 @@ impl Error {
     }
 
     pub fn unauthorized(msg: &str) -> Self {
-        Error::Validation(msg.to_string())
+        let _ = msg;
+        Error::Unauthorized
     }
 
     pub fn internal(msg: impl Into<String> + std::fmt::Display) -> Self {

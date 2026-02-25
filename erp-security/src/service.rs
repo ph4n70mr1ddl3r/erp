@@ -268,7 +268,14 @@ impl SecurityService {
         self.oauth_connection_repo.find_by_user(pool, user_id).await
     }
 
-    pub async fn unlink_oauth_account(&self, pool: &SqlitePool, connection_id: Uuid) -> Result<()> {
+    pub async fn unlink_oauth_account(&self, pool: &SqlitePool, user_id: Uuid, connection_id: Uuid) -> Result<()> {
+        let connection = self.oauth_connection_repo.find_by_id(pool, connection_id).await?
+            .ok_or_else(|| erp_core::Error::not_found("OAuth connection", &connection_id.to_string()))?;
+        
+        if connection.user_id != user_id {
+            return Err(erp_core::Error::Unauthorized);
+        }
+        
         self.oauth_connection_repo.delete(pool, connection_id).await
     }
 
@@ -315,7 +322,14 @@ impl SecurityService {
         self.session_repo.find_by_user(pool, user_id).await
     }
 
-    pub async fn revoke_session(&self, pool: &SqlitePool, session_id: Uuid) -> Result<()> {
+    pub async fn revoke_session(&self, pool: &SqlitePool, user_id: Uuid, session_id: Uuid) -> Result<()> {
+        let session = self.session_repo.find_by_id(pool, session_id).await?
+            .ok_or_else(|| erp_core::Error::not_found("Session", &session_id.to_string()))?;
+        
+        if session.user_id != user_id {
+            return Err(erp_core::Error::Unauthorized);
+        }
+        
         self.session_repo.delete(pool, session_id).await
     }
 

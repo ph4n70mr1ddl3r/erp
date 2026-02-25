@@ -23,6 +23,15 @@ impl Default for Config {
 
 impl Config {
     pub fn from_env() -> Self {
+        let production_mode = env::var("ENVIRONMENT").unwrap_or_default() == "production";
+
+        let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| {
+            if production_mode {
+                panic!("JWT_SECRET environment variable must be set in production mode");
+            }
+            "your-super-secret-jwt-key-change-in-production".to_string()
+        });
+
         Self {
             database_url: env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite:erp.db?mode=rwc".to_string()),
@@ -31,8 +40,7 @@ impl Config {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(3000),
-            jwt_secret: env::var("JWT_SECRET")
-                .unwrap_or_else(|_| "your-super-secret-jwt-key-change-in-production".to_string()),
+            jwt_secret,
             jwt_expiration: env::var("JWT_EXPIRATION")
                 .ok()
                 .and_then(|p| p.parse().ok())

@@ -1,4 +1,4 @@
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use std::sync::Arc;
 use crate::Config;
 use crate::handlers::websocket::WebSocketManager;
@@ -12,7 +12,11 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new(config: Config) -> anyhow::Result<Self> {
-        let pool = SqlitePool::connect(&config.database_url).await?;
+        let pool = SqlitePoolOptions::new()
+            .max_connections(10)
+            .min_connections(1)
+            .connect(&config.database_url)
+            .await?;
         
         run_migrations(&pool).await?;
         
@@ -61,6 +65,7 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240101200400_tpm.sql"),
         include_str!("../../migrations/20240101200500_enterprise_wms_demand_edi_tenant_revrec_intercompany_lms.sql"),
         include_str!("../../migrations/20240101200600_reportscheduling_chat_calendar_signing_email.sql"),
+        include_str!("../../migrations/20240202000000_bi_i18n_push_bpm_graphql.sql"),
     ];
     
     for migration in migration_queries {

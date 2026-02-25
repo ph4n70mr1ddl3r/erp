@@ -26,12 +26,14 @@ pub async fn get_employee(State(state): State<AppState>, Path(id): Path<Uuid>) -
 
 pub async fn create_employee(State(state): State<AppState>, Json(req): Json<CreateEmployeeRequest>) -> ApiResult<Json<EmployeeResponse>> {
     let svc = EmployeeService::new();
+    let hire_date = NaiveDate::parse_from_str(&req.hire_date, "%Y-%m-%d")
+        .map_err(|_| erp_core::Error::validation("Invalid hire_date format, expected YYYY-MM-DD"))?;
     let e = Employee {
         base: BaseEntity::new(), employee_number: req.employee_number, first_name: req.first_name, last_name: req.last_name, email: req.email.clone(),
         contact: ContactInfo { email: Some(req.email), phone: req.phone, fax: None, website: None },
         address: Address { street: String::new(), city: String::new(), state: None, postal_code: String::new(), country: String::new() },
         birth_date: NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
-        hire_date: NaiveDate::parse_from_str(&req.hire_date, "%Y-%m-%d").unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
+        hire_date,
         termination_date: None, department_id: None, position_id: None, manager_id: None, status: Status::Active,
     };
     Ok(Json(EmployeeResponse::from(svc.create(&state.pool, e).await?)))
@@ -65,10 +67,14 @@ pub async fn list_payroll(State(_state): State<AppState>, Query(_pagination): Qu
 
 pub async fn create_payroll(State(state): State<AppState>, Json(req): Json<CreatePayrollRequest>) -> ApiResult<Json<PayrollResponse>> {
     let svc = PayrollService::new();
+    let period_start = NaiveDate::parse_from_str(&req.period_start, "%Y-%m-%d")
+        .map_err(|_| erp_core::Error::validation("Invalid period_start format, expected YYYY-MM-DD"))?;
+    let period_end = NaiveDate::parse_from_str(&req.period_end, "%Y-%m-%d")
+        .map_err(|_| erp_core::Error::validation("Invalid period_end format, expected YYYY-MM-DD"))?;
     let p = Payroll {
         base: BaseEntity::new(), employee_id: req.employee_id,
-        period_start: NaiveDate::parse_from_str(&req.period_start, "%Y-%m-%d").unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
-        period_end: NaiveDate::parse_from_str(&req.period_end, "%Y-%m-%d").unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
+        period_start,
+        period_end,
         base_salary: Money::new(req.base_salary, Currency::USD), overtime: Money::new(req.overtime.unwrap_or(0), Currency::USD),
         bonuses: Money::new(req.bonuses.unwrap_or(0), Currency::USD), deductions: Money::new(req.deductions.unwrap_or(0), Currency::USD),
         net_salary: Money::zero(Currency::USD), status: Status::Draft,

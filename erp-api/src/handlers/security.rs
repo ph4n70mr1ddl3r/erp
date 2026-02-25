@@ -178,8 +178,9 @@ pub async fn unlink_oauth_account(
     axum::Extension(AuthUser(user)): axum::Extension<AuthUser>,
     Path(connection_id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
+    let user_id = Uuid::parse_str(&user.user_id).map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = SecurityService::new();
-    svc.unlink_oauth_account(&state.pool, connection_id).await?;
+    svc.unlink_oauth_account(&state.pool, user_id, connection_id).await?;
     Ok(Json(serde_json::json!({ "success": true })))
 }
 
@@ -203,10 +204,12 @@ pub async fn get_user_sessions(
 
 pub async fn revoke_session(
     State(state): State<AppState>,
+    axum::Extension(AuthUser(user)): axum::Extension<AuthUser>,
     Path(session_id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
+    let user_id = Uuid::parse_str(&user.user_id).map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = SecurityService::new();
-    svc.revoke_session(&state.pool, session_id).await?;
+    svc.revoke_session(&state.pool, user_id, session_id).await?;
     Ok(Json(serde_json::json!({ "success": true })))
 }
 

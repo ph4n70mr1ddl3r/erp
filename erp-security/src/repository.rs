@@ -232,6 +232,7 @@ impl OAuthProviderRow {
 
 #[async_trait]
 pub trait UserOAuthConnectionRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<UserOAuthConnection>>;
     async fn find_by_provider_and_id(&self, pool: &SqlitePool, provider_id: Uuid, provider_user_id: &str) -> Result<Option<UserOAuthConnection>>;
     async fn find_by_user(&self, pool: &SqlitePool, user_id: Uuid) -> Result<Vec<UserOAuthConnection>>;
     async fn create(&self, pool: &SqlitePool, conn: UserOAuthConnection) -> Result<UserOAuthConnection>;
@@ -243,6 +244,17 @@ pub struct SqliteUserOAuthConnectionRepository;
 
 #[async_trait]
 impl UserOAuthConnectionRepository for SqliteUserOAuthConnectionRepository {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<UserOAuthConnection>> {
+        let row = sqlx::query_as::<_, UserOAuthConnectionRow>(
+            "SELECT id, user_id, provider_id, provider_user_id, access_token, refresh_token, token_expires_at, created_at FROM user_oauth_connections WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(row.map(|r| r.into_model()))
+    }
+
     async fn find_by_provider_and_id(&self, pool: &SqlitePool, provider_id: Uuid, provider_user_id: &str) -> Result<Option<UserOAuthConnection>> {
         let row = sqlx::query_as::<_, UserOAuthConnectionRow>(
             "SELECT id, user_id, provider_id, provider_user_id, access_token, refresh_token, token_expires_at, created_at FROM user_oauth_connections WHERE provider_id = ? AND provider_user_id = ?"
@@ -334,6 +346,7 @@ impl UserOAuthConnectionRow {
 #[async_trait]
 pub trait UserSessionRepository: Send + Sync {
     async fn create(&self, pool: &SqlitePool, session: UserSession) -> Result<UserSession>;
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<UserSession>>;
     async fn find_by_token(&self, pool: &SqlitePool, token_hash: &str) -> Result<Option<UserSession>>;
     async fn find_by_user(&self, pool: &SqlitePool, user_id: Uuid) -> Result<Vec<UserSession>>;
     async fn update_activity(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
@@ -364,6 +377,17 @@ impl UserSessionRepository for SqliteUserSessionRepository {
         .await?;
 
         Ok(session)
+    }
+
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<UserSession>> {
+        let row = sqlx::query_as::<_, UserSessionRow>(
+            "SELECT id, user_id, token_hash, ip_address, user_agent, device_type, is_current, last_activity, expires_at, created_at FROM user_sessions WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(row.map(|r| r.into_model()))
     }
 
     async fn find_by_token(&self, pool: &SqlitePool, token_hash: &str) -> Result<Option<UserSession>> {
