@@ -93,6 +93,10 @@ members = [
     "erp-bpm",
     "erp-graphql",
     "erp-api",
+    "erp-assistant",
+    "erp-ocr",
+    "erp-fraud",
+    "erp-processmining",
 ]
 resolver = "2"
 
@@ -219,3 +223,7 @@ erp-i18n = { path = "erp-i18n" }
 erp-push = { path = "erp-push" }
 erp-bpm = { path = "erp-bpm" }
 erp-graphql = { path = "erp-graphql" }
+erp-assistant = { path = "erp-assistant" }
+erp-ocr = { path = "erp-ocr" }
+erp-fraud = { path = "erp-fraud" }
+erp-processmining = { path = "erp-processmining" }

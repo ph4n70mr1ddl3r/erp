@@ -256,6 +256,10 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/push", handlers::push::routes())
         .nest("/bpm", handlers::bpm::routes())
         .nest("/graphql", handlers::graphql::routes())
+        .nest("/assistant", handlers::assistant::routes())
+        .nest("/ocr", handlers::ocr::routes())
+        .nest("/fraud", handlers::fraud::routes())
+        .nest("/processmining", handlers::processmining::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

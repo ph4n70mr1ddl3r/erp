@@ -12,6 +12,10 @@ pub mod i18n;
 pub mod push;
 pub mod bpm;
 pub mod graphql;
+pub mod assistant;
+pub mod ocr;
+pub mod fraud;
+pub mod processmining;
 
 use axum::{extract::State, Json};
 use serde_json::json;

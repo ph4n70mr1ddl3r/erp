@@ -679,6 +679,7 @@ dependencies = [
  "erp-ai",
  "erp-aps",
  "erp-assets",
+ "erp-assistant",
  "erp-auth",
  "erp-automation",
  "erp-backup",
@@ -704,6 +705,7 @@ dependencies = [
  "erp-enterprise",
  "erp-features",
  "erp-finance",
+ "erp-fraud",
  "erp-fsm",
  "erp-graphql",
  "erp-hr",
@@ -722,6 +724,7 @@ dependencies = [
  "erp-monitoring",
  "erp-mrp",
  "erp-notifications",
+ "erp-ocr",
  "erp-partner",
  "erp-payments",
  "erp-pcard",
@@ -730,6 +733,7 @@ dependencies = [
  "erp-pos",
  "erp-predictive",
  "erp-pricing",
+ "erp-processmining",
  "erp-projects",
  "erp-purchasing",
  "erp-push",
@@ -804,6 +808,23 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-assistant"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "regex",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1267,6 +1288,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-fraud"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "rand",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-fsm"
 version = "0.1.0"
 dependencies = [
@@ -1631,6 +1669,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-ocr"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "base64 0.22.1",
+ "chrono",
+ "erp-core",
+ "regex",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "erp-partner"
 version = "0.1.0"
 dependencies = [
@@ -1776,6 +1832,22 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-processmining"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
