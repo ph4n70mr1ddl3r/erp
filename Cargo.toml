@@ -72,6 +72,15 @@ members = [
     "erp-calendar",
     "erp-signing",
     "erp-email",
+    "erp-lease",
+    "erp-bank",
+    "erp-loyalty",
+    "erp-partner",
+    "erp-pcard",
+    "erp-territory",
+    "erp-predictive",
+    "erp-mrp",
+    "erp-eam",
     "erp-api",
 ]
 resolver = "2"
@@ -176,6 +185,15 @@ erp-chat = { path = "erp-chat" }
 erp-calendar = { path = "erp-calendar" }
 erp-signing = { path = "erp-signing" }
 erp-email = { path = "erp-email" }
+erp-lease = { path = "erp-lease" }
+erp-bank = { path = "erp-bank" }
+erp-loyalty = { path = "erp-loyalty" }
+erp-partner = { path = "erp-partner" }
+erp-pcard = { path = "erp-pcard" }
+erp-territory = { path = "erp-territory" }
+erp-predictive = { path = "erp-predictive" }
+erp-mrp = { path = "erp-mrp" }
+erp-eam = { path = "erp-eam" }
 reqwest = { version = "0.11", features = ["json"] }
 hmac = "0.12"
 hex = "0.4"

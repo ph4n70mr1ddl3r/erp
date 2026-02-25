@@ -829,3 +829,344 @@ pub struct RecurringJournalRun {
     pub status: Status,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashPool {
+    pub id: Uuid,
+    pub pool_code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub header_account_id: Uuid,
+    pub pooling_type: PoolingType,
+    pub pooling_frequency: PoolingFrequency,
+    pub target_balance: i64,
+    pub min_balance: i64,
+    pub max_balance: i64,
+    pub interest_calculation_method: InterestCalcMethod,
+    pub interest_rate: f64,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum PoolingType {
+    ZeroBalance,
+    TargetBalance,
+    Notional,
+    Physical,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum PoolingFrequency {
+    Daily,
+    Weekly,
+    Monthly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum InterestCalcMethod {
+    Simple,
+    Compound,
+    Tiered,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashPoolMember {
+    pub id: Uuid,
+    pub pool_id: Uuid,
+    pub bank_account_id: Uuid,
+    pub company_id: Uuid,
+    pub member_type: PoolMemberType,
+    pub participation_percent: f64,
+    pub target_balance: i64,
+    pub min_balance: i64,
+    pub max_balance: i64,
+    pub interest_rate_override: Option<f64>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum PoolMemberType {
+    Header,
+    Participant,
+    SubAccount,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashSweep {
+    pub id: Uuid,
+    pub sweep_number: String,
+    pub pool_id: Uuid,
+    pub sweep_date: DateTime<Utc>,
+    pub sweep_type: SweepType,
+    pub total_amount: i64,
+    pub status: SweepStatus,
+    pub processed_at: Option<DateTime<Utc>>,
+    pub journal_entry_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum SweepType {
+    ZeroBalance,
+    TargetBalance,
+    Threshold,
+    Scheduled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum SweepStatus {
+    Pending,
+    Processing,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashSweepLine {
+    pub id: Uuid,
+    pub sweep_id: Uuid,
+    pub member_id: Uuid,
+    pub bank_account_id: Uuid,
+    pub opening_balance: i64,
+    pub target_balance: i64,
+    pub sweep_amount: i64,
+    pub closing_balance: i64,
+    pub direction: SweepDirection,
+    pub status: SweepLineStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum SweepDirection {
+    ToHeader,
+    FromHeader,
+    None,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum SweepLineStatus {
+    Pending,
+    Completed,
+    Failed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashPosition {
+    pub id: Uuid,
+    pub position_date: DateTime<Utc>,
+    pub company_id: Option<Uuid>,
+    pub bank_account_id: Option<Uuid>,
+    pub opening_balance: i64,
+    pub receipts: i64,
+    pub disbursements: i64,
+    pub transfers_in: i64,
+    pub transfers_out: i64,
+    pub closing_balance: i64,
+    pub currency: String,
+    pub exchange_rate: f64,
+    pub base_currency_balance: i64,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CashPositionDetail {
+    pub id: Uuid,
+    pub position_id: Uuid,
+    pub transaction_type: CashTransactionType,
+    pub reference_type: Option<String>,
+    pub reference_id: Option<Uuid>,
+    pub description: Option<String>,
+    pub amount: i64,
+    pub value_date: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CashTransactionType {
+    Receipt,
+    Disbursement,
+    TransferIn,
+    TransferOut,
+    Adjustment,
+    BankFee,
+    Interest,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntercompanyLoan {
+    pub id: Uuid,
+    pub loan_number: String,
+    pub from_company_id: Uuid,
+    pub to_company_id: Uuid,
+    pub from_account_id: Uuid,
+    pub to_account_id: Uuid,
+    pub principal_amount: i64,
+    pub currency: String,
+    pub interest_rate: f64,
+    pub interest_type: InterestType,
+    pub start_date: DateTime<Utc>,
+    pub maturity_date: Option<DateTime<Utc>>,
+    pub repayment_schedule: Option<String>,
+    pub status: LoanStatus,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum InterestType {
+    Fixed,
+    Floating,
+    LIBOR,
+    SOFR,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum LoanStatus {
+    Active,
+    Repaid,
+    Defaulted,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IntercompanyLoanPayment {
+    pub id: Uuid,
+    pub loan_id: Uuid,
+    pub payment_date: DateTime<Utc>,
+    pub principal_amount: i64,
+    pub interest_amount: i64,
+    pub total_amount: i64,
+    pub from_journal_entry_id: Option<Uuid>,
+    pub to_journal_entry_id: Option<Uuid>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupplierQualification {
+    pub id: Uuid,
+    pub vendor_id: Uuid,
+    pub qualification_type: QualificationType,
+    pub status: QualificationStatus,
+    pub submitted_at: Option<DateTime<Utc>>,
+    pub reviewed_by: Option<Uuid>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub valid_from: Option<DateTime<Utc>>,
+    pub valid_until: Option<DateTime<Utc>>,
+    pub score: Option<i32>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum QualificationType {
+    Financial,
+    Quality,
+    Environmental,
+    Safety,
+    Technical,
+    General,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum QualificationStatus {
+    Pending,
+    UnderReview,
+    Approved,
+    Rejected,
+    Expired,
+    Suspended,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupplierQualificationDocument {
+    pub id: Uuid,
+    pub qualification_id: Uuid,
+    pub document_type: String,
+    pub document_name: String,
+    pub file_path: String,
+    pub expiry_date: Option<DateTime<Utc>>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupplierEvaluation {
+    pub id: Uuid,
+    pub evaluation_number: String,
+    pub vendor_id: Uuid,
+    pub evaluation_period_start: DateTime<Utc>,
+    pub evaluation_period_end: DateTime<Utc>,
+    pub quality_score: i32,
+    pub delivery_score: i32,
+    pub price_score: i32,
+    pub service_score: i32,
+    pub overall_score: f64,
+    pub grade: SupplierGrade,
+    pub evaluator_id: Option<Uuid>,
+    pub evaluated_at: DateTime<Utc>,
+    pub comments: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum SupplierGrade {
+    A,
+    B,
+    C,
+    D,
+    F,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupplierEvaluationCriteria {
+    pub id: Uuid,
+    pub criteria_code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub category: EvaluationCategory,
+    pub weight: i32,
+    pub max_score: i32,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum EvaluationCategory {
+    Quality,
+    Delivery,
+    Price,
+    Service,
+    Compliance,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SupplierEvaluationLine {
+    pub id: Uuid,
+    pub evaluation_id: Uuid,
+    pub criteria_id: Uuid,
+    pub score: i32,
+    pub weighted_score: f64,
+    pub comments: Option<String>,
+}

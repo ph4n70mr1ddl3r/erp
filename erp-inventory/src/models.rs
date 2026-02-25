@@ -772,3 +772,281 @@ pub struct RFQResponseLine {
     pub minimum_order_qty: Option<i64>,
     pub notes: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ValuationMethod {
+    FIFO,
+    LIFO,
+    WeightedAverage,
+    StandardCost,
+    MovingAverage,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductValuation {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub valuation_method: ValuationMethod,
+    pub standard_cost: i64,
+    pub current_unit_cost: i64,
+    pub total_quantity: i64,
+    pub total_value: i64,
+    pub last_receipt_cost: i64,
+    pub last_receipt_date: Option<DateTime<Utc>>,
+    pub last_issue_cost: i64,
+    pub last_issue_date: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InventoryCostLayer {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub layer_date: DateTime<Utc>,
+    pub receipt_reference: String,
+    pub receipt_id: Option<Uuid>,
+    pub quantity: i64,
+    pub unit_cost: i64,
+    pub remaining_quantity: i64,
+    pub total_value: i64,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InventoryValuationSummary {
+    pub id: Uuid,
+    pub valuation_date: DateTime<Utc>,
+    pub warehouse_id: Option<Uuid>,
+    pub category_id: Option<Uuid>,
+    pub total_products: i32,
+    pub total_quantity: i64,
+    pub total_value: i64,
+    pub currency: String,
+    pub status: ValuationStatus,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ValuationStatus {
+    Draft,
+    Posted,
+    Reversed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InventoryValuationLine {
+    pub id: Uuid,
+    pub summary_id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub quantity_on_hand: i64,
+    pub unit_cost: i64,
+    pub total_value: i64,
+    pub valuation_method: ValuationMethod,
+    pub previous_value: i64,
+    pub value_change: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostAdjustment {
+    pub id: Uuid,
+    pub adjustment_number: String,
+    pub adjustment_type: CostAdjustmentType,
+    pub adjustment_date: DateTime<Utc>,
+    pub reason: String,
+    pub status: CostAdjustmentStatus,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+    pub journal_entry_id: Option<Uuid>,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CostAdjustmentType {
+    StandardCostChange,
+    Revaluation,
+    WriteDown,
+    WriteUp,
+    CurrencyRevaluation,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CostAdjustmentStatus {
+    Draft,
+    Pending,
+    Approved,
+    Posted,
+    Reversed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CostAdjustmentLine {
+    pub id: Uuid,
+    pub adjustment_id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub quantity: i64,
+    pub old_unit_cost: i64,
+    pub new_unit_cost: i64,
+    pub old_total_value: i64,
+    pub new_total_value: i64,
+    pub value_change: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ABCClassification {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub classification: ABCClass,
+    pub annual_value: i64,
+    pub annual_quantity: i64,
+    pub cumulative_value_percent: f64,
+    pub classification_date: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ABCClass {
+    A,
+    B,
+    C,
+    D,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InventoryTurnover {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+    pub beginning_inventory: i64,
+    pub ending_inventory: i64,
+    pub average_inventory: i64,
+    pub cost_of_goods_sold: i64,
+    pub turnover_ratio: f64,
+    pub days_of_inventory: f64,
+    pub calculated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsignmentStock {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub warehouse_id: Uuid,
+    pub vendor_id: Uuid,
+    pub agreement_id: Option<Uuid>,
+    pub quantity: i64,
+    pub unit_cost: i64,
+    pub total_value: i64,
+    pub ownership_status: ConsignmentOwnership,
+    pub received_date: DateTime<Utc>,
+    pub consumption_start_date: Option<DateTime<Utc>>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ConsignmentOwnership {
+    VendorOwned,
+    Transferred,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConsignmentConsumption {
+    pub id: Uuid,
+    pub consignment_id: Uuid,
+    pub consumption_date: DateTime<Utc>,
+    pub quantity: i64,
+    pub unit_cost: i64,
+    pub total_cost: i64,
+    pub purchase_order_id: Option<Uuid>,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlanketPurchaseOrder {
+    pub base: BaseEntity,
+    pub bpo_number: String,
+    pub vendor_id: Uuid,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub total_amount_limit: i64,
+    pub total_quantity_limit: Option<i64>,
+    pub total_released: i64,
+    pub total_invoiced: i64,
+    pub payment_terms: i32,
+    pub terms_conditions: Option<String>,
+    pub status: BlanketOrderStatus,
+    pub created_by: Option<Uuid>,
+    pub approved_by: Option<Uuid>,
+    pub approved_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum BlanketOrderStatus {
+    Draft,
+    Pending,
+    Active,
+    Expired,
+    Closed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlanketPurchaseOrderLine {
+    pub id: Uuid,
+    pub bpo_id: Uuid,
+    pub product_id: Uuid,
+    pub unit_price: i64,
+    pub currency: String,
+    pub min_release_qty: i64,
+    pub max_quantity: i64,
+    pub released_quantity: i64,
+    pub remaining_quantity: i64,
+    pub uom: String,
+    pub lead_time_days: i32,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReleaseOrder {
+    pub base: BaseEntity,
+    pub release_number: String,
+    pub bpo_id: Uuid,
+    pub bpo_line_id: Uuid,
+    pub quantity: i64,
+    pub unit_price: i64,
+    pub total_amount: i64,
+    pub required_date: DateTime<Utc>,
+    pub ship_to_warehouse_id: Uuid,
+    pub status: ReleaseOrderStatus,
+    pub purchase_order_id: Option<Uuid>,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ReleaseOrderStatus {
+    Draft,
+    Submitted,
+    Confirmed,
+    PartiallyReceived,
+    Received,
+    Cancelled,
+}

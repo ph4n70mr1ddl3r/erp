@@ -1,0 +1,14 @@
+[package]
+name = "erp-eam"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+erp-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
