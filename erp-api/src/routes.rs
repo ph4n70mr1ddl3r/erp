@@ -272,6 +272,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/processmining", handlers::processmining::routes())
         .nest("/promotions", promotions_routes())
         .nest("/approval-workflow", approval_workflow_routes())
+        .nest("/credit", credit_routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
@@ -1000,5 +1001,40 @@ fn approval_workflow_routes() -> Router<AppState> {
         .route(
             "/pending/:user_id/summary",
             get(handlers::approval_workflow::get_pending_summary),
+        )
+}
+
+fn credit_routes() -> Router<AppState> {
+    Router::new()
+        .route("/check", post(handlers::credit::check_credit))
+        .route("/summary", get(handlers::credit::get_summary))
+        .route("/profiles", get(handlers::credit::list_profiles))
+        .route("/on-hold", get(handlers::credit::list_on_hold))
+        .route("/high-risk", get(handlers::credit::list_high_risk))
+        .route("/alerts", get(handlers::credit::list_alerts))
+        .route(
+            "/alerts/:id/acknowledge",
+            post(handlers::credit::acknowledge_alert),
+        )
+        .route("/invoice", post(handlers::credit::record_invoice))
+        .route("/payment", post(handlers::credit::record_payment))
+        .route("/:customer_id", get(handlers::credit::get_profile))
+        .route(
+            "/:customer_id/limit",
+            post(handlers::credit::update_credit_limit),
+        )
+        .route("/:customer_id/hold", post(handlers::credit::place_hold))
+        .route(
+            "/:customer_id/release",
+            post(handlers::credit::release_hold),
+        )
+        .route(
+            "/:customer_id/transactions",
+            get(handlers::credit::list_transactions),
+        )
+        .route("/:customer_id/holds", get(handlers::credit::list_holds))
+        .route(
+            "/:customer_id/limit-changes",
+            get(handlers::credit::list_limit_changes),
         )
 }

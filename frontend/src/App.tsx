@@ -26,6 +26,7 @@ import ConfigPage from './pages/Config';
 import RulesPage from './pages/Rules';
 import CurrencyRevaluation from './pages/CurrencyRevaluation';
 import ApprovalWorkflow from './pages/ApprovalWorkflow';
+import CreditManagement from './pages/CreditManagement';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -69,6 +70,7 @@ function AppRoutes() {
       <Route path="/rules" element={<PrivateRoute><RulesPage /></PrivateRoute>} />
       <Route path="/currency-revaluation" element={<PrivateRoute><CurrencyRevaluation /></PrivateRoute>} />
       <Route path="/approval-workflow" element={<PrivateRoute><ApprovalWorkflow /></PrivateRoute>} />
+      <Route path="/credit" element={<PrivateRoute><CreditManagement /></PrivateRoute>} />
     </Routes>
   );
 }

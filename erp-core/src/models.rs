@@ -22,6 +22,17 @@ impl BaseEntity {
             updated_by: None,
         }
     }
+
+    pub fn new_with_id(id: Uuid) -> Self {
+        let now = Utc::now();
+        Self {
+            id,
+            created_at: now,
+            updated_at: now,
+            created_by: None,
+            updated_by: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]

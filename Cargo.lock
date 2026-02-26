@@ -697,6 +697,7 @@ dependencies = [
  "erp-config",
  "erp-core",
  "erp-cpq",
+ "erp-credit",
  "erp-demand",
  "erp-documents",
  "erp-eam",
@@ -1126,6 +1127,23 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-credit"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

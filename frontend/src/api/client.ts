@@ -863,3 +863,103 @@ export const approvalWorkflow = {
   getPendingSummary: (userId: string) =>
     api.get<PendingApprovalSummary>(`/api/v1/approval-workflow/pending/${userId}/summary`),
 };
+
+export const credit = {
+  checkCredit: (data: { customer_id: string; order_id?: string; order_amount: number; currency: string }) =>
+    api.post('/api/v1/credit/check', data),
+  getSummary: () => api.get<CreditSummary>('/api/v1/credit/summary'),
+  getProfiles: (page = 1, limit = 20) =>
+    api.get<ApiResponse<CreditProfile[]>>(`/api/v1/credit/profiles?page=${page}&limit=${limit}`),
+  getOnHold: () => api.get<ApiResponse<CreditProfile[]>>('/api/v1/credit/on-hold'),
+  getHighRisk: () => api.get<ApiResponse<CreditProfile[]>>('/api/v1/credit/high-risk'),
+  getProfile: (customerId: string) => api.get<CreditProfile>(`/api/v1/credit/${customerId}`),
+  updateLimit: (customerId: string, data: { credit_limit: number; reason: string }) =>
+    api.post<CreditProfile>(`/api/v1/credit/${customerId}/limit`, data),
+  placeHold: (customerId: string, data: { reason: string }) =>
+    api.post(`/api/v1/credit/${customerId}/hold`, data),
+  releaseHold: (customerId: string, data: { override_reason: string }) =>
+    api.post(`/api/v1/credit/${customerId}/release`, data),
+  getTransactions: (customerId: string, limit = 50) =>
+    api.get<ApiResponse<CreditTransaction[]>>(`/api/v1/credit/${customerId}/transactions?limit=${limit}`),
+  getHolds: (customerId: string) =>
+    api.get<ApiResponse<CreditHold[]>>(`/api/v1/credit/${customerId}/holds`),
+  recordInvoice: (data: { customer_id: string; invoice_id: string; invoice_number: string; amount: number }) =>
+    api.post<CreditProfile>('/api/v1/credit/invoice', data),
+  recordPayment: (data: { customer_id: string; invoice_id?: string; amount: number }) =>
+    api.post<CreditProfile>('/api/v1/credit/payment', data),
+};
+
+export interface CreditSummary {
+  total_customers: number;
+  total_credit_limit: number;
+  total_credit_used: number;
+  total_available_credit: number;
+  total_overdue: number;
+  customers_on_hold: number;
+  high_risk_customers: number;
+  avg_utilization_percent: number;
+}
+
+export interface CreditProfile {
+  id: string;
+  customer_id: string;
+  credit_limit: number;
+  credit_used: number;
+  available_credit: number;
+  outstanding_invoices: number;
+  pending_orders: number;
+  overdue_amount: number;
+  overdue_days_avg: number;
+  credit_score: number | null;
+  risk_level: 'Low' | 'Medium' | 'High' | 'Critical';
+  payment_history_score: number | null;
+  last_credit_review: string | null;
+  next_review_date: string | null;
+  auto_hold_enabled: boolean;
+  hold_threshold_percent: number;
+  status: string;
+  utilization_percent: number;
+  is_on_hold: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreditTransaction {
+  id: string;
+  profile_id: string;
+  customer_id: string;
+  transaction_type: string;
+  amount: number;
+  previous_credit_used: number;
+  new_credit_used: number;
+  reference_type: string | null;
+  reference_id: string | null;
+  reference_number: string | null;
+  description: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface CreditHold {
+  id: string;
+  profile_id: string;
+  customer_id: string;
+  hold_type: string;
+  reason: string;
+  amount_over_limit: number;
+  related_order_id: string | null;
+  related_invoice_id: string | null;
+  status: string;
+  placed_by: string | null;
+  placed_at: string;
+  released_by: string | null;
+  released_at: string | null;
+  override_reason: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}

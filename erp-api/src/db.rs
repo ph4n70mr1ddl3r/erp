@@ -68,6 +68,9 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240202000000_bi_i18n_push_bpm_graphql.sql"),
         include_str!("../../migrations/20240101200700_assistant_ocr_fraud_processmining.sql"),
         include_str!("../../migrations/20240101201000_promotions.sql"),
+        include_str!("../../migrations/20240301000000_currency_revaluation.sql"),
+        include_str!("../../migrations/20240302000000_approval_workflow.sql"),
+        include_str!("../../migrations/20240303000000_credit_management.sql"),
     ];
     
     for migration in migration_queries {
