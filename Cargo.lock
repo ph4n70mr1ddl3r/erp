@@ -735,6 +735,7 @@ dependencies = [
  "erp-pricing",
  "erp-processmining",
  "erp-projects",
+ "erp-promotions",
  "erp-purchasing",
  "erp-push",
  "erp-reports",
@@ -1865,6 +1866,22 @@ dependencies = [
  "tokio",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "erp-promotions"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "erp-core",
+ "rand",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]

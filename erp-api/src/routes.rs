@@ -260,6 +260,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/ocr", handlers::ocr::routes())
         .nest("/fraud", handlers::fraud::routes())
         .nest("/processmining", handlers::processmining::routes())
+        .nest("/promotions", promotions_routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
@@ -877,4 +878,47 @@ fn tpm_routes() -> Router<AppState> {
         )
         .route("/funds", post(handlers::tpm::create_trade_fund))
         .route("/funds/:id/commit", post(handlers::tpm::commit_fund))
+}
+
+fn promotions_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/campaigns",
+            get(handlers::promotions::list_promotions).post(handlers::promotions::create_promotion),
+        )
+        .route("/campaigns/:id", get(handlers::promotions::get_promotion))
+        .route(
+            "/campaigns/:id",
+            put(handlers::promotions::update_promotion),
+        )
+        .route(
+            "/campaigns/:id/activate",
+            post(handlers::promotions::activate_promotion),
+        )
+        .route(
+            "/campaigns/:id/deactivate",
+            post(handlers::promotions::deactivate_promotion),
+        )
+        .route(
+            "/campaigns/:id/calculate",
+            post(handlers::promotions::calculate_promotion_discount),
+        )
+        .route(
+            "/campaigns/:id/report",
+            get(handlers::promotions::get_promotion_report),
+        )
+        .route(
+            "/coupons",
+            get(handlers::promotions::list_coupons).post(handlers::promotions::create_coupon),
+        )
+        .route("/coupons/:id", get(handlers::promotions::get_coupon))
+        .route(
+            "/coupons/validate",
+            post(handlers::promotions::validate_coupon),
+        )
+        .route("/coupons/apply", post(handlers::promotions::apply_coupon))
+        .route(
+            "/coupons/generate-batch",
+            post(handlers::promotions::generate_coupon_batch),
+        )
 }

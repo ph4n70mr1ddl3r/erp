@@ -16,6 +16,7 @@ pub mod assistant;
 pub mod ocr;
 pub mod fraud;
 pub mod processmining;
+pub mod promotions;
 
 use axum::{extract::State, Json};
 use serde_json::json;

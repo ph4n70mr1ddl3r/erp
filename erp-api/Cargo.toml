@@ -106,6 +106,7 @@ erp-assistant.workspace = true
 erp-ocr.workspace = true
 erp-fraud.workspace = true
 erp-processmining.workspace = true
+erp-promotions.workspace = true
 async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"

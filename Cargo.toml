@@ -97,6 +97,7 @@ members = [
     "erp-ocr",
     "erp-fraud",
     "erp-processmining",
+    "erp-promotions",
 ]
 resolver = "2"
 
@@ -227,3 +228,4 @@ erp-assistant = { path = "erp-assistant" }
 erp-ocr = { path = "erp-ocr" }
 erp-fraud = { path = "erp-fraud" }
 erp-processmining = { path = "erp-processmining" }
+erp-promotions = { path = "erp-promotions" }
