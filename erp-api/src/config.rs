@@ -3,12 +3,12 @@ use std::env;
 const MIN_JWT_SECRET_LENGTH: usize = 32;
 
 fn generate_dev_secret() -> String {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let timestamp = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    format!("dev-secret-{}-please-change-in-production", timestamp)
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let secret: String = (0..64)
+        .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
+        .collect();
+    format!("dev-{}", secret)
 }
 
 #[derive(Debug, Clone)]
@@ -20,13 +20,26 @@ pub struct Config {
     pub jwt_expiration: i64,
 }
 
+#[derive(Debug)]
+pub struct ConfigError(String);
+
+impl std::fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl std::error::Error for ConfigError {}
+
 impl Default for Config {
     fn default() -> Self {
+        let secret = generate_dev_secret();
+        eprintln!("WARNING: Using generated dev secret. Set JWT_SECRET for production.");
         Self {
             database_url: "sqlite:erp.db?mode=rwc".to_string(),
             server_host: "127.0.0.1".to_string(),
             server_port: 3000,
-            jwt_secret: generate_dev_secret(),
+            jwt_secret: secret,
             jwt_expiration: 24,
         }
     }
@@ -38,17 +51,19 @@ impl Config {
 
         let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| {
             if production_mode {
-                panic!("JWT_SECRET environment variable must be set in production mode");
+                eprintln!("ERROR: JWT_SECRET environment variable must be set in production mode");
+                std::process::exit(1);
             }
             generate_dev_secret()
         });
 
         if jwt_secret.len() < MIN_JWT_SECRET_LENGTH {
             if production_mode {
-                panic!(
-                    "JWT_SECRET must be at least {} characters long in production mode",
+                eprintln!(
+                    "ERROR: JWT_SECRET must be at least {} characters long in production mode",
                     MIN_JWT_SECRET_LENGTH
                 );
+                std::process::exit(1);
             }
             eprintln!(
                 "WARNING: JWT_SECRET is shorter than {} characters. This is insecure for production.",

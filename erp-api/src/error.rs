@@ -19,11 +19,20 @@ impl IntoResponse for ApiError {
             Error::BusinessRule(_) => (StatusCode::UNPROCESSABLE_ENTITY, self.0.to_string()),
             Error::Conflict(_) => (StatusCode::CONFLICT, self.0.to_string()),
             Error::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
-            Error::Database(e) => (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Database error: {}", e),
-            ),
-            Error::Internal(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            Error::Database(e) => {
+                tracing::error!("Database error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal server error".to_string(),
+                )
+            }
+            Error::Internal(e) => {
+                tracing::error!("Internal error: {}", e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Internal server error".to_string(),
+                )
+            }
         };
 
         (status, Json(json!({ "error": message }))).into_response()

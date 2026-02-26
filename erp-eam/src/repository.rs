@@ -1,5 +1,5 @@
 use crate::models::*;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use erp_core::BaseEntity;
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -31,7 +31,7 @@ impl EamRepository {
             equipment.depreciation_method,
             equipment.useful_life_years,
             equipment.current_book_value,
-            equipment.meter_type.as_ref().map(|t| serde_json::to_string(t).unwrap()),
+            equipment.meter_type.as_ref().map(|t| serde_json::to_string(t)).transpose()?,
             equipment.meter_unit,
             equipment.current_meter_reading,
             equipment.created_at.to_rfc3339(),
@@ -45,33 +45,35 @@ impl EamRepository {
             r#"SELECT * FROM equipment_assets WHERE id = ?"#,
             id.to_string()
         ).fetch_optional(pool).await?;
-        Ok(row.map(|r| EquipmentAsset {
-            base: BaseEntity::new(),
-            asset_number: r.asset_number,
-            name: r.name,
-            description: r.description,
-            asset_type: serde_json::from_str(&r.asset_type).unwrap(),
-            category: r.category,
-            manufacturer: r.manufacturer,
-            model: r.model,
-            serial_number: r.serial_number,
-            location_id: r.location_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            department_id: r.department_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            parent_asset_id: r.parent_asset_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            installation_date: r.installation_date.map(|d| d.parse().unwrap()),
-            warranty_end_date: r.warranty_end_date.map(|d| d.parse().unwrap()),
-            criticality: serde_json::from_str(&r.criticality).unwrap(),
-            status: serde_json::from_str(&r.status).unwrap(),
-            acquisition_cost: r.acquisition_cost,
-            depreciation_method: r.depreciation_method,
-            useful_life_years: r.useful_life_years,
-            current_book_value: r.current_book_value,
-            meter_type: r.meter_type.map(|t| serde_json::from_str(&t).unwrap()),
-            meter_unit: r.meter_unit,
-            current_meter_reading: r.current_meter_reading,
-            created_at: r.created_at.parse().unwrap(),
-            updated_at: r.updated_at.parse().unwrap(),
-        }))
+        Ok(row.map(|r| {
+            EquipmentAsset {
+                base: BaseEntity::new(),
+                asset_number: r.asset_number,
+                name: r.name,
+                description: r.description,
+                asset_type: serde_json::from_str(&r.asset_type).context("Invalid asset_type JSON")?,
+                category: r.category,
+                manufacturer: r.manufacturer,
+                model: r.model,
+                serial_number: r.serial_number,
+                location_id: r.location_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid location_id UUID")).transpose()?,
+                department_id: r.department_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid department_id UUID")).transpose()?,
+                parent_asset_id: r.parent_asset_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid parent_asset_id UUID")).transpose()?,
+                installation_date: r.installation_date.as_ref().map(|d| d.parse().context("Invalid installation_date")).transpose()?,
+                warranty_end_date: r.warranty_end_date.as_ref().map(|d| d.parse().context("Invalid warranty_end_date")).transpose()?,
+                criticality: serde_json::from_str(&r.criticality).context("Invalid criticality JSON")?,
+                status: serde_json::from_str(&r.status).context("Invalid status JSON")?,
+                acquisition_cost: r.acquisition_cost,
+                depreciation_method: r.depreciation_method,
+                useful_life_years: r.useful_life_years,
+                current_book_value: r.current_book_value,
+                meter_type: r.meter_type.as_ref().map(|t| serde_json::from_str(t).context("Invalid meter_type JSON")).transpose()?,
+                meter_unit: r.meter_unit,
+                current_meter_reading: r.current_meter_reading,
+                created_at: r.created_at.parse().context("Invalid created_at")?,
+                updated_at: r.updated_at.parse().context("Invalid updated_at")?,
+            }
+        }).transpose())
     }
 
     pub async fn create_work_order(pool: &SqlitePool, wo: &WorkOrder) -> Result<()> {
@@ -118,39 +120,41 @@ impl EamRepository {
             r#"SELECT * FROM work_orders WHERE id = ?"#,
             id.to_string()
         ).fetch_optional(pool).await?;
-        Ok(row.map(|r| WorkOrder {
-            base: BaseEntity::new(),
-            wo_number: r.wo_number,
-            description: r.description,
-            work_order_type: serde_json::from_str(&r.work_order_type).unwrap(),
-            priority: serde_json::from_str(&r.priority).unwrap(),
-            asset_id: r.asset_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            location_id: r.location_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            failure_code_id: r.failure_code_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            problem_description: r.problem_description,
-            cause_description: r.cause_description,
-            remedy_description: r.remedy_description,
-            requested_by: r.requested_by.map(|u| Uuid::parse_str(&u).unwrap()),
-            requested_date: r.requested_date.parse().unwrap(),
-            required_date: r.required_date.map(|d| d.parse().unwrap()),
-            scheduled_start: r.scheduled_start.map(|d| d.parse().unwrap()),
-            scheduled_end: r.scheduled_end.map(|d| d.parse().unwrap()),
-            actual_start: r.actual_start.map(|d| d.parse().unwrap()),
-            actual_end: r.actual_end.map(|d| d.parse().unwrap()),
-            assigned_to: r.assigned_to.map(|u| Uuid::parse_str(&u).unwrap()),
-            assigned_team_id: r.assigned_team_id.map(|u| Uuid::parse_str(&u).unwrap()),
-            status: serde_json::from_str(&r.status).unwrap(),
-            estimated_labor_hours: r.estimated_labor_hours,
-            actual_labor_hours: r.actual_labor_hours,
-            estimated_cost: r.estimated_cost,
-            actual_cost: r.actual_cost,
-            downtime_hours: r.downtime_hours,
-            completion_notes: r.completion_notes,
-            closed_by: r.closed_by.map(|u| Uuid::parse_str(&u).unwrap()),
-            closed_at: r.closed_at.map(|d| d.parse().unwrap()),
-            created_at: r.created_at.parse().unwrap(),
-            updated_at: r.updated_at.parse().unwrap(),
-        }))
+        Ok(row.map(|r| {
+            WorkOrder {
+                base: BaseEntity::new(),
+                wo_number: r.wo_number,
+                description: r.description,
+                work_order_type: serde_json::from_str(&r.work_order_type).context("Invalid work_order_type JSON")?,
+                priority: serde_json::from_str(&r.priority).context("Invalid priority JSON")?,
+                asset_id: r.asset_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid asset_id UUID")).transpose()?,
+                location_id: r.location_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid location_id UUID")).transpose()?,
+                failure_code_id: r.failure_code_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid failure_code_id UUID")).transpose()?,
+                problem_description: r.problem_description,
+                cause_description: r.cause_description,
+                remedy_description: r.remedy_description,
+                requested_by: r.requested_by.as_ref().map(|u| Uuid::parse_str(u).context("Invalid requested_by UUID")).transpose()?,
+                requested_date: r.requested_date.parse().context("Invalid requested_date")?,
+                required_date: r.required_date.as_ref().map(|d| d.parse().context("Invalid required_date")).transpose()?,
+                scheduled_start: r.scheduled_start.as_ref().map(|d| d.parse().context("Invalid scheduled_start")).transpose()?,
+                scheduled_end: r.scheduled_end.as_ref().map(|d| d.parse().context("Invalid scheduled_end")).transpose()?,
+                actual_start: r.actual_start.as_ref().map(|d| d.parse().context("Invalid actual_start")).transpose()?,
+                actual_end: r.actual_end.as_ref().map(|d| d.parse().context("Invalid actual_end")).transpose()?,
+                assigned_to: r.assigned_to.as_ref().map(|u| Uuid::parse_str(u).context("Invalid assigned_to UUID")).transpose()?,
+                assigned_team_id: r.assigned_team_id.as_ref().map(|u| Uuid::parse_str(u).context("Invalid assigned_team_id UUID")).transpose()?,
+                status: serde_json::from_str(&r.status).context("Invalid status JSON")?,
+                estimated_labor_hours: r.estimated_labor_hours,
+                actual_labor_hours: r.actual_labor_hours,
+                estimated_cost: r.estimated_cost,
+                actual_cost: r.actual_cost,
+                downtime_hours: r.downtime_hours,
+                completion_notes: r.completion_notes,
+                closed_by: r.closed_by.as_ref().map(|u| Uuid::parse_str(u).context("Invalid closed_by UUID")).transpose()?,
+                closed_at: r.closed_at.as_ref().map(|d| d.parse().context("Invalid closed_at")).transpose()?,
+                created_at: r.created_at.parse().context("Invalid created_at")?,
+                updated_at: r.updated_at.parse().context("Invalid updated_at")?,
+            }
+        }).transpose())
     }
 
     pub async fn create_pm_schedule(pool: &SqlitePool, pm: &PreventiveMaintenanceSchedule) -> Result<()> {
