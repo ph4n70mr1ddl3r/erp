@@ -1,0 +1,15 @@
+[package]
+name = "erp-approval-workflow"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+erp-core.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+async-trait.workspace = true
+tracing.workspace = true

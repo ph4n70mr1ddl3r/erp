@@ -702,3 +702,164 @@ export const rules = {
   evaluateTable: (data: { table_id: string; inputs: Record<string, unknown> }) =>
     api.post('/api/v1/rules/decision-tables/evaluate', data),
 };
+
+export interface ApprovalLevel {
+  id: string;
+  level_number: number;
+  name: string;
+  description?: string;
+  approver_type: string;
+  approver_ids: string[];
+  min_approvers: number;
+  skip_if_approved_above: boolean;
+  due_hours?: number;
+  escalation_to?: string;
+}
+
+export interface ApprovalWorkflow {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  document_type: string;
+  approval_type: string;
+  min_amount?: number;
+  max_amount?: number;
+  auto_approve_below?: number;
+  escalation_hours?: number;
+  notify_requester: boolean;
+  notify_approver: boolean;
+  allow_delegation: boolean;
+  allow_reassignment: boolean;
+  require_comments: boolean;
+  status: string;
+  levels: ApprovalLevel[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApprovalRequest {
+  id: string;
+  request_number: string;
+  workflow_id: string;
+  document_type: string;
+  document_id: string;
+  document_number: string;
+  requested_by: string;
+  requested_at: string;
+  amount: number;
+  currency: string;
+  status: string;
+  current_level?: number;
+  due_date?: string;
+  approved_at?: string;
+  approved_by?: string;
+  rejected_at?: string;
+  rejected_by?: string;
+  rejection_reason?: string;
+  approvals: {
+    id: string;
+    level_number: number;
+    approver_id: string;
+    action: string;
+    comments?: string;
+    delegated_to?: string;
+    created_at: string;
+  }[];
+}
+
+export interface PendingApprovalSummary {
+  user_id: string;
+  pending_count: number;
+  total_amount: number;
+  overdue_count: number;
+  by_document_type: {
+    document_type: string;
+    count: number;
+    total_amount: number;
+  }[];
+}
+
+export const approvalWorkflow = {
+  listWorkflows: (page = 1, perPage = 20) =>
+    api.get<Paginated<ApprovalWorkflow>>(`/api/v1/approval-workflow/workflows?page=${page}&per_page=${perPage}`),
+  getWorkflow: (id: string) =>
+    api.get<ApprovalWorkflow>(`/api/v1/approval-workflow/workflows/${id}`),
+  createWorkflow: (data: {
+    code: string;
+    name: string;
+    description?: string;
+    document_type: string;
+    approval_type?: string;
+    min_amount?: number;
+    max_amount?: number;
+    auto_approve_below?: number;
+    escalation_hours?: number;
+    notify_requester?: boolean;
+    notify_approver?: boolean;
+    allow_delegation?: boolean;
+    allow_reassignment?: boolean;
+    require_comments?: boolean;
+    levels: {
+      name: string;
+      description?: string;
+      approver_type?: string;
+      approver_ids: string[];
+      min_approvers?: number;
+      skip_if_approved_above?: boolean;
+      due_hours?: number;
+      escalation_to?: string;
+    }[];
+  }) => api.post<ApprovalWorkflow>('/api/v1/approval-workflow/workflows', data),
+  updateWorkflow: (id: string, data: Partial<{
+    name: string;
+    description: string;
+    approval_type: string;
+    min_amount: number;
+    max_amount: number;
+    auto_approve_below: number;
+    escalation_hours: number;
+    notify_requester: boolean;
+    notify_approver: boolean;
+    allow_delegation: boolean;
+    allow_reassignment: boolean;
+    require_comments: boolean;
+    status: string;
+    levels: {
+      name: string;
+      description?: string;
+      approver_type?: string;
+      approver_ids: string[];
+      min_approvers?: number;
+      skip_if_approved_above?: boolean;
+      due_hours?: number;
+      escalation_to?: string;
+    }[];
+  }>) => api.put<ApprovalWorkflow>(`/api/v1/approval-workflow/workflows/${id}`, data),
+  deleteWorkflow: (id: string) =>
+    api.delete(`/api/v1/approval-workflow/workflows/${id}`),
+  
+  listRequests: (page = 1, perPage = 20) =>
+    api.get<Paginated<ApprovalRequest>>(`/api/v1/approval-workflow/requests?page=${page}&per_page=${perPage}`),
+  getRequest: (id: string) =>
+    api.get<ApprovalRequest>(`/api/v1/approval-workflow/requests/${id}`),
+  submitForApproval: (data: {
+    document_type: string;
+    document_id: string;
+    document_number: string;
+    requested_by: string;
+    amount: number;
+    currency?: string;
+  }) => api.post<ApprovalRequest>('/api/v1/approval-workflow/requests', data),
+  approveRequest: (id: string, data: { approver_id: string; comments?: string }) =>
+    api.post<ApprovalRequest>(`/api/v1/approval-workflow/requests/${id}/approve`, data),
+  rejectRequest: (id: string, data: { approver_id: string; reason: string }) =>
+    api.post<ApprovalRequest>(`/api/v1/approval-workflow/requests/${id}/reject`, data),
+  cancelRequest: (id: string) =>
+    api.post<ApprovalRequest>(`/api/v1/approval-workflow/requests/${id}/cancel`),
+  
+  getPendingApprovals: (userId: string, page = 1, perPage = 20) =>
+    api.get<Paginated<ApprovalRequest>>(`/api/v1/approval-workflow/pending/${userId}?page=${page}&per_page=${perPage}`),
+  getPendingSummary: (userId: string) =>
+    api.get<PendingApprovalSummary>(`/api/v1/approval-workflow/pending/${userId}/summary`),
+};

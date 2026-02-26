@@ -23,7 +23,8 @@ import {
   Gavel,
   Settings,
   Zap,
-  RefreshCw
+  RefreshCw,
+  CheckSquare
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -51,6 +52,7 @@ const navItems = [
   { path: '/sourcing', icon: Gavel, label: 'Sourcing' },
   { path: '/config', icon: Settings, label: 'Settings' },
   { path: '/rules', icon: Zap, label: 'Rules' },
+  { path: '/approval-workflow', icon: CheckSquare, label: 'Approvals' },
   { path: '/currency-revaluation', icon: RefreshCw, label: 'FX Revaluation' },
 ];
 

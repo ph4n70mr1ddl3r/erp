@@ -98,6 +98,7 @@ members = [
     "erp-fraud",
     "erp-processmining",
     "erp-promotions",
+    "erp-approval-workflow",
 ]
 resolver = "2"
 
@@ -229,3 +230,4 @@ erp-ocr = { path = "erp-ocr" }
 erp-fraud = { path = "erp-fraud" }
 erp-processmining = { path = "erp-processmining" }
 erp-promotions = { path = "erp-promotions" }
+erp-approval-workflow = { path = "erp-approval-workflow" }

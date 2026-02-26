@@ -261,6 +261,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/fraud", handlers::fraud::routes())
         .nest("/processmining", handlers::processmining::routes())
         .nest("/promotions", promotions_routes())
+        .nest("/approval-workflow", approval_workflow_routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
@@ -945,5 +946,49 @@ fn promotions_routes() -> Router<AppState> {
         .route(
             "/coupons/generate-batch",
             post(handlers::promotions::generate_coupon_batch),
+        )
+}
+
+fn approval_workflow_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/workflows",
+            get(handlers::approval_workflow::list_workflows)
+                .post(handlers::approval_workflow::create_workflow),
+        )
+        .route(
+            "/workflows/:id",
+            get(handlers::approval_workflow::get_workflow)
+                .put(handlers::approval_workflow::update_workflow)
+                .delete(handlers::approval_workflow::delete_workflow),
+        )
+        .route(
+            "/requests",
+            get(handlers::approval_workflow::list_requests)
+                .post(handlers::approval_workflow::submit_for_approval),
+        )
+        .route(
+            "/requests/:id",
+            get(handlers::approval_workflow::get_request),
+        )
+        .route(
+            "/requests/:id/approve",
+            post(handlers::approval_workflow::approve_request),
+        )
+        .route(
+            "/requests/:id/reject",
+            post(handlers::approval_workflow::reject_request),
+        )
+        .route(
+            "/requests/:id/cancel",
+            post(handlers::approval_workflow::cancel_request),
+        )
+        .route(
+            "/pending/:user_id",
+            get(handlers::approval_workflow::get_pending_approvals),
+        )
+        .route(
+            "/pending/:user_id/summary",
+            get(handlers::approval_workflow::get_pending_summary),
         )
 }
