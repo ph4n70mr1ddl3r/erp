@@ -1170,3 +1170,72 @@ pub struct SupplierEvaluationLine {
     pub weighted_score: f64,
     pub comments: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurrencyRevaluation {
+    pub id: Uuid,
+    pub revaluation_number: String,
+    pub revaluation_date: DateTime<Utc>,
+    pub period_start: DateTime<Utc>,
+    pub period_end: DateTime<Utc>,
+    pub base_currency: String,
+    pub status: CurrencyRevaluationStatus,
+    pub total_unrealized_gain: i64,
+    pub total_unrealized_loss: i64,
+    pub net_unrealized: i64,
+    pub journal_entry_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+    pub created_by: Option<Uuid>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CurrencyRevaluationStatus {
+    Draft,
+    Pending,
+    Completed,
+    Reversed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurrencyRevaluationLine {
+    pub id: Uuid,
+    pub revaluation_id: Uuid,
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub currency: String,
+    pub original_balance: i64,
+    pub original_rate: f64,
+    pub revaluation_rate: f64,
+    pub base_currency_balance: i64,
+    pub revalued_balance: i64,
+    pub unrealized_gain: i64,
+    pub unrealized_loss: i64,
+    pub gain_account_id: Option<Uuid>,
+    pub loss_account_id: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurrencyRevaluationSummary {
+    pub currency: String,
+    pub total_accounts: i32,
+    pub total_original_balance: i64,
+    pub total_revalued_balance: i64,
+    pub total_unrealized_gain: i64,
+    pub total_unrealized_loss: i64,
+    pub net_change: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CurrencyRevaluationPreview {
+    pub revaluation_date: DateTime<Utc>,
+    pub base_currency: String,
+    pub lines: Vec<CurrencyRevaluationLine>,
+    pub total_unrealized_gain: i64,
+    pub total_unrealized_loss: i64,
+    pub net_unrealized: i64,
+    pub summaries: Vec<CurrencyRevaluationSummary>,
+}

@@ -22,7 +22,8 @@ import {
   DollarSign,
   Gavel,
   Settings,
-  Zap
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -50,6 +51,7 @@ const navItems = [
   { path: '/sourcing', icon: Gavel, label: 'Sourcing' },
   { path: '/config', icon: Settings, label: 'Settings' },
   { path: '/rules', icon: Zap, label: 'Rules' },
+  { path: '/currency-revaluation', icon: RefreshCw, label: 'FX Revaluation' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

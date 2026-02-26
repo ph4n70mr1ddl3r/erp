@@ -15,7 +15,8 @@ use erp_finance::{Account, AccountType, JournalEntry, JournalLine, FiscalYear,
                  DunningPolicy, DunningLevel, DunningLevelConfig, DunningRun,
                  CollectionCase, CollectionPriority, CollectionActivityType,
                  AccountingPeriod, PeriodLockType, RecurringJournal, RecurringFrequency,
-                 AgingReport};
+                 AgingReport, CurrencyRevaluationService, CurrencyRevaluation,
+                 CurrencyRevaluationLine, CurrencyRevaluationPreview, CurrencyRevaluationStatus};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateAccountRequest {
@@ -898,3 +899,221 @@ pub async fn deactivate_recurring_journal(
 ) -> ApiResult<Json<serde_json::Value>> {
     RecurringJournalService::deactivate(&state.pool, id).await?;
     Ok(Json(serde_json::json!({ "status": "deactivated" })))
+}
+
+#[derive(Deserialize)]
+pub struct PreviewCurrencyRevaluationRequest {
+    pub revaluation_date: String,
+    pub base_currency: Option<String>,
+}
+
+#[derive(Serialize)]
+pub struct CurrencyRevaluationPreviewResponse {
+    pub revaluation_date: String,
+    pub base_currency: String,
+    pub lines: Vec<CurrencyRevaluationLineResponse>,
+    pub total_unrealized_gain: f64,
+    pub total_unrealized_loss: f64,
+    pub net_unrealized: f64,
+    pub summaries: Vec<CurrencyRevaluationSummaryResponse>,
+}
+
+#[derive(Serialize)]
+pub struct CurrencyRevaluationLineResponse {
+    pub account_id: Uuid,
+    pub account_code: String,
+    pub account_name: String,
+    pub currency: String,
+    pub original_balance: f64,
+    pub original_rate: f64,
+    pub revaluation_rate: f64,
+    pub base_currency_balance: f64,
+    pub revalued_balance: f64,
+    pub unrealized_gain: f64,
+    pub unrealized_loss: f64,
+}
+
+#[derive(Serialize)]
+pub struct CurrencyRevaluationSummaryResponse {
+    pub currency: String,
+    pub total_accounts: i32,
+    pub total_original_balance: f64,
+    pub total_revalued_balance: f64,
+    pub total_unrealized_gain: f64,
+    pub total_unrealized_loss: f64,
+    pub net_change: f64,
+}
+
+impl From<CurrencyRevaluationPreview> for CurrencyRevaluationPreviewResponse {
+    fn from(p: CurrencyRevaluationPreview) -> Self {
+        Self {
+            revaluation_date: p.revaluation_date.to_rfc3339(),
+            base_currency: p.base_currency,
+            lines: p.lines.into_iter().map(|l| CurrencyRevaluationLineResponse {
+                account_id: l.account_id,
+                account_code: l.account_code,
+                account_name: l.account_name,
+                currency: l.currency,
+                original_balance: l.original_balance as f64 / 100.0,
+                original_rate: l.original_rate,
+                revaluation_rate: l.revaluation_rate,
+                base_currency_balance: l.base_currency_balance as f64 / 100.0,
+                revalued_balance: l.revalued_balance as f64 / 100.0,
+                unrealized_gain: l.unrealized_gain as f64 / 100.0,
+                unrealized_loss: l.unrealized_loss as f64 / 100.0,
+            }).collect(),
+            total_unrealized_gain: p.total_unrealized_gain as f64 / 100.0,
+            total_unrealized_loss: p.total_unrealized_loss as f64 / 100.0,
+            net_unrealized: p.net_unrealized as f64 / 100.0,
+            summaries: p.summaries.into_iter().map(|s| CurrencyRevaluationSummaryResponse {
+                currency: s.currency,
+                total_accounts: s.total_accounts,
+                total_original_balance: s.total_original_balance as f64 / 100.0,
+                total_revalued_balance: s.total_revalued_balance as f64 / 100.0,
+                total_unrealized_gain: s.total_unrealized_gain as f64 / 100.0,
+                total_unrealized_loss: s.total_unrealized_loss as f64 / 100.0,
+                net_change: s.net_change as f64 / 100.0,
+            }).collect(),
+        }
+    }
+}
+
+pub async fn preview_currency_revaluation(
+    State(state): State<AppState>,
+    Json(req): Json<PreviewCurrencyRevaluationRequest>,
+) -> ApiResult<Json<CurrencyRevaluationPreviewResponse>> {
+    let revaluation_date = chrono::DateTime::parse_from_rfc3339(&req.revaluation_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| erp_core::Error::validation("Invalid revaluation date format"))?;
+    
+    let base_currency = req.base_currency.unwrap_or_else(|| "USD".to_string());
+    
+    let preview = CurrencyRevaluationService::preview_revaluation(&state.pool, revaluation_date, &base_currency).await?;
+    Ok(Json(CurrencyRevaluationPreviewResponse::from(preview)))
+}
+
+#[derive(Deserialize)]
+pub struct CreateCurrencyRevaluationRequest {
+    pub revaluation_date: String,
+    pub period_start: String,
+    pub period_end: String,
+    pub base_currency: Option<String>,
+    pub gain_account_id: Option<Uuid>,
+    pub loss_account_id: Option<Uuid>,
+}
+
+#[derive(Serialize)]
+pub struct CurrencyRevaluationResponse {
+    pub id: Uuid,
+    pub revaluation_number: String,
+    pub revaluation_date: String,
+    pub period_start: String,
+    pub period_end: String,
+    pub base_currency: String,
+    pub status: String,
+    pub total_unrealized_gain: f64,
+    pub total_unrealized_loss: f64,
+    pub net_unrealized: f64,
+    pub journal_entry_id: Option<Uuid>,
+}
+
+impl From<CurrencyRevaluation> for CurrencyRevaluationResponse {
+    fn from(r: CurrencyRevaluation) -> Self {
+        Self {
+            id: r.id,
+            revaluation_number: r.revaluation_number,
+            revaluation_date: r.revaluation_date.to_rfc3339(),
+            period_start: r.period_start.to_rfc3339(),
+            period_end: r.period_end.to_rfc3339(),
+            base_currency: r.base_currency,
+            status: format!("{:?}", r.status),
+            total_unrealized_gain: r.total_unrealized_gain as f64 / 100.0,
+            total_unrealized_loss: r.total_unrealized_loss as f64 / 100.0,
+            net_unrealized: r.net_unrealized as f64 / 100.0,
+            journal_entry_id: r.journal_entry_id,
+        }
+    }
+}
+
+pub async fn list_currency_revaluations(
+    State(state): State<AppState>,
+) -> ApiResult<Json<Vec<CurrencyRevaluationResponse>>> {
+    let revaluations = CurrencyRevaluationService::list_revaluations(&state.pool).await?;
+    Ok(Json(revaluations.into_iter().map(CurrencyRevaluationResponse::from).collect()))
+}
+
+pub async fn get_currency_revaluation(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<CurrencyRevaluationResponse>> {
+    let revaluation = CurrencyRevaluationService::get_revaluation(&state.pool, id).await?;
+    Ok(Json(CurrencyRevaluationResponse::from(revaluation)))
+}
+
+pub async fn create_currency_revaluation(
+    State(state): State<AppState>,
+    Json(req): Json<CreateCurrencyRevaluationRequest>,
+) -> ApiResult<Json<CurrencyRevaluationResponse>> {
+    let revaluation_date = chrono::DateTime::parse_from_rfc3339(&req.revaluation_date)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| erp_core::Error::validation("Invalid revaluation date format"))?;
+    
+    let period_start = chrono::DateTime::parse_from_rfc3339(&req.period_start)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| erp_core::Error::validation("Invalid period start format"))?;
+    
+    let period_end = chrono::DateTime::parse_from_rfc3339(&req.period_end)
+        .map(|d| d.with_timezone(&Utc))
+        .map_err(|_| erp_core::Error::validation("Invalid period end format"))?;
+    
+    let base_currency = req.base_currency.unwrap_or_else(|| "USD".to_string());
+    
+    let revaluation = CurrencyRevaluationService::create_revaluation(
+        &state.pool,
+        revaluation_date,
+        period_start,
+        period_end,
+        &base_currency,
+        req.gain_account_id,
+        req.loss_account_id,
+        None,
+    ).await?;
+    
+    Ok(Json(CurrencyRevaluationResponse::from(revaluation)))
+}
+
+pub async fn get_currency_revaluation_lines(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<Vec<CurrencyRevaluationLineResponse>>> {
+    let lines = CurrencyRevaluationService::get_revaluation_lines(&state.pool, id).await?;
+    Ok(Json(lines.into_iter().map(|l| CurrencyRevaluationLineResponse {
+        account_id: l.account_id,
+        account_code: l.account_code,
+        account_name: l.account_name,
+        currency: l.currency,
+        original_balance: l.original_balance as f64 / 100.0,
+        original_rate: l.original_rate,
+        revaluation_rate: l.revaluation_rate,
+        base_currency_balance: l.base_currency_balance as f64 / 100.0,
+        revalued_balance: l.revalued_balance as f64 / 100.0,
+        unrealized_gain: l.unrealized_gain as f64 / 100.0,
+        unrealized_loss: l.unrealized_loss as f64 / 100.0,
+    }).collect()))
+}
+
+pub async fn post_currency_revaluation(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<CurrencyRevaluationResponse>> {
+    let revaluation = CurrencyRevaluationService::post_revaluation(&state.pool, id).await?;
+    Ok(Json(CurrencyRevaluationResponse::from(revaluation)))
+}
+
+pub async fn reverse_currency_revaluation(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> ApiResult<Json<CurrencyRevaluationResponse>> {
+    let revaluation = CurrencyRevaluationService::reverse_revaluation(&state.pool, id).await?;
+    Ok(Json(CurrencyRevaluationResponse::from(revaluation)))
+})

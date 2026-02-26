@@ -3351,6 +3351,530 @@ impl From<RecurringJournalLineRow> for RecurringJournalLine {
     }
 }
 
+pub struct CurrencyRevaluationService;
+
+impl CurrencyRevaluationService {
+    pub fn new() -> Self { Self }
+
+    pub async fn preview_revaluation(
+        pool: &SqlitePool,
+        revaluation_date: DateTime<Utc>,
+        base_currency: &str,
+    ) -> Result<CurrencyRevaluationPreview> {
+        let foreign_accounts = Self::get_foreign_currency_accounts(pool).await?;
+        let mut lines = Vec::new();
+        let mut total_gain = 0i64;
+        let mut total_loss = 0i64;
+        let mut currency_summaries: std::collections::HashMap<String, CurrencyRevaluationSummary> = std::collections::HashMap::new();
+
+        for account in foreign_accounts {
+            if account.currency == base_currency {
+                continue;
+            }
+
+            let original_rate = Self::get_historical_rate(pool, &account.currency, base_currency, account.original_date).await?;
+            let revaluation_rate = CurrencyService::get_exchange_rate(pool, &account.currency, base_currency).await.unwrap_or(1.0);
+            
+            let base_currency_balance = (account.original_balance as f64 * original_rate) as i64;
+            let revalued_balance = (account.original_balance as f64 * revaluation_rate) as i64;
+            let difference = revalued_balance - base_currency_balance;
+
+            let (unrealized_gain, unrealized_loss) = if difference > 0 {
+                (difference, 0)
+            } else {
+                (0, difference.abs())
+            };
+
+            total_gain += unrealized_gain;
+            total_loss += unrealized_loss;
+
+            let line = CurrencyRevaluationLine {
+                id: Uuid::new_v4(),
+                revaluation_id: Uuid::nil(),
+                account_id: account.account_id,
+                account_code: account.account_code.clone(),
+                account_name: account.account_name.clone(),
+                currency: account.currency.clone(),
+                original_balance: account.original_balance,
+                original_rate,
+                revaluation_rate,
+                base_currency_balance,
+                revalued_balance,
+                unrealized_gain,
+                unrealized_loss,
+                gain_account_id: None,
+                loss_account_id: None,
+                created_at: chrono::Utc::now(),
+            };
+
+            let summary = currency_summaries.entry(account.currency.clone()).or_insert(CurrencyRevaluationSummary {
+                currency: account.currency.clone(),
+                total_accounts: 0,
+                total_original_balance: 0,
+                total_revalued_balance: 0,
+                total_unrealized_gain: 0,
+                total_unrealized_loss: 0,
+                net_change: 0,
+            });
+            summary.total_accounts += 1;
+            summary.total_original_balance += account.original_balance;
+            summary.total_revalued_balance += revalued_balance;
+            summary.total_unrealized_gain += unrealized_gain;
+            summary.total_unrealized_loss += unrealized_loss;
+            summary.net_change += difference;
+
+            lines.push(line);
+        }
+
+        Ok(CurrencyRevaluationPreview {
+            revaluation_date,
+            base_currency: base_currency.to_string(),
+            lines,
+            total_unrealized_gain: total_gain,
+            total_unrealized_loss: total_loss,
+            net_unrealized: total_gain - total_loss,
+            summaries: currency_summaries.into_values().collect(),
+        })
+    }
+
+    pub async fn create_revaluation(
+        pool: &SqlitePool,
+        revaluation_date: DateTime<Utc>,
+        period_start: DateTime<Utc>,
+        period_end: DateTime<Utc>,
+        base_currency: &str,
+        gain_account_id: Option<Uuid>,
+        loss_account_id: Option<Uuid>,
+        created_by: Option<Uuid>,
+    ) -> Result<CurrencyRevaluation> {
+        let now = chrono::Utc::now();
+        let id = Uuid::new_v4();
+        let revaluation_number = format!("CR-{}", now.format("%Y%m%d%H%M%S"));
+
+        let revaluation = CurrencyRevaluation {
+            id,
+            revaluation_number,
+            revaluation_date,
+            period_start,
+            period_end,
+            base_currency: base_currency.to_string(),
+            status: CurrencyRevaluationStatus::Draft,
+            total_unrealized_gain: 0,
+            total_unrealized_loss: 0,
+            net_unrealized: 0,
+            journal_entry_id: None,
+            created_at: now,
+            updated_at: now,
+            created_by,
+        };
+
+        sqlx::query(
+            "INSERT INTO currency_revaluations (id, revaluation_number, revaluation_date, period_start, period_end, base_currency, status, total_unrealized_gain, total_unrealized_loss, net_unrealized, journal_entry_id, created_at, updated_at, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, 'Draft', 0, 0, 0, NULL, ?, ?, ?)"
+        )
+        .bind(revaluation.id.to_string())
+        .bind(&revaluation.revaluation_number)
+        .bind(revaluation.revaluation_date.to_rfc3339())
+        .bind(revaluation.period_start.to_rfc3339())
+        .bind(revaluation.period_end.to_rfc3339())
+        .bind(&revaluation.base_currency)
+        .bind(revaluation.created_at.to_rfc3339())
+        .bind(revaluation.updated_at.to_rfc3339())
+        .bind(revaluation.created_by.map(|id| id.to_string()))
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        let preview = Self::preview_revaluation(pool, revaluation_date, base_currency).await?;
+        
+        for mut line in preview.lines {
+            line.revaluation_id = id;
+            line.gain_account_id = gain_account_id;
+            line.loss_account_id = loss_account_id;
+
+            sqlx::query(
+                "INSERT INTO currency_revaluation_lines (id, revaluation_id, account_id, account_code, account_name, currency, original_balance, original_rate, revaluation_rate, base_currency_balance, revalued_balance, unrealized_gain, unrealized_loss, gain_account_id, loss_account_id, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            )
+            .bind(line.id.to_string())
+            .bind(line.revaluation_id.to_string())
+            .bind(line.account_id.to_string())
+            .bind(&line.account_code)
+            .bind(&line.account_name)
+            .bind(&line.currency)
+            .bind(line.original_balance)
+            .bind(line.original_rate)
+            .bind(line.revaluation_rate)
+            .bind(line.base_currency_balance)
+            .bind(line.revalued_balance)
+            .bind(line.unrealized_gain)
+            .bind(line.unrealized_loss)
+            .bind(line.gain_account_id.map(|id| id.to_string()))
+            .bind(line.loss_account_id.map(|id| id.to_string()))
+            .bind(line.created_at.to_rfc3339())
+            .execute(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+        }
+
+        sqlx::query(
+            "UPDATE currency_revaluations SET total_unrealized_gain = ?, total_unrealized_loss = ?, net_unrealized = ? WHERE id = ?"
+        )
+        .bind(preview.total_unrealized_gain)
+        .bind(preview.total_unrealized_loss)
+        .bind(preview.net_unrealized)
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        Ok(revaluation)
+    }
+
+    pub async fn get_revaluation(pool: &SqlitePool, id: Uuid) -> Result<CurrencyRevaluation> {
+        let row = sqlx::query_as::<_, CurrencyRevaluationRow>(
+            "SELECT id, revaluation_number, revaluation_date, period_start, period_end, base_currency, status, total_unrealized_gain, total_unrealized_loss, net_unrealized, journal_entry_id, created_at, updated_at, created_by
+             FROM currency_revaluations WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| Error::Database(e))?
+        .ok_or_else(|| Error::not_found("CurrencyRevaluation", &id.to_string()))?;
+
+        Ok(row.into())
+    }
+
+    pub async fn list_revaluations(pool: &SqlitePool) -> Result<Vec<CurrencyRevaluation>> {
+        let rows = sqlx::query_as::<_, CurrencyRevaluationRow>(
+            "SELECT id, revaluation_number, revaluation_date, period_start, period_end, base_currency, status, total_unrealized_gain, total_unrealized_loss, net_unrealized, journal_entry_id, created_at, updated_at, created_by
+             FROM currency_revaluations ORDER BY revaluation_date DESC"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn get_revaluation_lines(pool: &SqlitePool, revaluation_id: Uuid) -> Result<Vec<CurrencyRevaluationLine>> {
+        let rows = sqlx::query_as::<_, CurrencyRevaluationLineRow>(
+            "SELECT id, revaluation_id, account_id, account_code, account_name, currency, original_balance, original_rate, revaluation_rate, base_currency_balance, revalued_balance, unrealized_gain, unrealized_loss, gain_account_id, loss_account_id, created_at
+             FROM currency_revaluation_lines WHERE revaluation_id = ? ORDER BY currency, account_code"
+        )
+        .bind(revaluation_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        Ok(rows.into_iter().map(|r| r.into()).collect())
+    }
+
+    pub async fn post_revaluation(pool: &SqlitePool, id: Uuid) -> Result<CurrencyRevaluation> {
+        let revaluation = Self::get_revaluation(pool, id).await?;
+        
+        if revaluation.status != CurrencyRevaluationStatus::Draft {
+            return Err(Error::business_rule("Revaluation must be in Draft status to post"));
+        }
+
+        let lines = Self::get_revaluation_lines(pool, id).await?;
+        
+        if lines.is_empty() {
+            return Err(Error::business_rule("No revaluation lines to post"));
+        }
+
+        let journal_entry_id = Self::create_revaluation_journal_entry(pool, &revaluation, &lines).await?;
+
+        let now = chrono::Utc::now();
+        sqlx::query(
+            "UPDATE currency_revaluations SET status = 'Completed', journal_entry_id = ?, updated_at = ? WHERE id = ?"
+        )
+        .bind(journal_entry_id.to_string())
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        Self::get_revaluation(pool, id).await
+    }
+
+    pub async fn reverse_revaluation(pool: &SqlitePool, id: Uuid) -> Result<CurrencyRevaluation> {
+        let revaluation = Self::get_revaluation(pool, id).await?;
+        
+        if revaluation.status != CurrencyRevaluationStatus::Completed {
+            return Err(Error::business_rule("Only completed revaluations can be reversed"));
+        }
+
+        if let Some(je_id) = revaluation.journal_entry_id {
+            sqlx::query(
+                "UPDATE journal_entries SET status = 'Draft' WHERE id = ?"
+            )
+            .bind(je_id.to_string())
+            .execute(pool)
+            .await
+            .ok();
+        }
+
+        let now = chrono::Utc::now();
+        sqlx::query(
+            "UPDATE currency_revaluations SET status = 'Reversed', updated_at = ? WHERE id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        Self::get_revaluation(pool, id).await
+    }
+
+    async fn create_revaluation_journal_entry(
+        pool: &SqlitePool,
+        revaluation: &CurrencyRevaluation,
+        lines: &[CurrencyRevaluationLine],
+    ) -> Result<Uuid> {
+        let now = chrono::Utc::now();
+        let je_id = Uuid::new_v4();
+        let entry_number = format!("JE-{}", now.format("%Y%m%d%H%M%S"));
+        let description = format!("Currency Revaluation - {}", revaluation.revaluation_number);
+
+        sqlx::query(
+            "INSERT INTO journal_entries (id, entry_number, date, description, reference, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, NULL, 'Completed', ?, ?)"
+        )
+        .bind(je_id.to_string())
+        .bind(&entry_number)
+        .bind(revaluation.revaluation_date.to_rfc3339())
+        .bind(&description)
+        .bind(now.to_rfc3339())
+        .bind(now.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        for line in lines {
+            if line.unrealized_gain > 0 {
+                let line_id = Uuid::new_v4();
+                sqlx::query(
+                    "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                     VALUES (?, ?, ?, ?, 0, ?)"
+                )
+                .bind(line_id.to_string())
+                .bind(je_id.to_string())
+                .bind(line.account_id.to_string())
+                .bind(line.unrealized_gain)
+                .bind(format!("Unrealized gain - {} / {}", line.currency, revaluation.base_currency))
+                .execute(pool)
+                .await
+                .map_err(|e| Error::Database(e))?;
+
+                if let Some(gain_acct) = line.gain_account_id {
+                    let credit_line_id = Uuid::new_v4();
+                    sqlx::query(
+                        "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                         VALUES (?, ?, ?, 0, ?, ?)"
+                    )
+                    .bind(credit_line_id.to_string())
+                    .bind(je_id.to_string())
+                    .bind(gain_acct.to_string())
+                    .bind(line.unrealized_gain)
+                    .bind(format!("Unrealized FX gain - {}", line.currency))
+                    .execute(pool)
+                    .await
+                    .map_err(|e| Error::Database(e))?;
+                }
+            }
+
+            if line.unrealized_loss > 0 {
+                let line_id = Uuid::new_v4();
+                sqlx::query(
+                    "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                     VALUES (?, ?, ?, 0, ?, ?)"
+                )
+                .bind(line_id.to_string())
+                .bind(je_id.to_string())
+                .bind(line.account_id.to_string())
+                .bind(line.unrealized_loss)
+                .bind(format!("Unrealized loss - {} / {}", line.currency, revaluation.base_currency))
+                .execute(pool)
+                .await
+                .map_err(|e| Error::Database(e))?;
+
+                if let Some(loss_acct) = line.loss_account_id {
+                    let debit_line_id = Uuid::new_v4();
+                    sqlx::query(
+                        "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                         VALUES (?, ?, ?, ?, 0, ?)"
+                    )
+                    .bind(debit_line_id.to_string())
+                    .bind(je_id.to_string())
+                    .bind(loss_acct.to_string())
+                    .bind(line.unrealized_loss)
+                    .bind(format!("Unrealized FX loss - {}", line.currency))
+                    .execute(pool)
+                    .await
+                    .map_err(|e| Error::Database(e))?;
+                }
+            }
+        }
+
+        Ok(je_id)
+    }
+
+    async fn get_foreign_currency_accounts(pool: &SqlitePool) -> Result<Vec<ForeignCurrencyAccountInfo>> {
+        let rows: Vec<ForeignCurrencyAccountRow> = sqlx::query_as(
+            "SELECT a.id as account_id, a.code as account_code, a.name as account_name, 
+                    ba.currency, 
+                    COALESCE(SUM(jl.debit - jl.credit), 0) as original_balance,
+                    MAX(je.date) as original_date
+             FROM accounts a
+             JOIN bank_accounts ba ON ba.account_id = a.id
+             LEFT JOIN journal_lines jl ON jl.account_id = a.id
+             LEFT JOIN journal_entries je ON jl.journal_entry_id = je.id AND je.status = 'Completed'
+             WHERE a.status = 'Active' AND ba.currency != 'USD'
+             GROUP BY a.id, a.code, a.name, ba.currency
+             HAVING original_balance != 0"
+        )
+        .fetch_all(pool)
+        .await
+        .map_err(|e| Error::Database(e))?;
+
+        Ok(rows.into_iter().map(|r| ForeignCurrencyAccountInfo {
+            account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),
+            account_code: r.account_code,
+            account_name: r.account_name,
+            currency: r.currency,
+            original_balance: r.original_balance,
+            original_date: chrono::DateTime::parse_from_rfc3339(&r.original_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }).collect())
+    }
+
+    async fn get_historical_rate(pool: &SqlitePool, from: &str, to: &str, _date: DateTime<Utc>) -> Result<f64> {
+        CurrencyService::get_exchange_rate(pool, from, to).await
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct ForeignCurrencyAccountRow {
+    account_id: String,
+    account_code: String,
+    account_name: String,
+    currency: String,
+    original_balance: i64,
+    original_date: String,
+}
+
+struct ForeignCurrencyAccountInfo {
+    account_id: Uuid,
+    account_code: String,
+    account_name: String,
+    currency: String,
+    original_balance: i64,
+    original_date: DateTime<Utc>,
+}
+
+#[derive(sqlx::FromRow)]
+struct CurrencyRevaluationRow {
+    id: String,
+    revaluation_number: String,
+    revaluation_date: String,
+    period_start: String,
+    period_end: String,
+    base_currency: String,
+    status: String,
+    total_unrealized_gain: i64,
+    total_unrealized_loss: i64,
+    net_unrealized: i64,
+    journal_entry_id: Option<String>,
+    created_at: String,
+    updated_at: String,
+    created_by: Option<String>,
+}
+
+impl From<CurrencyRevaluationRow> for CurrencyRevaluation {
+    fn from(r: CurrencyRevaluationRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            revaluation_number: r.revaluation_number,
+            revaluation_date: chrono::DateTime::parse_from_rfc3339(&r.revaluation_date)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            period_start: chrono::DateTime::parse_from_rfc3339(&r.period_start)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            period_end: chrono::DateTime::parse_from_rfc3339(&r.period_end)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            base_currency: r.base_currency,
+            status: match r.status.as_str() {
+                "Pending" => CurrencyRevaluationStatus::Pending,
+                "Completed" => CurrencyRevaluationStatus::Completed,
+                "Reversed" => CurrencyRevaluationStatus::Reversed,
+                _ => CurrencyRevaluationStatus::Draft,
+            },
+            total_unrealized_gain: r.total_unrealized_gain,
+            total_unrealized_loss: r.total_unrealized_loss,
+            net_unrealized: r.net_unrealized,
+            journal_entry_id: r.journal_entry_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.updated_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+            created_by: r.created_by.and_then(|s| Uuid::parse_str(&s).ok()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CurrencyRevaluationLineRow {
+    id: String,
+    revaluation_id: String,
+    account_id: String,
+    account_code: String,
+    account_name: String,
+    currency: String,
+    original_balance: i64,
+    original_rate: f64,
+    revaluation_rate: f64,
+    base_currency_balance: i64,
+    revalued_balance: i64,
+    unrealized_gain: i64,
+    unrealized_loss: i64,
+    gain_account_id: Option<String>,
+    loss_account_id: Option<String>,
+    created_at: String,
+}
+
+impl From<CurrencyRevaluationLineRow> for CurrencyRevaluationLine {
+    fn from(r: CurrencyRevaluationLineRow) -> Self {
+        Self {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            revaluation_id: Uuid::parse_str(&r.revaluation_id).unwrap_or_default(),
+            account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),
+            account_code: r.account_code,
+            account_name: r.account_name,
+            currency: r.currency,
+            original_balance: r.original_balance,
+            original_rate: r.original_rate,
+            revaluation_rate: r.revaluation_rate,
+            base_currency_balance: r.base_currency_balance,
+            revalued_balance: r.revalued_balance,
+            unrealized_gain: r.unrealized_gain,
+            unrealized_loss: r.unrealized_loss,
+            gain_account_id: r.gain_account_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            loss_account_id: r.loss_account_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -426,6 +426,31 @@ fn finance_routes(state: AppState) -> Router<AppState> {
             "/recurring-journals/:id/deactivate",
             post(handlers::finance::deactivate_recurring_journal),
         )
+        .route(
+            "/currency-revaluations",
+            get(handlers::finance::list_currency_revaluations)
+                .post(handlers::finance::create_currency_revaluation),
+        )
+        .route(
+            "/currency-revaluations/preview",
+            post(handlers::finance::preview_currency_revaluation),
+        )
+        .route(
+            "/currency-revaluations/:id",
+            get(handlers::finance::get_currency_revaluation),
+        )
+        .route(
+            "/currency-revaluations/:id/lines",
+            get(handlers::finance::get_currency_revaluation_lines),
+        )
+        .route(
+            "/currency-revaluations/:id/post",
+            post(handlers::finance::post_currency_revaluation),
+        )
+        .route(
+            "/currency-revaluations/:id/reverse",
+            post(handlers::finance::reverse_currency_revaluation),
+        )
         .with_state(state)
 }
 

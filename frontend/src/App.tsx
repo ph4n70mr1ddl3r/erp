@@ -24,6 +24,7 @@ import Pricing from './pages/Pricing';
 import Sourcing from './pages/Sourcing';
 import ConfigPage from './pages/Config';
 import RulesPage from './pages/Rules';
+import CurrencyRevaluation from './pages/CurrencyRevaluation';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -65,6 +66,7 @@ function AppRoutes() {
       <Route path="/sourcing" element={<PrivateRoute><Sourcing /></PrivateRoute>} />
       <Route path="/config" element={<PrivateRoute><ConfigPage /></PrivateRoute>} />
       <Route path="/rules" element={<PrivateRoute><RulesPage /></PrivateRoute>} />
+      <Route path="/currency-revaluation" element={<PrivateRoute><CurrencyRevaluation /></PrivateRoute>} />
     </Routes>
   );
 }
