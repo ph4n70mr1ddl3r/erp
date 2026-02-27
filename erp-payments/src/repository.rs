@@ -3,6 +3,179 @@ use anyhow::Result;
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 
+pub struct StripeRepository;
+
+impl StripeRepository {
+    pub async fn create_payment_intent(pool: &SqlitePool, intent: &StripePaymentIntent) -> Result<()> {
+        sqlx::query(
+            r#"INSERT INTO stripe_payment_intents (id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(intent.id.to_string())
+        .bind(&intent.stripe_intent_id)
+        .bind(intent.customer_id.to_string())
+        .bind(intent.invoice_id.map(|id| id.to_string()))
+        .bind(intent.amount)
+        .bind(&intent.currency)
+        .bind(&intent.status)
+        .bind(&intent.client_secret)
+        .bind(&intent.description)
+        .bind(&intent.metadata)
+        .bind(intent.created_at.to_rfc3339())
+        .bind(intent.updated_at.to_rfc3339())
+        .execute(pool).await?;
+        Ok(())
+    }
+    
+    pub async fn get_payment_intent_by_id(pool: &SqlitePool, id: Uuid) -> Result<Option<StripePaymentIntent>> {
+        let row = sqlx::query(
+            r#"SELECT id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at FROM stripe_payment_intents WHERE id = ?"#
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool).await?;
+        
+        Ok(row.map(|r| Self::row_to_payment_intent(&r)))
+    }
+    
+    pub async fn get_payment_intent_by_stripe_id(pool: &SqlitePool, stripe_id: &str) -> Result<Option<StripePaymentIntent>> {
+        let row = sqlx::query(
+            r#"SELECT id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at FROM stripe_payment_intents WHERE stripe_intent_id = ?"#
+        )
+        .bind(stripe_id)
+        .fetch_optional(pool).await?;
+        
+        Ok(row.map(|r| Self::row_to_payment_intent(&r)))
+    }
+    
+    pub async fn update_payment_intent_status(pool: &SqlitePool, intent: &StripePaymentIntent) -> Result<()> {
+        sqlx::query(
+            r#"UPDATE stripe_payment_intents SET status = ?, updated_at = ? WHERE id = ?"#
+        )
+        .bind(&intent.status)
+        .bind(intent.updated_at.to_rfc3339())
+        .bind(intent.id.to_string())
+        .execute(pool).await?;
+        Ok(())
+    }
+    
+    pub async fn list_payment_intents_by_customer(pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<StripePaymentIntent>> {
+        let rows = sqlx::query(
+            r#"SELECT id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at FROM stripe_payment_intents WHERE customer_id = ? ORDER BY created_at DESC"#
+        )
+        .bind(customer_id.to_string())
+        .fetch_all(pool).await?;
+        
+        Ok(rows.iter().map(|r| Self::row_to_payment_intent(&r)).collect())
+    }
+    
+    fn row_to_payment_intent(r: &sqlx::sqlite::SqliteRow) -> StripePaymentIntent {
+        StripePaymentIntent {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+            stripe_intent_id: r.get("stripe_intent_id"),
+            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str()).unwrap(),
+            invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            amount: r.get("amount"),
+            currency: r.get("currency"),
+            status: r.get("status"),
+            client_secret: r.get("client_secret"),
+            description: r.get("description"),
+            metadata: r.get("metadata"),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+        }
+    }
+    
+    pub async fn create_checkout_session(pool: &SqlitePool, session: &StripeCheckoutSession) -> Result<()> {
+        sqlx::query(
+            r#"INSERT INTO stripe_checkout_sessions (id, stripe_session_id, customer_id, invoice_id, amount, currency, status, checkout_url, success_url, cancel_url, payment_intent_id, expires_at, completed_at, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(session.id.to_string())
+        .bind(&session.stripe_session_id)
+        .bind(session.customer_id.to_string())
+        .bind(session.invoice_id.map(|id| id.to_string()))
+        .bind(session.amount)
+        .bind(&session.currency)
+        .bind(&session.status)
+        .bind(&session.checkout_url)
+        .bind(&session.success_url)
+        .bind(&session.cancel_url)
+        .bind(&session.payment_intent_id)
+        .bind(session.expires_at.map(|d| d.to_rfc3339()))
+        .bind(session.completed_at.map(|d| d.to_rfc3339()))
+        .bind(session.created_at.to_rfc3339())
+        .execute(pool).await?;
+        Ok(())
+    }
+    
+    pub async fn get_checkout_session_by_id(pool: &SqlitePool, id: Uuid) -> Result<Option<StripeCheckoutSession>> {
+        let row = sqlx::query(
+            r#"SELECT id, stripe_session_id, customer_id, invoice_id, amount, currency, status, checkout_url, success_url, cancel_url, payment_intent_id, expires_at, completed_at, created_at FROM stripe_checkout_sessions WHERE id = ?"#
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool).await?;
+        
+        Ok(row.map(|r| Self::row_to_checkout_session(&r)))
+    }
+    
+    pub async fn get_checkout_session_by_stripe_id(pool: &SqlitePool, stripe_id: &str) -> Result<Option<StripeCheckoutSession>> {
+        let row = sqlx::query(
+            r#"SELECT id, stripe_session_id, customer_id, invoice_id, amount, currency, status, checkout_url, success_url, cancel_url, payment_intent_id, expires_at, completed_at, created_at FROM stripe_checkout_sessions WHERE stripe_session_id = ?"#
+        )
+        .bind(stripe_id)
+        .fetch_optional(pool).await?;
+        
+        Ok(row.map(|r| Self::row_to_checkout_session(&r)))
+    }
+    
+    pub async fn update_checkout_session_status(pool: &SqlitePool, session: &StripeCheckoutSession) -> Result<()> {
+        sqlx::query(
+            r#"UPDATE stripe_checkout_sessions SET status = ?, completed_at = ? WHERE id = ?"#
+        )
+        .bind(&session.status)
+        .bind(session.completed_at.map(|d| d.to_rfc3339()))
+        .bind(session.id.to_string())
+        .execute(pool).await?;
+        Ok(())
+    }
+    
+    fn row_to_checkout_session(r: &sqlx::sqlite::SqliteRow) -> StripeCheckoutSession {
+        StripeCheckoutSession {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+            stripe_session_id: r.get("stripe_session_id"),
+            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str()).unwrap(),
+            invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            amount: r.get("amount"),
+            currency: r.get("currency"),
+            status: r.get("status"),
+            checkout_url: r.get("checkout_url"),
+            success_url: r.get("success_url"),
+            cancel_url: r.get("cancel_url"),
+            payment_intent_id: r.get("payment_intent_id"),
+            expires_at: r.get::<Option<String>, _>("expires_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
+            completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
+        }
+    }
+    
+    pub async fn create_webhook_event(pool: &SqlitePool, event: &StripeWebhookEvent) -> Result<()> {
+        sqlx::query(
+            r#"INSERT INTO stripe_webhook_events (id, stripe_event_id, event_type, payload, processed, processed_at, error_message, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(event.id.to_string())
+        .bind(&event.stripe_event_id)
+        .bind(&event.event_type)
+        .bind(&event.payload)
+        .bind(event.processed)
+        .bind(event.processed_at.map(|d| d.to_rfc3339()))
+        .bind(&event.error_message)
+        .bind(event.created_at.to_rfc3339())
+        .execute(pool).await?;
+        Ok(())
+    }
+}
+
 pub struct PaymentRepository;
 
 impl PaymentRepository {

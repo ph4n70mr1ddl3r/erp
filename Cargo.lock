@@ -70,6 +70,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71938f30533e4d95a6d17aa530939da3842c2ab6f4f84b9dae68447e4129f74a"
 
 [[package]]
+name = "async-channel"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81953c529336010edd6d8e358f886d9581267795c61b19475b71314bffa46d35"
+dependencies = [
+ "concurrent-queue",
+ "event-listener",
+ "futures-core",
+]
+
+[[package]]
 name = "async-graphql"
 version = "7.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -153,12 +164,37 @@ dependencies = [
  "cfg-if",
  "concurrent-queue",
  "futures-io",
- "futures-lite",
+ "futures-lite 2.6.1",
  "parking",
  "polling",
  "rustix",
  "slab",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "async-stripe"
+version = "0.28.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a0a25db5dccd562245928cf4c34850f9d9c18dc78a1433bb1002056de42593e3"
+dependencies = [
+ "chrono",
+ "futures-util",
+ "hex",
+ "hmac",
+ "http-types",
+ "hyper 0.14.32",
+ "hyper-tls",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_qs 0.10.1",
+ "sha2",
+ "smart-default",
+ "smol_str",
+ "thiserror 1.0.69",
+ "tokio",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -258,6 +294,12 @@ dependencies = [
  "tower-service",
  "tracing",
 ]
+
+[[package]]
+name = "base64"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
 
 [[package]]
 name = "base64"
@@ -646,7 +688,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -658,13 +700,13 @@ dependencies = [
  "chrono",
  "erp-core",
  "futures",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -774,7 +816,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -790,7 +832,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tracing",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -807,7 +849,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -824,7 +866,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -842,7 +884,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -856,7 +898,7 @@ dependencies = [
  "erp-core",
  "jsonwebtoken",
  "once_cell",
- "rand",
+ "rand 0.8.5",
  "regex",
  "serde",
  "serde_json",
@@ -864,7 +906,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -876,13 +918,13 @@ dependencies = [
  "async-trait",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -898,7 +940,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -914,7 +956,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -925,13 +967,13 @@ dependencies = [
  "async-trait",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -946,7 +988,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -961,7 +1003,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -975,7 +1017,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -991,7 +1033,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1007,7 +1049,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1023,7 +1065,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1040,7 +1082,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1057,7 +1099,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1073,7 +1115,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1090,7 +1132,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1107,7 +1149,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1125,7 +1167,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1143,7 +1185,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1158,7 +1200,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1174,7 +1216,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1190,7 +1232,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1205,7 +1247,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1221,7 +1263,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1237,7 +1279,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1254,7 +1296,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1272,7 +1314,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1284,7 +1326,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1295,14 +1337,14 @@ dependencies = [
  "async-trait",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sha2",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1318,7 +1360,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1330,13 +1372,13 @@ dependencies = [
  "async-trait",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1352,7 +1394,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1366,7 +1408,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1382,7 +1424,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1394,7 +1436,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1408,7 +1450,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1424,7 +1466,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1440,7 +1482,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1452,7 +1494,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
@@ -1460,7 +1502,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1476,7 +1518,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1492,7 +1534,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1504,13 +1546,13 @@ dependencies = [
  "async-trait",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1527,7 +1569,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1539,14 +1581,14 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sha2",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1560,7 +1602,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1572,7 +1614,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1587,7 +1629,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1603,7 +1645,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1618,7 +1660,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1635,7 +1677,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1653,7 +1695,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1670,7 +1712,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1684,7 +1726,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1700,7 +1742,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1718,7 +1760,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1733,7 +1775,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1741,6 +1783,7 @@ name = "erp-payments"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stripe",
  "async-trait",
  "base64 0.22.1",
  "chrono",
@@ -1754,7 +1797,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1769,7 +1812,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1781,7 +1824,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1797,7 +1840,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1812,13 +1855,13 @@ dependencies = [
  "erp-purchasing",
  "erp-sales",
  "futures",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1834,7 +1877,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1849,7 +1892,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1865,7 +1908,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1882,7 +1925,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1898,7 +1941,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1909,13 +1952,13 @@ dependencies = [
  "anyhow",
  "chrono",
  "erp-core",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1932,7 +1975,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -1948,7 +1991,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1960,7 +2003,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1976,7 +2019,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -1993,7 +2036,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2009,7 +2052,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2025,7 +2068,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2041,7 +2084,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2057,7 +2100,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -2075,7 +2118,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -2089,7 +2132,7 @@ dependencies = [
  "chrono",
  "erp-core",
  "hmac",
- "rand",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
@@ -2098,7 +2141,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2114,7 +2157,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -2131,7 +2174,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2149,7 +2192,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2165,7 +2208,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -2182,7 +2225,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
  "validator",
 ]
 
@@ -2199,7 +2242,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2211,7 +2254,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2227,7 +2270,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2245,7 +2288,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2261,7 +2304,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2276,7 +2319,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2292,7 +2335,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2308,7 +2351,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2320,7 +2363,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2333,7 +2376,7 @@ dependencies = [
  "erp-core",
  "hex",
  "hmac",
- "rand",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",
@@ -2341,7 +2384,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2357,7 +2400,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
- "uuid",
+ "uuid 1.21.0",
 ]
 
 [[package]]
@@ -2394,6 +2437,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "495a39d30d624c2caabe6312bfead73e7717692b44e0b32df168c275a2e8e9e4"
 dependencies = [
  "ascii_utils",
+]
+
+[[package]]
+name = "fastrand"
+version = "1.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
+dependencies = [
+ "instant",
 ]
 
 [[package]]
@@ -2516,6 +2568,21 @@ checksum = "cecba35d7ad927e23624b22ad55235f2239cfa44fd10428eecbeba6d6a717718"
 
 [[package]]
 name = "futures-lite"
+version = "1.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49a9d51ce47660b1e808d3c990b4709f2f415d928835a17dfd16991515c46bce"
+dependencies = [
+ "fastrand 1.9.0",
+ "futures-core",
+ "futures-io",
+ "memchr",
+ "parking",
+ "pin-project-lite",
+ "waker-fn",
+]
+
+[[package]]
+name = "futures-lite"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f78e10609fe0e0b3f4157ffab1876319b5b0db102a2c60dc4626306dc46b44ad"
@@ -2576,6 +2643,17 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
+version = "0.1.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fc3cb4d91f53b50155bdcfd23f6a4c39ae1969c2ae85982b135750cccaf5fce"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "wasi 0.9.0+wasi-snapshot-preview1",
+]
+
+[[package]]
+name = "getrandom"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff2abc00be7fca6ebc474524697ae276ad847ad0a6b3faa4bcb027e9a4614ad0"
@@ -2583,7 +2661,7 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "wasi",
+ "wasi 0.11.1+wasi-snapshot-preview1",
  "wasm-bindgen",
 ]
 
@@ -2802,6 +2880,27 @@ dependencies = [
  "http 1.4.0",
  "http-body 1.0.1",
  "pin-project-lite",
+]
+
+[[package]]
+name = "http-types"
+version = "2.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e9b187a72d63adbfba487f48095306ac823049cb504ee195541e91c7775f5ad"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "base64 0.13.1",
+ "futures-lite 1.13.0",
+ "http 0.2.12",
+ "infer",
+ "pin-project-lite",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
+ "serde_qs 0.8.5",
+ "serde_urlencoded",
+ "url",
 ]
 
 [[package]]
@@ -3056,6 +3155,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "infer"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64e9829a50b42bb782c1df523f78d332fe371b10c661e78b7a3c34b0198e9fac"
+
+[[package]]
+name = "instant"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
+dependencies = [
+ "cfg-if",
+]
+
+[[package]]
 name = "ipnet"
 version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3218,7 +3332,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a69bcab0ad47271a0234d9422b131806bf3968021e5dc9328caf2d4cd58557fc"
 dependencies = [
  "libc",
- "wasi",
+ "wasi 0.11.1+wasi-snapshot-preview1",
  "windows-sys 0.61.2",
 ]
 
@@ -3296,7 +3410,7 @@ dependencies = [
  "num-integer",
  "num-iter",
  "num-traits",
- "rand",
+ "rand 0.8.5",
  "smallvec",
  "zeroize",
 ]
@@ -3438,7 +3552,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "346f04948ba92c43e8469c1ee6736c7563d71012b17d40745260fe106aac2166"
 dependencies = [
  "base64ct",
- "rand_core",
+ "rand_core 0.6.4",
  "subtle",
 ]
 
@@ -3682,13 +3796,36 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "rand"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a6b1679d49b24bbfe0c803429aa1874472f50d9b363131f0e89fc356b544d03"
+dependencies = [
+ "getrandom 0.1.16",
+ "libc",
+ "rand_chacha 0.2.2",
+ "rand_core 0.5.1",
+ "rand_hc",
+]
+
+[[package]]
+name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404"
 dependencies = [
  "libc",
- "rand_chacha",
- "rand_core",
+ "rand_chacha 0.3.1",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand_chacha"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4c8ed856279c9737206bf725bf36935d8666ead7aa69b52be55af369d193402"
+dependencies = [
+ "ppv-lite86",
+ "rand_core 0.5.1",
 ]
 
 [[package]]
@@ -3698,7 +3835,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88"
 dependencies = [
  "ppv-lite86",
- "rand_core",
+ "rand_core 0.6.4",
+]
+
+[[package]]
+name = "rand_core"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90bde5296fc891b0cef12a6d03ddccc162ce7b2aff54160af9338f8d40df6d19"
+dependencies = [
+ "getrandom 0.1.16",
 ]
 
 [[package]]
@@ -3708,6 +3854,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
  "getrandom 0.2.17",
+]
+
+[[package]]
+name = "rand_hc"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ca3129af7b92a17112d59ad498c6f81eaf463253766b90396d39ea7a39d6613c"
+dependencies = [
+ "rand_core 0.5.1",
 ]
 
 [[package]]
@@ -3824,7 +3979,7 @@ dependencies = [
  "num-traits",
  "pkcs1",
  "pkcs8",
- "rand_core",
+ "rand_core 0.6.4",
  "signature",
  "spki",
  "subtle",
@@ -3964,6 +4119,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_qs"
+version = "0.8.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c7715380eec75f029a4ef7de39a9200e0a63823176b759d055b613f5a87df6a6"
+dependencies = [
+ "percent-encoding",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "serde_qs"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cac3f1e2ca2fe333923a1ae72caca910b98ed0630bb35ef6f8c8517d6e81afa"
+dependencies = [
+ "percent-encoding",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "serde_urlencoded"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4029,7 +4206,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77549399552de45a898a580c1b41d445bf730df867cc44e6c0233bbc4b8329de"
 dependencies = [
  "digest",
- "rand_core",
+ "rand_core 0.6.4",
 ]
 
 [[package]]
@@ -4055,6 +4232,26 @@ name = "smallvec"
 version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
+
+[[package]]
+name = "smart-default"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "133659a15339456eeeb07572eb02a91c91e9815e9cbc89566944d2c8d3efdbf6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "smol_str"
+version = "0.1.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fad6c857cbab2627dcf01ec85a623ca4e7dcb5691cbaa3d7fb7653671f0d09c9"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "socket2"
@@ -4224,7 +4421,7 @@ dependencies = [
  "memchr",
  "once_cell",
  "percent-encoding",
- "rand",
+ "rand 0.8.5",
  "rsa",
  "serde",
  "sha1",
@@ -4263,7 +4460,7 @@ dependencies = [
  "md-5",
  "memchr",
  "once_cell",
- "rand",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "sha2",
@@ -4426,7 +4623,7 @@ version = "3.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0136791f7c95b1f6dd99f9cc786b91bb81c3800b639b3478e561ddb7be95e5f1"
 dependencies = [
- "fastrand",
+ "fastrand 2.3.0",
  "getrandom 0.4.1",
  "once_cell",
  "rustix",
@@ -4831,6 +5028,7 @@ dependencies = [
  "idna 1.1.0",
  "percent-encoding",
  "serde",
+ "serde_derive",
 ]
 
 [[package]]
@@ -4844,6 +5042,15 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom 0.2.17",
+]
 
 [[package]]
 name = "uuid"
@@ -4918,6 +5125,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
+name = "waker-fn"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "317211a0dc0ceedd78fb2ca9a44aed3d7b9b26f81870d485c07122b4350673b7"
+
+[[package]]
 name = "want"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4925,6 +5138,12 @@ checksum = "bfa7760aed19e106de2c7c0b581b509f2f25d3dacaf737cb82ac61bc6d760b0e"
 dependencies = [
  "try-lock",
 ]
+
+[[package]]
+name = "wasi"
+version = "0.9.0+wasi-snapshot-preview1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cccddf32554fecc6acb585f82a32a72e28b48f8c4c1883ddfeeeaa96f7d8e519"
 
 [[package]]
 name = "wasi"

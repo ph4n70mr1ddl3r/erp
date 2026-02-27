@@ -963,3 +963,98 @@ export interface ApiResponse<T> {
   success: boolean;
   data: T;
 }
+
+export interface StripePaymentIntent {
+  id: string;
+  stripe_intent_id: string;
+  client_secret: string;
+  amount: number;
+  currency: string;
+  status: string;
+}
+
+export interface StripeCheckoutSession {
+  id: string;
+  stripe_session_id: string;
+  checkout_url: string;
+  amount: number;
+  currency: string;
+  status: string;
+}
+
+export interface StripeRefund {
+  id: string;
+  amount: number;
+  status: string;
+}
+
+export interface StripeConfig {
+  publishable_key: string;
+}
+
+export const stripe = {
+  createPaymentIntent: (data: {
+    customer_id: string;
+    invoice_id?: string;
+    amount: number;
+    currency?: string;
+    description?: string;
+    metadata?: Record<string, string>;
+  }) => api.post<StripePaymentIntent>('/api/v1/payments/stripe/intents', data),
+  
+  getPaymentIntent: (id: string) => 
+    api.get<StripePaymentIntent>(`/api/v1/payments/stripe/intents/${id}`),
+  
+  cancelPaymentIntent: (stripeIntentId: string) =>
+    api.post<StripePaymentIntent>('/api/v1/payments/stripe/intents/cancel', { stripe_intent_id: stripeIntentId }),
+  
+  createCheckoutSession: (data: {
+    customer_id: string;
+    invoice_id?: string;
+    amount: number;
+    currency?: string;
+    description?: string;
+    success_url: string;
+    cancel_url: string;
+    customer_email?: string;
+    metadata?: Record<string, string>;
+  }) => api.post<StripeCheckoutSession>('/api/v1/payments/stripe/checkout', data),
+  
+  getCheckoutSession: (id: string) =>
+    api.get<StripeCheckoutSession>(`/api/v1/payments/stripe/checkout/${id}`),
+  
+  createRefund: (data: {
+    stripe_intent_id: string;
+    amount?: number;
+    reason?: string;
+  }) => api.post<StripeRefund>('/api/v1/payments/stripe/refund', data),
+  
+  getConfig: () => api.get<StripeConfig>('/api/v1/payments/stripe/config'),
+};
+
+export const payments = {
+  createPayment: (data: {
+    customer_id: string;
+    amount: number;
+    currency?: string;
+    payment_method?: string;
+    invoice_id?: string;
+    card_last_four?: string;
+    card_brand?: string;
+    notes?: string;
+  }) => api.post('/api/v1/payments/payments', data),
+  
+  getPayment: (id: string) => 
+    api.get(`/api/v1/payments/payments/${id}`),
+  
+  getCustomerPayments: (customerId: string) =>
+    api.get(`/api/v1/payments/payments/customer/${customerId}`),
+  
+  refundPayment: (id: string, data: { amount: number; reason: string }) =>
+    api.post(`/api/v1/payments/payments/${id}/refund`, data),
+  
+  listGateways: () => api.get('/api/v1/payments/gateways'),
+  
+  createGateway: (data: { code: string; name: string; gateway_type: string; supported_methods?: string[] }) =>
+    api.post('/api/v1/payments/gateways', data),
+};

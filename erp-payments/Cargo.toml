@@ -19,3 +19,4 @@ hmac.workspace = true
 hex.workspace = true
 base64.workspace = true
 anyhow.workspace = true
+stripe-rust.workspace = true

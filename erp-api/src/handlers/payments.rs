@@ -1,5 +1,7 @@
 use axum::{
+    body::Bytes,
     extract::{Path, State},
+    http::HeaderMap,
     routing::{get, post},
     Json, Router,
 };
@@ -9,6 +11,7 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use erp_payments::{PaymentService, GatewayService, CreatePaymentRequest, ProcessPaymentRequest, CreateRefundRequest, PaymentMethod};
+use erp_payments::{StripeService, CreatePaymentIntentRequest, CreateCheckoutSessionRequest};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -18,6 +21,14 @@ pub fn routes() -> Router<AppState> {
         .route("/payments/customer/:customer_id", get(list_customer_payments))
         .route("/payments/:id/refund", post(refund_payment))
         .route("/process", post(process_payment))
+        .route("/stripe/intents", post(create_stripe_intent))
+        .route("/stripe/intents/:id", get(get_stripe_intent))
+        .route("/stripe/intents/:id/cancel", post(cancel_stripe_intent))
+        .route("/stripe/checkout", post(create_stripe_checkout))
+        .route("/stripe/checkout/:id", get(get_stripe_checkout))
+        .route("/stripe/refund", post(create_stripe_refund))
+        .route("/stripe/config", get(get_stripe_config))
+        .route("/stripe/webhook", post(stripe_webhook))
 }
 
 #[derive(Deserialize)]
@@ -217,6 +228,198 @@ async fn process_payment(
             "status": payment.status,
             "processing_fee": payment.processing_fee
         })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CreateStripeIntentBody {
+    pub customer_id: Uuid,
+    pub invoice_id: Option<Uuid>,
+    pub amount: i64,
+    #[serde(default = "default_currency")]
+    pub currency: String,
+    pub description: Option<String>,
+    pub metadata: Option<std::collections::HashMap<String, String>>,
+}
+
+async fn create_stripe_intent(
+    State(state): State<AppState>,
+    Json(body): Json<CreateStripeIntentBody>,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    let req = CreatePaymentIntentRequest {
+        customer_id: body.customer_id,
+        invoice_id: body.invoice_id,
+        amount: body.amount,
+        currency: body.currency,
+        description: body.description,
+        metadata: body.metadata,
+    };
+    
+    match stripe.create_payment_intent(&state.pool, req).await {
+        Ok(intent) => Json(json!({
+            "id": intent.id,
+            "stripe_intent_id": intent.stripe_intent_id,
+            "client_secret": intent.client_secret,
+            "amount": intent.amount,
+            "currency": intent.currency,
+            "status": intent.status
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+async fn get_stripe_intent(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    match stripe.get_payment_intent(&state.pool, id).await {
+        Ok(Some(intent)) => Json(json!({
+            "id": intent.id,
+            "stripe_intent_id": intent.stripe_intent_id,
+            "amount": intent.amount,
+            "currency": intent.currency,
+            "status": intent.status,
+            "created_at": intent.created_at
+        })),
+        Ok(None) => Json(json!({ "error": "Payment intent not found" })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CancelStripeIntentBody {
+    pub stripe_intent_id: String,
+}
+
+async fn cancel_stripe_intent(
+    State(_state): State<AppState>,
+    Json(body): Json<CancelStripeIntentBody>,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    match stripe.cancel_payment_intent(&body.stripe_intent_id).await {
+        Ok(intent) => Json(json!({
+            "id": intent.id,
+            "status": intent.status
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CreateStripeCheckoutBody {
+    pub customer_id: Uuid,
+    pub invoice_id: Option<Uuid>,
+    pub amount: i64,
+    #[serde(default = "default_currency")]
+    pub currency: String,
+    pub description: Option<String>,
+    pub success_url: String,
+    pub cancel_url: String,
+    pub customer_email: Option<String>,
+    pub metadata: Option<std::collections::HashMap<String, String>>,
+}
+
+async fn create_stripe_checkout(
+    State(state): State<AppState>,
+    Json(body): Json<CreateStripeCheckoutBody>,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    let req = CreateCheckoutSessionRequest {
+        customer_id: body.customer_id,
+        invoice_id: body.invoice_id,
+        amount: body.amount,
+        currency: body.currency,
+        description: body.description,
+        success_url: body.success_url,
+        cancel_url: body.cancel_url,
+        customer_email: body.customer_email,
+        metadata: body.metadata,
+    };
+    
+    match stripe.create_checkout_session(&state.pool, req).await {
+        Ok(session) => Json(json!({
+            "id": session.id,
+            "stripe_session_id": session.stripe_session_id,
+            "checkout_url": session.checkout_url,
+            "amount": session.amount,
+            "currency": session.currency,
+            "status": session.status
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+async fn get_stripe_checkout(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    match stripe.get_checkout_session(&state.pool, id).await {
+        Ok(Some(session)) => Json(json!({
+            "id": session.id,
+            "stripe_session_id": session.stripe_session_id,
+            "checkout_url": session.checkout_url,
+            "amount": session.amount,
+            "currency": session.currency,
+            "status": session.status,
+            "completed_at": session.completed_at
+        })),
+        Ok(None) => Json(json!({ "error": "Checkout session not found" })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+#[derive(Deserialize)]
+pub struct CreateStripeRefundBody {
+    pub stripe_intent_id: String,
+    pub amount: Option<i64>,
+    pub reason: Option<String>,
+}
+
+async fn create_stripe_refund(
+    State(state): State<AppState>,
+    Json(body): Json<CreateStripeRefundBody>,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    match stripe.create_refund(&state.pool, &body.stripe_intent_id, body.amount, body.reason).await {
+        Ok(refund) => Json(json!({
+            "id": refund.id,
+            "amount": refund.amount,
+            "status": refund.status
+        })),
+        Err(e) => Json(json!({ "error": e.to_string() })),
+    }
+}
+
+async fn get_stripe_config() -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    Json(json!({
+        "publishable_key": stripe.get_publishable_key()
+    }))
+}
+
+async fn stripe_webhook(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Json<serde_json::Value> {
+    let stripe = StripeService::from_env();
+    
+    let signature = match headers.get("stripe-signature").and_then(|v| v.to_str().ok()) {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Missing stripe-signature header" })),
+    };
+    
+    match stripe.verify_webhook_signature(&body, signature) {
+        Ok(webhook) => {
+            match stripe.process_webhook_event(&state.pool, webhook).await {
+                Ok(()) => Json(json!({ "received": true })),
+                Err(e) => Json(json!({ "error": e.to_string() })),
+            }
+        }
         Err(e) => Json(json!({ "error": e.to_string() })),
     }
 }

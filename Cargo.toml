@@ -220,6 +220,7 @@ base64 = "0.22"
 regex = "1.10"
 handlebars = "5.1"
 async-graphql = "7"
+stripe-rust = { version = "0.28", package = "async-stripe", features = ["runtime-tokio-hyper"] }
 
 erp-bi = { path = "erp-bi" }
 erp-i18n = { path = "erp-i18n" }

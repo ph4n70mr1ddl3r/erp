@@ -163,3 +163,92 @@ pub struct CreateRefundRequest {
     pub amount: i64,
     pub reason: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StripePaymentIntent {
+    pub id: Uuid,
+    pub stripe_intent_id: String,
+    pub customer_id: Uuid,
+    pub invoice_id: Option<Uuid>,
+    pub amount: i64,
+    pub currency: String,
+    pub status: String,
+    pub client_secret: Option<String>,
+    pub description: Option<String>,
+    pub metadata: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StripeCheckoutSession {
+    pub id: Uuid,
+    pub stripe_session_id: String,
+    pub customer_id: Uuid,
+    pub invoice_id: Option<Uuid>,
+    pub amount: i64,
+    pub currency: String,
+    pub status: String,
+    pub checkout_url: Option<String>,
+    pub success_url: String,
+    pub cancel_url: String,
+    pub payment_intent_id: Option<String>,
+    pub expires_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StripeWebhookEvent {
+    pub id: Uuid,
+    pub stripe_event_id: String,
+    pub event_type: String,
+    pub payload: String,
+    pub processed: bool,
+    pub processed_at: Option<DateTime<Utc>>,
+    pub error_message: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreatePaymentIntentRequest {
+    pub customer_id: Uuid,
+    pub invoice_id: Option<Uuid>,
+    pub amount: i64,
+    pub currency: String,
+    pub description: Option<String>,
+    pub metadata: Option<std::collections::HashMap<String, String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCheckoutSessionRequest {
+    pub customer_id: Uuid,
+    pub invoice_id: Option<Uuid>,
+    pub amount: i64,
+    pub currency: String,
+    pub description: Option<String>,
+    pub success_url: String,
+    pub cancel_url: String,
+    pub customer_email: Option<String>,
+    pub metadata: Option<std::collections::HashMap<String, String>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PaymentIntentResponse {
+    pub id: Uuid,
+    pub stripe_intent_id: String,
+    pub client_secret: String,
+    pub amount: i64,
+    pub currency: String,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CheckoutSessionResponse {
+    pub id: Uuid,
+    pub stripe_session_id: String,
+    pub checkout_url: String,
+    pub amount: i64,
+    pub currency: String,
+    pub status: String,
+}

@@ -25,7 +25,8 @@ import {
   Zap,
   RefreshCw,
   CheckSquare,
-  AlertCircle
+  AlertCircle,
+  Wallet
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -56,6 +57,7 @@ const navItems = [
   { path: '/approval-workflow', icon: CheckSquare, label: 'Approvals' },
   { path: '/currency-revaluation', icon: RefreshCw, label: 'FX Revaluation' },
   { path: '/credit', icon: AlertCircle, label: 'Credit Mgmt' },
+  { path: '/payments', icon: Wallet, label: 'Payments' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
