@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { stripe, payments, StripeCheckoutSession, StripePaymentIntent } from '../api/client';
+import { stripe, payments } from '../api/client';
+import type { StripeCheckoutSession, StripePaymentIntent } from '../api/client';
 
 export default function StripePayments() {
   const [activeTab, setActiveTab] = useState<'checkout' | 'intent' | 'history'>('checkout');

@@ -112,3 +112,23 @@ export interface AccountBalanceResponse {
   account_type: string;
   balance: number;
 }
+
+export interface Lead {
+  id: string;
+  lead_number: string;
+  company_name: string;
+  contact_name?: string;
+  email?: string;
+  estimated_value: number;
+  status: string;
+}
+
+export interface Opportunity {
+  id: string;
+  opportunity_number: string;
+  name: string;
+  stage: string;
+  probability: number;
+  amount: number;
+  status: string;
+}

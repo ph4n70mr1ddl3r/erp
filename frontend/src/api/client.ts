@@ -1,7 +1,8 @@
 import axios from 'axios';
 import type { 
   AuthResponse, User, Paginated, Account, JournalEntry, Product, 
-  Warehouse, Customer, SalesOrder, Vendor, PurchaseOrder, Employee 
+  Warehouse, Customer, SalesOrder, Vendor, PurchaseOrder, Employee,
+  Lead, Opportunity
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -1057,4 +1058,33 @@ export const payments = {
   
   createGateway: (data: { code: string; name: string; gateway_type: string; supported_methods?: string[] }) =>
     api.post('/api/v1/payments/gateways', data),
+};
+
+export interface CreateLeadRequest {
+  company_name: string;
+  contact_name?: string;
+  email?: string;
+  phone?: string;
+  source?: string;
+  industry?: string;
+  estimated_value: number;
+  assigned_to?: string;
+}
+
+export interface CreateOpportunityRequest {
+  name: string;
+  customer_id?: string;
+  lead_id?: string;
+  amount: number;
+  expected_close_date?: string;
+  description?: string;
+  assigned_to?: string;
+}
+
+export const crm = {
+  getLeads: () => api.get<Lead[]>('/api/v1/leads'),
+  createLead: (data: CreateLeadRequest) => api.post<Lead>('/api/v1/leads', { ...data, estimated_value: Math.round(data.estimated_value * 100) }),
+  getOpportunities: () => api.get<Opportunity[]>('/api/v1/opportunities'),
+  createOpportunity: (data: CreateOpportunityRequest) => api.post<Opportunity>('/api/v1/opportunities', { ...data, amount: Math.round(data.amount * 100) }),
+  updateOpportunityStage: (id: string, stage: string) => api.post<Opportunity>(`/api/v1/opportunities/${id}/stage`, { stage }),
 };

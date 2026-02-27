@@ -26,7 +26,8 @@ import {
   RefreshCw,
   CheckSquare,
   AlertCircle,
-  Wallet
+  Wallet,
+  UserCircle
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -40,6 +41,7 @@ const navItems = [
   { path: '/audit', icon: ClipboardList, label: 'Audit Trail' },
   { path: '/inventory', icon: Package, label: 'Inventory' },
   { path: '/sales', icon: ShoppingCart, label: 'Sales' },
+  { path: '/crm', icon: UserCircle, label: 'CRM' },
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
   { path: '/hr', icon: UserCog, label: 'HR' },
