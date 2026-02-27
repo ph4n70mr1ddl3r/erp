@@ -109,6 +109,7 @@ erp-processmining.workspace = true
 erp-promotions.workspace = true
 erp-approval-workflow.workspace = true
 erp-credit.workspace = true
+erp-kanban.workspace = true
 async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"

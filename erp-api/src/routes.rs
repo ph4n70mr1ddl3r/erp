@@ -288,6 +288,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/promotions", promotions_routes())
         .nest("/approval-workflow", approval_workflow_routes())
         .nest("/credit", credit_routes())
+        .nest("/kanban", kanban_routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
@@ -1051,5 +1052,42 @@ fn credit_routes() -> Router<AppState> {
         .route(
             "/:customer_id/limit-changes",
             get(handlers::credit::list_limit_changes),
+        )
+}
+
+fn kanban_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/boards",
+            get(handlers::kanban::list_boards).post(handlers::kanban::create_board),
+        )
+        .route(
+            "/boards/:id",
+            get(handlers::kanban::get_board).delete(handlers::kanban::delete_board),
+        )
+        .route(
+            "/boards/:id/summary",
+            get(handlers::kanban::get_board_summary),
+        )
+        .route(
+            "/boards/:id/activities",
+            get(handlers::kanban::list_activities),
+        )
+        .route("/boards/:board_id/cards", get(handlers::kanban::list_cards))
+        .route("/cards", post(handlers::kanban::create_card))
+        .route(
+            "/cards/:id",
+            get(handlers::kanban::get_card).delete(handlers::kanban::delete_card),
+        )
+        .route("/cards/move", post(handlers::kanban::move_card))
+        .route("/cards/:id/block", post(handlers::kanban::block_card))
+        .route("/cards/:id/unblock", post(handlers::kanban::unblock_card))
+        .route(
+            "/cards/:card_id/comments",
+            get(handlers::kanban::list_comments).post(handlers::kanban::add_comment),
+        )
+        .route(
+            "/cards/:card_id/checklists",
+            get(handlers::kanban::list_checklists).post(handlers::kanban::add_checklist),
         )
 }

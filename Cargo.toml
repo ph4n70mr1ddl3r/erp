@@ -101,6 +101,7 @@ members = [
     "erp-approval-workflow",
     "erp-credit",
     "erp-dropship",
+    "erp-kanban",
 ]
 resolver = "2"
 
@@ -235,3 +236,4 @@ erp-processmining = { path = "erp-processmining" }
 erp-promotions = { path = "erp-promotions" }
 erp-approval-workflow = { path = "erp-approval-workflow" }
 erp-credit = { path = "erp-credit" }
+erp-kanban = { path = "erp-kanban" }
