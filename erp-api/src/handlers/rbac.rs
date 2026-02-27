@@ -6,12 +6,16 @@ use axum::{
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
-use crate::error::ApiResult;
+use crate::error::{ApiError, ApiResult};
 use erp_core::BaseEntity;
 use erp_auth::{
     CustomRole, Permission, RolePermission, UserRoleAssignment, DataPermission, FieldPermission,
     get_default_permissions,
 };
+
+fn parse_uuid(s: &str) -> ApiResult<Uuid> {
+    Uuid::parse_str(s).map_err(|e| ApiError(erp_core::Error::Validation(format!("Invalid UUID: {}", e))))
+}
 
 #[derive(Serialize)]
 pub struct RoleResponse {
@@ -36,14 +40,18 @@ pub async fn list_roles(State(state): State<AppState>) -> ApiResult<Json<Vec<Rol
         "SELECT id, name, code, description, is_system, is_active FROM custom_roles WHERE is_active = 1 ORDER BY name"
     ).fetch_all(&state.pool).await?;
     
-    Ok(Json(rows.into_iter().map(|r| RoleResponse {
-        id: Uuid::parse_str(&r.id).unwrap(),
-        name: r.name,
-        code: r.code,
-        description: r.description,
-        is_system: r.is_system == 1,
-        is_active: r.is_active == 1,
-    }).collect()))
+    let mut roles = Vec::new();
+    for r in rows {
+        roles.push(RoleResponse {
+            id: parse_uuid(&r.id)?,
+            name: r.name,
+            code: r.code,
+            description: r.description,
+            is_system: r.is_system == 1,
+            is_active: r.is_active == 1,
+        });
+    }
+    Ok(Json(roles))
 }
 
 pub async fn create_role(
@@ -107,24 +115,32 @@ pub async fn list_permissions(State(state): State<AppState>) -> ApiResult<Json<V
             "SELECT id, code, name, module, resource, action FROM permissions ORDER BY module, resource, action"
         ).fetch_all(&state.pool).await?;
         
-        return Ok(Json(rows.into_iter().map(|r| PermissionResponse {
-            id: Uuid::parse_str(&r.id).unwrap(),
+        let mut perms = Vec::new();
+        for r in rows {
+            perms.push(PermissionResponse {
+                id: parse_uuid(&r.id)?,
+                code: r.code,
+                name: r.name,
+                module: r.module,
+                resource: r.resource,
+                action: r.action,
+            });
+        }
+        return Ok(Json(perms));
+    }
+    
+    let mut perms = Vec::new();
+    for r in rows {
+        perms.push(PermissionResponse {
+            id: parse_uuid(&r.id)?,
             code: r.code,
             name: r.name,
             module: r.module,
             resource: r.resource,
             action: r.action,
-        }).collect()));
+        });
     }
-    
-    Ok(Json(rows.into_iter().map(|r| PermissionResponse {
-        id: Uuid::parse_str(&r.id).unwrap(),
-        code: r.code,
-        name: r.name,
-        module: r.module,
-        resource: r.resource,
-        action: r.action,
-    }).collect()))
+    Ok(Json(perms))
 }
 
 #[derive(Deserialize)]
@@ -179,11 +195,15 @@ pub async fn list_role_permissions(
         role_id.to_string()
     ).fetch_all(&state.pool).await?;
     
-    Ok(Json(rows.into_iter().map(|r| RolePermissionResponse {
-        permission_id: Uuid::parse_str(&r.permission_id).unwrap(),
-        permission_code: r.code,
-        permission_name: r.name,
-    }).collect()))
+    let mut perms = Vec::new();
+    for r in rows {
+        perms.push(RolePermissionResponse {
+            permission_id: parse_uuid(&r.permission_id)?,
+            permission_code: r.code,
+            permission_name: r.name,
+        });
+    }
+    Ok(Json(perms))
 }
 
 #[derive(Deserialize)]
@@ -239,11 +259,15 @@ pub async fn list_user_roles(
         user_id.to_string()
     ).fetch_all(&state.pool).await?;
     
-    Ok(Json(rows.into_iter().map(|r| UserRolesResponse {
-        role_id: Uuid::parse_str(&r.id).unwrap(),
-        role_name: r.name,
-        role_code: r.code,
-    }).collect()))
+    let mut roles = Vec::new();
+    for r in rows {
+        roles.push(UserRolesResponse {
+            role_id: parse_uuid(&r.id)?,
+            role_name: r.name,
+            role_code: r.code,
+        });
+    }
+    Ok(Json(roles))
 }
 
 #[derive(Serialize)]

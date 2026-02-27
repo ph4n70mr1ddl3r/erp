@@ -43,12 +43,13 @@ impl AuthService {
         
         validate_password_strength(&req.password)?;
         
-        if self.repo.find_by_username(pool, &req.username).await.is_ok() {
-            return Err(Error::Conflict(format!("Username '{}' already exists", req.username)));
-        }
+        let username_exists = self.repo.find_by_username(pool, &req.username).await.is_ok();
+        let email_exists = self.repo.find_by_email(pool, &req.email).await.is_ok();
         
-        if self.repo.find_by_email(pool, &req.email).await.is_ok() {
-            return Err(Error::Conflict(format!("Email '{}' already exists", req.email)));
+        if username_exists || email_exists {
+            return Err(Error::Conflict(
+                "Registration failed. Please try different credentials.".to_string()
+            ));
         }
         
         let password_hash = self.hash_password(&req.password)?;

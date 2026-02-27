@@ -6,7 +6,8 @@ use axum::{
     routing::{delete, get, post, put},
     Extension, Router,
 };
-use tower_http::cors::{Any, CorsLayer};
+use http::{header, HeaderValue, Method};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::limit::RequestBodyLimitLayer;
 
 const MAX_REQUEST_BODY_SIZE: usize = 1024 * 1024;
@@ -15,9 +16,23 @@ pub fn create_router(state: AppState) -> Router {
     let rate_limiter = RateLimiter::new();
 
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(AllowOrigin::list(
+            state
+                .config
+                .cors_allowed_origins
+                .iter()
+                .filter_map(|origin| origin.parse::<HeaderValue>().ok()),
+        ))
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::PATCH,
+            Method::OPTIONS,
+        ])
+        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE, header::ACCEPT])
+        .allow_credentials(true);
 
     let public_routes = Router::new()
         .route("/health", get(handlers::health))

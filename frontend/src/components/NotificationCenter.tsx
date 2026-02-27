@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import { notifications, type Notification } from '../api/client';
 
@@ -8,11 +8,24 @@ export default function NotificationCenter() {
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const loadNotifications = useCallback(async () => {
+    try {
+      const [listRes, countRes] = await Promise.all([
+        notifications.list(),
+        notifications.unreadCount(),
+      ]);
+      setNotificationList(listRes.data);
+      setUnreadCount(countRes.data.count);
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    }
+  }, []);
+
   useEffect(() => {
     loadNotifications();
     const interval = setInterval(loadNotifications, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [loadNotifications]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -24,36 +37,23 @@ export default function NotificationCenter() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const loadNotifications = async () => {
-    try {
-      const [listRes, countRes] = await Promise.all([
-        notifications.list(),
-        notifications.unreadCount(),
-      ]);
-      setNotificationList(listRes.data);
-      setUnreadCount(countRes.data.count);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  };
-
-  const handleMarkRead = async (id: string) => {
+  const handleMarkRead = useCallback(async (id: string) => {
     try {
       await notifications.markRead(id);
       loadNotifications();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
-  };
+  }, [loadNotifications]);
 
-  const handleMarkAllRead = async () => {
+  const handleMarkAllRead = useCallback(async () => {
     try {
       await notifications.markAllRead();
       loadNotifications();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
     }
-  };
+  }, [loadNotifications]);
 
   const getTypeColor = (type: string) => {
     switch (type) {

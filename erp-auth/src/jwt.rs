@@ -21,18 +21,20 @@ pub fn init_jwt_secret(secret: &str) -> Result<()> {
     Ok(())
 }
 
-fn get_secret() -> &'static [u8; 32] {
-    JWT_SECRET.get().expect("JWT secret not initialized")
+fn get_secret() -> Result<&'static [u8; 32]> {
+    JWT_SECRET
+        .get()
+        .ok_or_else(|| anyhow::anyhow!("JWT secret not initialized"))
 }
 
 pub fn encode_token<T: Serialize>(claims: &T) -> Result<String> {
     let header = Header::new(Algorithm::HS256);
-    let key = EncodingKey::from_secret(get_secret());
+    let key = EncodingKey::from_secret(get_secret()?);
     Ok(encode(&header, claims, &key)?)
 }
 
 pub fn decode_token<T: DeserializeOwned>(token: &str) -> Result<T> {
-    let key = DecodingKey::from_secret(get_secret());
+    let key = DecodingKey::from_secret(get_secret()?);
     let validation = Validation::new(Algorithm::HS256);
     let data = decode::<T>(token, &key, &validation)?;
     Ok(data.claims)
@@ -51,8 +53,8 @@ pub fn generate_token(
         "sub": user_id,
         "username": username,
         "role": role,
-        "exp": exp.timestamp() as usize,
-        "iat": now.timestamp() as usize,
+        "exp": exp.timestamp(),
+        "iat": now.timestamp(),
     });
 
     let token = encode_token(&claims)?;
@@ -61,6 +63,13 @@ pub fn generate_token(
 
 pub fn validate_token(token: &str) -> Result<TokenData> {
     let claims: serde_json::Value = decode_token(token)?;
+
+    let exp = claims["exp"]
+        .as_i64()
+        .ok_or_else(|| anyhow::anyhow!("Missing or invalid exp"))?;
+    if Utc::now().timestamp() > exp {
+        return Err(anyhow::anyhow!("Token has expired"));
+    }
 
     Ok(TokenData {
         user_id: claims["sub"]

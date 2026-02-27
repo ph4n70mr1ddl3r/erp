@@ -1,9 +1,11 @@
 use axum::{
     body::Body,
+    extract::ConnectInfo,
     http::{Request, Response, StatusCode},
     middleware::Next,
 };
 use std::collections::HashMap;
+use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
@@ -70,11 +72,10 @@ pub async fn rate_limit_middleware(
     next: Next,
 ) -> Result<Response<Body>, StatusCode> {
     let key = req
-        .headers()
-        .get("x-forwarded-for")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("unknown")
-        .to_string();
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .map(|addr| addr.ip().to_string())
+        .unwrap_or_else(|| "unknown".to_string());
 
     rate_limiter.check(&key).await?;
     Ok(next.run(req).await)

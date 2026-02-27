@@ -352,7 +352,11 @@ export default function StripePayments() {
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Client Secret</dt>
-                  <dd className="mt-1 text-sm text-gray-900 font-mono text-xs break-all">{paymentIntent.client_secret}</dd>
+                  <dd className="mt-1 text-sm text-gray-900 font-mono text-xs break-all">
+                    {paymentIntent.client_secret ? 
+                      `${paymentIntent.client_secret.substring(0, 12)}...${paymentIntent.client_secret.substring(paymentIntent.client_secret.length - 4)}` 
+                      : '-'}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Amount</dt>
@@ -374,7 +378,7 @@ export default function StripePayments() {
                 <pre className="text-xs text-gray-600 overflow-x-auto">
 {`const stripe = Stripe('pk_test_...');
 const elements = stripe.elements({
-  clientSecret: '${paymentIntent.client_secret}'
+  clientSecret: '<your_client_secret>'
 });
 // Use elements to build your payment form`}
                 </pre>

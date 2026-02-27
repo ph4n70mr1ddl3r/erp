@@ -18,6 +18,7 @@ pub struct Config {
     pub server_port: u16,
     pub jwt_secret: String,
     pub jwt_expiration: i64,
+    pub cors_allowed_origins: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -41,6 +42,10 @@ impl Default for Config {
             server_port: 3000,
             jwt_secret: secret,
             jwt_expiration: 24,
+            cors_allowed_origins: vec![
+                "http://localhost:5173".to_string(),
+                "http://localhost:3000".to_string(),
+            ],
         }
     }
 }
@@ -71,6 +76,14 @@ impl Config {
             );
         }
 
+        let cors_origins = env::var("CORS_ALLOWED_ORIGINS")
+            .unwrap_or_else(|_| "http://localhost:5173,http://localhost:3000".to_string());
+        let cors_allowed_origins: Vec<String> = cors_origins
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+
         Self {
             database_url: env::var("DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite:erp.db?mode=rwc".to_string()),
@@ -84,6 +97,7 @@ impl Config {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(24),
+            cors_allowed_origins,
         }
     }
 }
