@@ -290,6 +290,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/approval-workflow", approval_workflow_routes())
         .nest("/credit", credit_routes())
         .nest("/kanban", kanban_routes())
+        .nest("/warranty", handlers::warranty::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

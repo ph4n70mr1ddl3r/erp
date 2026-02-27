@@ -804,6 +804,7 @@ dependencies = [
  "erp-territory",
  "erp-tms",
  "erp-tpm",
+ "erp-warranty",
  "erp-webhooks",
  "erp-wms",
  "futures",
@@ -2415,6 +2416,20 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "uuid 1.21.0",
+]
+
+[[package]]
+name = "erp-warranty"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
  "uuid 1.21.0",
 ]
 
