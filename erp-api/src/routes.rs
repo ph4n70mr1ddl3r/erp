@@ -87,6 +87,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/portals", handlers::portals::routes())
         .nest("/iot", handlers::iot::routes())
         .nest("/automation", handlers::automation::routes())
+        .nest("/bundles", bundles_routes())
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
         .route(
             "/workflows",
@@ -1090,4 +1091,36 @@ fn kanban_routes() -> Router<AppState> {
             "/cards/:card_id/checklists",
             get(handlers::kanban::list_checklists).post(handlers::kanban::add_checklist),
         )
+}
+
+fn bundles_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/",
+            get(handlers::bundles::list_bundles).post(handlers::bundles::create_bundle),
+        )
+        .route(
+            "/:id",
+            get(handlers::bundles::get_bundle)
+                .put(handlers::bundles::update_bundle)
+                .delete(handlers::bundles::delete_bundle),
+        )
+        .route("/:id/components", post(handlers::bundles::add_component))
+        .route(
+            "/:id/components/:component_id",
+            delete(handlers::bundles::remove_component),
+        )
+        .route(
+            "/:id/availability",
+            get(handlers::bundles::get_availability),
+        )
+        .route(
+            "/:id/price-rules",
+            get(handlers::bundles::get_price_rules).post(handlers::bundles::add_price_rule),
+        )
+        .route(
+            "/:id/calculate-price",
+            get(handlers::bundles::calculate_price),
+        )
+        .route("/:id/analytics", get(handlers::bundles::get_analytics))
 }

@@ -730,6 +730,7 @@ dependencies = [
  "erp-barcode",
  "erp-bi",
  "erp-bpm",
+ "erp-bundles",
  "erp-calendar",
  "erp-chat",
  "erp-clm",
@@ -1018,6 +1019,22 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
+ "uuid 1.21.0",
+]
+
+[[package]]
+name = "erp-bundles"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
  "uuid 1.21.0",
 ]
 

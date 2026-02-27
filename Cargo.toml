@@ -102,6 +102,7 @@ members = [
     "erp-credit",
     "erp-dropship",
     "erp-kanban",
+    "erp-bundles",
 ]
 resolver = "2"
 
@@ -237,3 +238,4 @@ erp-promotions = { path = "erp-promotions" }
 erp-approval-workflow = { path = "erp-approval-workflow" }
 erp-credit = { path = "erp-credit" }
 erp-kanban = { path = "erp-kanban" }
+erp-bundles = { path = "erp-bundles" }

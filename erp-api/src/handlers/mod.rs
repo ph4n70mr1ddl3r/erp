@@ -20,6 +20,7 @@ pub mod promotions;
 pub mod approval_workflow;
 pub mod credit;
 pub mod kanban;
+pub mod bundles;
 
 use axum::{extract::State, Json};
 use serde_json::json;
