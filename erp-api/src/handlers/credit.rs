@@ -5,8 +5,16 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::{ApiResponse, ApiResult, AppState, auth::Claims};
+use crate::error::ApiResult;
+use crate::db::AppState;
+use crate::handlers::auth::AuthUser;
 use erp_credit::{CreditService, CreditCheckRequest, CreditCheckResponse, CustomerCreditProfile, CreditTransaction, CreditHold, CreditLimitChange, CreditAlert, CreditSummary};
+
+#[derive(Serialize)]
+pub struct ApiResponse<T> {
+    pub success: bool,
+    pub data: T,
+}
 
 #[derive(Deserialize)]
 pub struct CheckCreditRequest {
@@ -288,9 +296,14 @@ impl From<CreditSummary> for CreditSummaryResponse {
 
 pub async fn check_credit(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Json(req): Json<CheckCreditRequest>,
 ) -> ApiResult<Json<CreditCheckResponse>> {
+    if req.order_amount < 0 {
+        return Err(erp_core::Error::validation("Order amount cannot be negative"));
+    }
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
     let check_req = CreditCheckRequest {
         customer_id: req.customer_id,
@@ -298,7 +311,7 @@ pub async fn check_credit(
         order_amount: req.order_amount,
         currency: req.currency,
     };
-    let result = svc.check_credit(&state.pool, check_req, Some(claims.sub)).await?;
+    let result = svc.check_credit(&state.pool, check_req, Some(user_id)).await?;
     Ok(Json(result))
 }
 
@@ -344,34 +357,43 @@ pub async fn list_high_risk(
 
 pub async fn update_credit_limit(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(customer_id): Path<Uuid>,
     Json(req): Json<UpdateCreditLimitRequest>,
 ) -> ApiResult<Json<CreditProfileResponse>> {
+    if req.credit_limit < 0 {
+        return Err(erp_core::Error::validation("Credit limit cannot be negative"));
+    }
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
-    let profile = svc.update_credit_limit(&state.pool, customer_id, req.credit_limit, req.reason, claims.sub).await?;
+    let profile = svc.update_credit_limit(&state.pool, customer_id, req.credit_limit, req.reason, user_id).await?;
     Ok(Json(CreditProfileResponse::from(profile)))
 }
 
 pub async fn place_hold(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(customer_id): Path<Uuid>,
     Json(req): Json<PlaceHoldRequest>,
 ) -> ApiResult<Json<CreditHoldResponse>> {
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
-    let hold = svc.place_manual_hold(&state.pool, customer_id, req.reason, claims.sub).await?;
+    let hold = svc.place_manual_hold(&state.pool, customer_id, req.reason, user_id).await?;
     Ok(Json(CreditHoldResponse::from(hold)))
 }
 
 pub async fn release_hold(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(customer_id): Path<Uuid>,
     Json(req): Json<ReleaseHoldRequest>,
 ) -> ApiResult<StatusCode> {
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
-    svc.release_hold(&state.pool, customer_id, req.override_reason, claims.sub).await?;
+    svc.release_hold(&state.pool, customer_id, req.override_reason, user_id).await?;
     Ok(StatusCode::OK)
 }
 
@@ -409,21 +431,31 @@ pub async fn list_limit_changes(
 
 pub async fn record_invoice(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Json(req): Json<RecordInvoiceRequest>,
 ) -> ApiResult<Json<CreditProfileResponse>> {
+    if req.amount < 0 {
+        return Err(erp_core::Error::validation("Invoice amount cannot be negative"));
+    }
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
-    let profile = svc.record_invoice(&state.pool, req.customer_id, req.invoice_id, req.invoice_number, req.amount, Some(claims.sub)).await?;
+    let profile = svc.record_invoice(&state.pool, req.customer_id, req.invoice_id, req.invoice_number, req.amount, Some(user_id)).await?;
     Ok(Json(CreditProfileResponse::from(profile)))
 }
 
 pub async fn record_payment(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Json(req): Json<RecordPaymentRequest>,
 ) -> ApiResult<Json<CreditProfileResponse>> {
+    if req.amount < 0 {
+        return Err(erp_core::Error::validation("Payment amount cannot be negative"));
+    }
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
-    let profile = svc.record_payment(&state.pool, req.customer_id, req.invoice_id, req.amount, Some(claims.sub)).await?;
+    let profile = svc.record_payment(&state.pool, req.customer_id, req.invoice_id, req.amount, Some(user_id)).await?;
     Ok(Json(CreditProfileResponse::from(profile)))
 }
 
@@ -446,10 +478,12 @@ pub async fn list_alerts(
 
 pub async fn acknowledge_alert(
     State(state): State<AppState>,
-    claims: Claims,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(alert_id): Path<Uuid>,
 ) -> ApiResult<StatusCode> {
+    let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let svc = CreditService::new();
-    svc.acknowledge_alert(&state.pool, alert_id, claims.sub).await?;
+    svc.acknowledge_alert(&state.pool, alert_id, user_id).await?;
     Ok(StatusCode::OK)
 }

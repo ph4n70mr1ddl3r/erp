@@ -100,6 +100,7 @@ members = [
     "erp-promotions",
     "erp-approval-workflow",
     "erp-credit",
+    "erp-dropship",
 ]
 resolver = "2"
 

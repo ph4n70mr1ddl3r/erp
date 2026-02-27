@@ -1189,7 +1189,7 @@ pub struct CurrencyRevaluation {
     pub created_by: Option<Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "TEXT")]
 pub enum CurrencyRevaluationStatus {
     Draft,

@@ -10,6 +10,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use crate::db::AppState;
+use crate::handlers::auth::AuthUser;
 use erp_payments::{PaymentService, GatewayService, CreatePaymentRequest, ProcessPaymentRequest, CreateRefundRequest, PaymentMethod};
 use erp_payments::{StripeService, CreatePaymentIntentRequest, CreateCheckoutSessionRequest};
 
@@ -42,6 +43,7 @@ pub struct CreateGatewayBody {
 
 async fn create_gateway(
     State(state): State<AppState>,
+    axum::Extension(_auth_user): axum::Extension<AuthUser>,
     Json(body): Json<CreateGatewayBody>,
 ) -> Json<serde_json::Value> {
     match GatewayService::create(&state.pool, body.code, body.name, body.gateway_type, body.supported_methods).await {
@@ -95,6 +97,10 @@ async fn create_payment(
     State(state): State<AppState>,
     Json(body): Json<CreatePaymentBody>,
 ) -> Json<serde_json::Value> {
+    if body.amount <= 0 {
+        return Json(json!({ "error": "Amount must be greater than zero" }));
+    }
+    
     let req = CreatePaymentRequest {
         gateway_id: body.gateway_id,
         invoice_id: body.invoice_id,
@@ -177,6 +183,10 @@ async fn refund_payment(
     Path(id): Path<Uuid>,
     Json(body): Json<RefundPaymentBody>,
 ) -> Json<serde_json::Value> {
+    if body.amount <= 0 {
+        return Json(json!({ "error": "Refund amount must be greater than zero" }));
+    }
+    
     let req = CreateRefundRequest {
         payment_id: id,
         amount: body.amount,
@@ -210,6 +220,10 @@ async fn process_payment(
     State(state): State<AppState>,
     Json(body): Json<ProcessPaymentBody>,
 ) -> Json<serde_json::Value> {
+    if body.amount <= 0 {
+        return Json(json!({ "error": "Amount must be greater than zero" }));
+    }
+    
     let req = ProcessPaymentRequest {
         gateway_id: body.gateway_id,
         customer_id: body.customer_id,
@@ -247,6 +261,10 @@ async fn create_stripe_intent(
     State(state): State<AppState>,
     Json(body): Json<CreateStripeIntentBody>,
 ) -> Json<serde_json::Value> {
+    if body.amount <= 0 {
+        return Json(json!({ "error": "Amount must be greater than zero" }));
+    }
+    
     let stripe = StripeService::from_env();
     let req = CreatePaymentIntentRequest {
         customer_id: body.customer_id,
@@ -326,6 +344,10 @@ async fn create_stripe_checkout(
     State(state): State<AppState>,
     Json(body): Json<CreateStripeCheckoutBody>,
 ) -> Json<serde_json::Value> {
+    if body.amount <= 0 {
+        return Json(json!({ "error": "Amount must be greater than zero" }));
+    }
+    
     let stripe = StripeService::from_env();
     let req = CreateCheckoutSessionRequest {
         customer_id: body.customer_id,

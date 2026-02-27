@@ -231,7 +231,7 @@ impl StripeService {
         amount: Option<i64>,
         reason: Option<String>,
     ) -> Result<StripeRefundResponse> {
-let mut form_data: Vec<(String, String)> = vec![("payment_intent".to_string(), payment_intent_id.to_string())];
+        let mut form_data: Vec<(String, String)> = vec![("payment_intent".to_string(), payment_intent_id.to_string())];
         
         if let Some(amt) = amount {
             form_data.push(("amount".to_string(), amt.to_string()));
@@ -239,11 +239,6 @@ let mut form_data: Vec<(String, String)> = vec![("payment_intent".to_string(), p
         
         if let Some(rsn) = reason {
             form_data.push(("reason".to_string(), rsn));
-        }
-    }
-        
-        if let Some(rsn) = reason {
-            form_data.push(("reason", rsn));
         }
         
         let response = self.client
@@ -280,14 +275,9 @@ let mut form_data: Vec<(String, String)> = vec![("payment_intent".to_string(), p
     pub fn verify_webhook_signature(&self, payload: &[u8], signature: &str) -> Result<StripeWebhookPayload> {
         use hmac::{Hmac, Mac};
         use sha2::Sha256;
+        use std::time::{SystemTime, UNIX_EPOCH};
         
         type HmacSha256 = Hmac<Sha256>;
-        
-        let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
-            .context("Invalid webhook secret")?;
-        mac.update(payload);
-        
-        let expected_signature = hex::encode(mac.finalize().into_bytes());
         
         let signature_parts: Vec<&str> = signature.split(',').collect();
         let mut signature_value = "";
@@ -305,12 +295,26 @@ let mut form_data: Vec<(String, String)> = vec![("payment_intent".to_string(), p
             anyhow::bail!("Invalid webhook signature format");
         }
         
-        let signed_payload = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
-        let mut mac2 = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())?;
-        mac2.update(signed_payload.as_bytes());
-        let expected = hex::encode(mac2.finalize().into_bytes());
+        let timestamp_secs: u64 = timestamp.parse()
+            .context("Invalid timestamp in signature")?;
         
-        if !expected.eq_ignore_ascii_case(signature_value) {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .context("System time error")?
+            .as_secs();
+        
+        const TOLERANCE_SECS: u64 = 300;
+        if now.abs_diff(timestamp_secs) > TOLERANCE_SECS {
+            anyhow::bail!("Webhook timestamp outside tolerance window");
+        }
+        
+        let signed_payload = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
+        let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
+            .context("Invalid webhook secret")?;
+        mac.update(signed_payload.as_bytes());
+        let expected = hex::encode(mac.finalize().into_bytes());
+        
+        if !constant_time_eq(&expected, signature_value) {
             anyhow::bail!("Webhook signature verification failed");
         }
         
@@ -498,4 +502,15 @@ pub struct StripeWebhookPayload {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct StripeWebhookData {
     pub object: Option<serde_json::Value>,
+}
+
+fn constant_time_eq(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    a.as_bytes()
+        .iter()
+        .zip(b.as_bytes().iter())
+        .fold(0, |acc, (x, y)| acc | (x ^ y))
+        == 0
 }

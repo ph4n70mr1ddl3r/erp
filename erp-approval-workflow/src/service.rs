@@ -153,7 +153,7 @@ impl ApprovalRequestService {
 
         if let Some(auto_approve) = workflow.auto_approve_below {
             if req.amount < auto_approve {
-                return Ok(ApprovalRequest {
+                let request = ApprovalRequest {
                     id: Uuid::new_v4(),
                     request_number: format!("APR-{}", Utc::now().format("%Y%m%d%H%M%S")),
                     workflow_id: workflow.base.id,
@@ -175,7 +175,9 @@ impl ApprovalRequestService {
                     created_at: Utc::now(),
                     updated_at: Utc::now(),
                     approvals: vec![],
-                });
+                };
+                
+                return self.request_repo.create(pool, request).await;
             }
         }
 
@@ -241,8 +243,8 @@ impl ApprovalRequestService {
             delegated_to: None,
             created_at: Utc::now(),
         };
-        self.request_repo.add_approval(pool, record).await?;
         request.approvals.push(record.clone());
+        self.request_repo.add_approval(pool, record).await?;
 
         let approvals_at_level: Vec<_> = request.approvals.iter()
             .filter(|a| a.level_number == current_level && matches!(a.action, ApprovalAction::Approved))
@@ -361,7 +363,7 @@ impl ApprovalRequestService {
         }
 
         if request.requested_by != cancelled_by {
-            return Err(Error::forbidden("Only the requester can cancel"));
+            return Err(Error::unauthorized("Only the requester can cancel"));
         }
 
         request.status = ApprovalRequestStatus::Cancelled;

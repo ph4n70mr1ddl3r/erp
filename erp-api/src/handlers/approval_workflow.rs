@@ -1,11 +1,13 @@
 use axum::{
     extract::{Path, Query, State},
     Json,
+    http::StatusCode,
 };
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
+use crate::handlers::auth::AuthUser;
 use erp_core::Pagination;
 use erp_approval_workflow::{
     ApprovalWorkflow, ApprovalWorkflowService, ApprovalWorkflowStatus, ApprovalType,
@@ -413,30 +415,39 @@ pub async fn submit_for_approval(
 
 pub async fn approve_request(
     State(state): State<AppState>,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(id): Path<Uuid>,
     Json(req): Json<ApproveRequest>,
 ) -> ApiResult<Json<RequestResponse>> {
+    let approver_id = Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let service = ApprovalRequestService::new();
-    let request = service.approve(&state.pool, id, req.approver_id, req.comments).await?;
+    let request = service.approve(&state.pool, id, approver_id, req.comments).await?;
     Ok(Json(RequestResponse::from(request)))
 }
 
 pub async fn reject_request(
     State(state): State<AppState>,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(id): Path<Uuid>,
     Json(req): Json<RejectRequest>,
 ) -> ApiResult<Json<RequestResponse>> {
+    let approver_id = Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let service = ApprovalRequestService::new();
-    let request = service.reject(&state.pool, id, req.approver_id, req.reason).await?;
+    let request = service.reject(&state.pool, id, approver_id, req.reason).await?;
     Ok(Json(RequestResponse::from(request)))
 }
 
 pub async fn cancel_request(
     State(state): State<AppState>,
+    axum::Extension(auth_user): axum::Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<RequestResponse>> {
+    let user_id = Uuid::parse_str(&auth_user.0.user_id)
+        .map_err(|_| erp_core::Error::Unauthorized)?;
     let service = ApprovalRequestService::new();
     let request = service.get_request(&state.pool, id).await?;
-    let request = service.cancel(&state.pool, id, request.requested_by).await?;
+    let request = service.cancel(&state.pool, id, user_id).await?;
     Ok(Json(RequestResponse::from(request)))
 }

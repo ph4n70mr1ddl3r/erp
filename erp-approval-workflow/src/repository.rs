@@ -1,12 +1,36 @@
 use async_trait::async_trait;
 use chrono::Utc;
-use erp_core::{Error, Paginated, Pagination, Result};
+use erp_core::{BaseEntity, Error, Paginated, Pagination, Result};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::models::*;
 
 pub struct SqliteApprovalWorkflowRepository;
+
+#[derive(sqlx::FromRow)]
+struct RequestRow {
+    id: String,
+    request_number: String,
+    workflow_id: String,
+    document_type: String,
+    document_id: String,
+    document_number: String,
+    requested_by: String,
+    requested_at: String,
+    amount: i64,
+    currency: String,
+    status: String,
+    current_level: Option<i32>,
+    due_date: Option<String>,
+    approved_at: Option<String>,
+    approved_by: Option<String>,
+    rejected_at: Option<String>,
+    rejected_by: Option<String>,
+    rejection_reason: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
 
 #[async_trait]
 pub trait ApprovalWorkflowRepository: Send + Sync {
@@ -365,30 +389,6 @@ pub trait ApprovalRequestRepository: Send + Sync {
 #[async_trait]
 impl ApprovalRequestRepository for SqliteApprovalRequestRepository {
     async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ApprovalRequest> {
-        #[derive(sqlx::FromRow)]
-        struct RequestRow {
-            id: String,
-            request_number: String,
-            workflow_id: String,
-            document_type: String,
-            document_id: String,
-            document_number: String,
-            requested_by: String,
-            requested_at: String,
-            amount: i64,
-            currency: String,
-            status: String,
-            current_level: Option<i32>,
-            due_date: Option<String>,
-            approved_at: Option<String>,
-            approved_by: Option<String>,
-            rejected_at: Option<String>,
-            rejected_by: Option<String>,
-            rejection_reason: Option<String>,
-            created_at: String,
-            updated_at: String,
-        }
-
         let row = sqlx::query_as::<_, RequestRow>(
             "SELECT id, request_number, workflow_id, document_type, document_id, document_number,
              requested_by, requested_at, amount, currency, status, current_level, due_date,
@@ -405,30 +405,6 @@ impl ApprovalRequestRepository for SqliteApprovalRequestRepository {
     }
 
     async fn find_by_document(&self, pool: &SqlitePool, doc_type: &str, doc_id: Uuid) -> Result<Option<ApprovalRequest>> {
-        #[derive(sqlx::FromRow)]
-        struct RequestRow {
-            id: String,
-            request_number: String,
-            workflow_id: String,
-            document_type: String,
-            document_id: String,
-            document_number: String,
-            requested_by: String,
-            requested_at: String,
-            amount: i64,
-            currency: String,
-            status: String,
-            current_level: Option<i32>,
-            due_date: Option<String>,
-            approved_at: Option<String>,
-            approved_by: Option<String>,
-            rejected_at: Option<String>,
-            rejected_by: Option<String>,
-            rejection_reason: Option<String>,
-            created_at: String,
-            updated_at: String,
-        }
-
         let row = sqlx::query_as::<_, RequestRow>(
             "SELECT id, request_number, workflow_id, document_type, document_id, document_number,
              requested_by, requested_at, amount, currency, status, current_level, due_date,
@@ -451,30 +427,6 @@ impl ApprovalRequestRepository for SqliteApprovalRequestRepository {
     }
 
     async fn find_pending_for_approver(&self, pool: &SqlitePool, approver_id: Uuid, pagination: Pagination) -> Result<Paginated<ApprovalRequest>> {
-        #[derive(sqlx::FromRow)]
-        struct RequestRow {
-            id: String,
-            request_number: String,
-            workflow_id: String,
-            document_type: String,
-            document_id: String,
-            document_number: String,
-            requested_by: String,
-            requested_at: String,
-            amount: i64,
-            currency: String,
-            status: String,
-            current_level: Option<i32>,
-            due_date: Option<String>,
-            approved_at: Option<String>,
-            approved_by: Option<String>,
-            rejected_at: Option<String>,
-            rejected_by: Option<String>,
-            rejection_reason: Option<String>,
-            created_at: String,
-            updated_at: String,
-        }
-
         let count: (i64,) = sqlx::query_as(
             "SELECT COUNT(*) FROM approval_requests ar
              JOIN approval_workflow_levels awl ON awl.workflow_id = ar.workflow_id
@@ -512,30 +464,6 @@ impl ApprovalRequestRepository for SqliteApprovalRequestRepository {
     }
 
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<ApprovalRequest>> {
-        #[derive(sqlx::FromRow)]
-        struct RequestRow {
-            id: String,
-            request_number: String,
-            workflow_id: String,
-            document_type: String,
-            document_id: String,
-            document_number: String,
-            requested_by: String,
-            requested_at: String,
-            amount: i64,
-            currency: String,
-            status: String,
-            current_level: Option<i32>,
-            due_date: Option<String>,
-            approved_at: Option<String>,
-            approved_by: Option<String>,
-            rejected_at: Option<String>,
-            rejected_by: Option<String>,
-            rejection_reason: Option<String>,
-            created_at: String,
-            updated_at: String,
-        }
-
         let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM approval_requests")
             .fetch_one(pool)
             .await?;
