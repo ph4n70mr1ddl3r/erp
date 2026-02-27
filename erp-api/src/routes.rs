@@ -55,6 +55,8 @@ pub fn create_router(state: AppState) -> Router {
     let protected_routes = Router::new()
         .route("/auth/me", get(handlers::auth::me))
         .nest("/api/v1", api_routes(state.clone()))
+        .layer(middleware::from_fn(rate_limit_middleware))
+        .layer(Extension(rate_limiter.clone()))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             handlers::auth::auth_middleware,

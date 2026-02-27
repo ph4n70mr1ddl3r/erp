@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { getErrorMessage } from '../types';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -29,8 +30,8 @@ export default function Login() {
         await login(username, password);
         navigate('/');
       }
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

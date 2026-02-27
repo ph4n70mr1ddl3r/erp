@@ -21,16 +21,20 @@ struct AccountRow {
 }
 
 impl AccountRow {
-    fn into_account(self) -> Account {
-        Account {
+    fn into_account(self) -> Result<Account> {
+        let id = Uuid::parse_str(&self.id)
+            .map_err(|_| Error::validation("Invalid account ID format"))?;
+        let created_at = chrono::DateTime::parse_from_rfc3339(&self.created_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid created_at timestamp"))?;
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&self.updated_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid updated_at timestamp"))?;
+        Ok(Account {
             base: BaseEntity {
-                id: Uuid::parse_str(&self.id).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
-                    .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at)
-                    .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                id,
+                created_at,
+                updated_at,
                 created_by: self.created_by.and_then(|s| Uuid::parse_str(&s).ok()),
                 updated_by: self.updated_by.and_then(|s| Uuid::parse_str(&s).ok()),
             },
@@ -49,7 +53,7 @@ impl AccountRow {
                 _ => Status::Active,
             },
             description: self.description,
-        }
+        })
     }
 }
 
@@ -68,7 +72,7 @@ impl AccountRepository for SqliteAccountRepository {
         .await?
         .ok_or_else(|| Error::not_found("Account", &id.to_string()))?;
         
-        Ok(row.into_account())
+        Ok(row.into_account()?)
     }
 
     async fn find_by_code(&self, pool: &SqlitePool, code: &str) -> Result<Account> {
@@ -82,7 +86,7 @@ impl AccountRepository for SqliteAccountRepository {
         .await?
         .ok_or_else(|| Error::not_found("Account", code))?;
         
-        Ok(row.into_account())
+        Ok(row.into_account()?)
     }
 
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<Account>> {
@@ -103,8 +107,8 @@ impl AccountRepository for SqliteAccountRepository {
         .fetch_all(pool)
         .await?;
         
-        let items: Vec<Account> = rows.into_iter().map(|r| r.into_account()).collect();
-        Ok(Paginated::new(items, count.0 as u64, pagination))
+        let items: Result<Vec<Account>> = rows.into_iter().map(|r| r.into_account()).collect();
+        Ok(Paginated::new(items?, count.0 as u64, pagination))
     }
 
     async fn find_by_type(&self, pool: &SqlitePool, account_type: AccountType) -> Result<Vec<Account>> {
@@ -120,7 +124,7 @@ impl AccountRepository for SqliteAccountRepository {
         .fetch_all(pool)
         .await?;
         
-        Ok(rows.into_iter().map(|r| r.into_account()).collect())
+        Ok(rows.into_iter().map(|r| r.into_account()).collect::<Result<Vec<_>>>()?)
     }
 
     async fn create(&self, pool: &SqlitePool, account: Account) -> Result<Account> {
@@ -231,7 +235,7 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         .ok_or_else(|| Error::not_found("JournalEntry", &id.to_string()))?;
         
         let lines = self.load_lines(pool, id).await?;
-        Ok(self.row_to_entry(row, lines))
+        self.row_to_entry(row, lines)
     }
 
     async fn find_by_number(&self, pool: &SqlitePool, number: &str) -> Result<JournalEntry> {
@@ -247,7 +251,7 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         
         let id = Uuid::parse_str(&row.id).unwrap_or_default();
         let lines = self.load_lines(pool, id).await?;
-        Ok(self.row_to_entry(row, lines))
+        self.row_to_entry(row, lines)
     }
 
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<JournalEntry>> {
@@ -269,9 +273,10 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         
         let mut entries = Vec::new();
         for row in rows {
-            let id = Uuid::parse_str(&row.id).unwrap_or_default();
+            let id = Uuid::parse_str(&row.id)
+                .map_err(|_| Error::validation("Invalid journal entry ID format"))?;
             let lines = self.load_lines(pool, id).await?;
-            entries.push(self.row_to_entry(row, lines));
+            entries.push(self.row_to_entry(row, lines)?);
         }
         
         Ok(Paginated::new(entries, count.0 as u64, pagination))
@@ -401,32 +406,43 @@ impl SqliteJournalEntryRepository {
         .fetch_all(pool)
         .await?;
         
-        Ok(rows.into_iter().map(|r| JournalLine {
-            id: Uuid::parse_str(&r.id).unwrap_or_default(),
-            account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),
-            debit: Money::new(r.debit, Currency::USD),
-            credit: Money::new(r.credit, Currency::USD),
-            description: r.description,
-        }).collect())
+        rows.into_iter().map(|r| {
+            let id = Uuid::parse_str(&r.id)
+                .map_err(|_| Error::validation("Invalid journal line ID format"))?;
+            let account_id = Uuid::parse_str(&r.account_id)
+                .map_err(|_| Error::validation("Invalid account ID format in journal line"))?;
+            Ok(JournalLine {
+                id,
+                account_id,
+                debit: Money::new(r.debit, Currency::USD),
+                credit: Money::new(r.credit, Currency::USD),
+                description: r.description,
+            })
+        }).collect()
     }
 
-    fn row_to_entry(&self, row: JournalEntryRow, lines: Vec<JournalLine>) -> JournalEntry {
-        JournalEntry {
+    fn row_to_entry(&self, row: JournalEntryRow, lines: Vec<JournalLine>) -> Result<JournalEntry> {
+        let id = Uuid::parse_str(&row.id)
+            .map_err(|_| Error::validation("Invalid journal entry ID format"))?;
+        let created_at = chrono::DateTime::parse_from_rfc3339(&row.created_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid created_at timestamp"))?;
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&row.updated_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid updated_at timestamp"))?;
+        let date = chrono::DateTime::parse_from_rfc3339(&row.date)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid date timestamp"))?;
+        Ok(JournalEntry {
             base: BaseEntity {
-                id: Uuid::parse_str(&row.id).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
-                    .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(&row.updated_at)
-                    .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                id,
+                created_at,
+                updated_at,
                 created_by: row.created_by.and_then(|s| Uuid::parse_str(&s).ok()),
                 updated_by: row.updated_by.and_then(|s| Uuid::parse_str(&s).ok()),
             },
             entry_number: row.entry_number,
-            date: chrono::DateTime::parse_from_rfc3339(&row.date)
-                .map(|d| d.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now()),
+            date,
             description: row.description,
             reference: row.reference,
             lines,
@@ -434,7 +450,7 @@ impl SqliteJournalEntryRepository {
                 "Posted" => Status::Approved,
                 _ => Status::Draft,
             },
-        }
+        })
     }
 }
 
@@ -463,7 +479,7 @@ impl FiscalYearRepository for SqliteFiscalYearRepository {
         .await?
         .ok_or_else(|| Error::not_found("FiscalYear", &id.to_string()))?;
         
-        Ok(self.row_to_fiscal_year(row))
+        self.row_to_fiscal_year(row)
     }
 
     async fn find_active(&self, pool: &SqlitePool) -> Result<FiscalYear> {
@@ -475,7 +491,7 @@ impl FiscalYearRepository for SqliteFiscalYearRepository {
         .await?
         .ok_or_else(|| Error::not_found("FiscalYear", "active"))?;
         
-        Ok(self.row_to_fiscal_year(row))
+        self.row_to_fiscal_year(row)
     }
 
     async fn find_all(&self, pool: &SqlitePool) -> Result<Vec<FiscalYear>> {
@@ -486,7 +502,7 @@ impl FiscalYearRepository for SqliteFiscalYearRepository {
         .fetch_all(pool)
         .await?;
         
-        Ok(rows.into_iter().map(|r| self.row_to_fiscal_year(r)).collect())
+        rows.into_iter().map(|r| self.row_to_fiscal_year(r)).collect()
     }
 
     async fn create(&self, pool: &SqlitePool, year: FiscalYear) -> Result<FiscalYear> {
@@ -532,31 +548,37 @@ impl FiscalYearRepository for SqliteFiscalYearRepository {
 }
 
 impl SqliteFiscalYearRepository {
-    fn row_to_fiscal_year(&self, row: FiscalYearRow) -> FiscalYear {
-        FiscalYear {
+    fn row_to_fiscal_year(&self, row: FiscalYearRow) -> Result<FiscalYear> {
+        let id = Uuid::parse_str(&row.id)
+            .map_err(|_| Error::validation("Invalid fiscal year ID format"))?;
+        let created_at = chrono::DateTime::parse_from_rfc3339(&row.created_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid created_at timestamp"))?;
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&row.updated_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid updated_at timestamp"))?;
+        let start_date = chrono::DateTime::parse_from_rfc3339(&row.start_date)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid start_date timestamp"))?;
+        let end_date = chrono::DateTime::parse_from_rfc3339(&row.end_date)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| Error::validation("Invalid end_date timestamp"))?;
+        Ok(FiscalYear {
             base: BaseEntity {
-                id: Uuid::parse_str(&row.id).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
-                    .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(&row.updated_at)
-                    .map(|d| d.with_timezone(&Utc))
-                    .unwrap_or_else(|_| Utc::now()),
+                id,
+                created_at,
+                updated_at,
                 created_by: None,
                 updated_by: None,
             },
             name: row.name,
-            start_date: chrono::DateTime::parse_from_rfc3339(&row.start_date)
-                .map(|d| d.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now()),
-            end_date: chrono::DateTime::parse_from_rfc3339(&row.end_date)
-                .map(|d| d.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now()),
+            start_date,
+            end_date,
             status: match row.status.as_str() {
                 "Closed" => Status::Completed,
                 _ => Status::Active,
             },
-        }
+        })
     }
 }
 

@@ -24,7 +24,7 @@ impl UserRepository for SqliteUserRepository {
             "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users WHERE id = ?"
         ).bind(id.to_string()).fetch_optional(pool).await?
         .ok_or_else(|| erp_core::Error::not_found("User", &id.to_string()))?;
-        Ok(row.into_user())
+        Ok(row.into_user()?)
     }
 
     async fn find_by_username(&self, pool: &SqlitePool, username: &str) -> Result<User> {
@@ -32,7 +32,7 @@ impl UserRepository for SqliteUserRepository {
             "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users WHERE username = ?"
         ).bind(username).fetch_optional(pool).await?
         .ok_or_else(|| erp_core::Error::not_found("User", username))?;
-        Ok(row.into_user())
+        Ok(row.into_user()?)
     }
 
     async fn find_by_email(&self, pool: &SqlitePool, email: &str) -> Result<User> {
@@ -40,7 +40,7 @@ impl UserRepository for SqliteUserRepository {
             "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users WHERE email = ?"
         ).bind(email).fetch_optional(pool).await?
         .ok_or_else(|| erp_core::Error::not_found("User", email))?;
-        Ok(row.into_user())
+        Ok(row.into_user()?)
     }
 
     async fn create(&self, pool: &SqlitePool, user: User) -> Result<User> {
@@ -67,7 +67,7 @@ impl UserRepository for SqliteUserRepository {
         let rows = sqlx::query_as::<_, UserRow>(
             "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users ORDER BY username"
         ).fetch_all(pool).await?;
-        Ok(rows.into_iter().map(|r| r.into_user()).collect())
+        rows.into_iter().map(|r| r.into_user()).collect()
     }
 }
 
@@ -86,9 +86,17 @@ struct UserRow {
 }
 
 impl UserRow {
-    fn into_user(self) -> User {
-        User {
-            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+    fn into_user(self) -> Result<User> {
+        let id = Uuid::parse_str(&self.id)
+            .map_err(|_| erp_core::Error::validation("Invalid user ID format"))?;
+        let created_at = chrono::DateTime::parse_from_rfc3339(&self.created_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| erp_core::Error::validation("Invalid created_at timestamp"))?;
+        let updated_at = chrono::DateTime::parse_from_rfc3339(&self.updated_at)
+            .map(|d| d.with_timezone(&Utc))
+            .map_err(|_| erp_core::Error::validation("Invalid updated_at timestamp"))?;
+        Ok(User {
+            id,
             username: self.username,
             email: self.email,
             password_hash: self.password_hash,
@@ -96,8 +104,8 @@ impl UserRow {
             role: UserRole::from_str(&self.role),
             status: UserStatus::from_str(&self.status),
             last_login: self.last_login.and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
-        }
+            created_at,
+            updated_at,
+        })
     }
 }

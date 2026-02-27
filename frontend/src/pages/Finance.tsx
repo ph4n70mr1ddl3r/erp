@@ -5,6 +5,7 @@ import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
 import type { Account, JournalEntry } from '../types';
 import type { CreateAccountRequest } from '../api/client';
+import { getErrorMessage } from '../types';
 
 export default function Finance() {
   const toast = useToast();
@@ -53,8 +54,8 @@ export default function Finance() {
       setShowAccountModal(false);
       setNewAccount({ code: '', name: '', account_type: 'Asset' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create account');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -84,8 +85,8 @@ export default function Finance() {
       setShowJEModal(false);
       setNewEntry({ description: '', reference: '', lines: [{ account_id: '', debit: 0, credit: 0 }] });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create journal entry');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -96,8 +97,8 @@ export default function Finance() {
       await finance.postJournalEntry(id);
       toast.success('Journal entry posted successfully');
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to post journal entry');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     }
   };
 
@@ -112,7 +113,7 @@ export default function Finance() {
     }
   };
 
-  const updateLine = (index: number, field: string, value: any) => {
+  const updateLine = (index: number, field: string, value: string | number) => {
     const lines = [...newEntry.lines];
     lines[index] = { ...lines[index], [field]: value };
     setNewEntry({ ...newEntry, lines });

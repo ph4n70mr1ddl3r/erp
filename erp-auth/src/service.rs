@@ -43,15 +43,6 @@ impl AuthService {
         
         validate_password_strength(&req.password)?;
         
-        let username_exists = self.repo.find_by_username(pool, &req.username).await.is_ok();
-        let email_exists = self.repo.find_by_email(pool, &req.email).await.is_ok();
-        
-        if username_exists || email_exists {
-            return Err(Error::Conflict(
-                "Registration failed. Please try different credentials.".to_string()
-            ));
-        }
-        
         let password_hash = self.hash_password(&req.password)?;
         let now = Utc::now();
         
@@ -68,7 +59,13 @@ impl AuthService {
             updated_at: now,
         };
         
-        let user = self.repo.create(pool, user).await?;
+        let user = self.repo.create(pool, user).await.map_err(|e| {
+            if matches!(e, Error::Database(_)) {
+                Error::Conflict("Registration failed. Please try different credentials.".to_string())
+            } else {
+                e
+            }
+        })?;
         let (token, expires_at) = jwt::generate_token(&user.id.to_string(), &user.username, user.role.as_str(), 24)?;
         
         Ok(AuthResponse {

@@ -6,6 +6,7 @@ import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Product, Warehouse } from '../types';
+import { getErrorMessage } from '../types';
 
 export default function Inventory() {
   const toast = useToast();
@@ -45,8 +46,8 @@ export default function Inventory() {
       setShowProductModal(false);
       setNewProduct({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create product');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -63,8 +64,8 @@ export default function Inventory() {
       setEditingProduct(null);
       setNewProduct({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to update product');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -79,8 +80,8 @@ export default function Inventory() {
       setShowWarehouseModal(false);
       setNewWarehouse({ code: '', name: '' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create warehouse');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -92,8 +93,8 @@ export default function Inventory() {
       await inventory.deleteProduct(deleteConfirm.id);
       toast.success('Product deleted successfully');
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to delete product');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setDeleteConfirm(null);
     }
