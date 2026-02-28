@@ -1,10 +1,11 @@
 use axum::{
     extract::{Query, State},
     body::Body,
-    http::{header, Response},
+    http::{header, Response, StatusCode},
 };
 use crate::db::AppState;
 use crate::error::ApiResult;
+use tracing::warn;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ExportQuery {
@@ -24,11 +25,11 @@ pub async fn export_csv(
         _ => return Err(erp_core::Error::validation("Unknown entity type").into()),
     };
     
-    Ok(Response::builder()
+    Response::builder()
         .header(header::CONTENT_TYPE, "text/csv")
         .header(header::CONTENT_DISPOSITION, format!("attachment; filename=\"{}.csv\"", query.entity))
         .body(Body::from(csv))
-        .unwrap())
+        .map_err(|e| erp_core::Error::Internal(anyhow::anyhow!("Failed to build response: {}", e)).into())
 }
 
 async fn export_products(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<String> {
@@ -114,6 +115,38 @@ fn escape_csv(s: &str) -> String {
     }
 }
 
+fn parse_csv_line(line: &str) -> Vec<String> {
+    let mut fields = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut chars = line.chars().peekable();
+    
+    while let Some(c) = chars.next() {
+        match c {
+            '"' if !in_quotes => {
+                in_quotes = true;
+            }
+            '"' if in_quotes => {
+                if chars.peek() == Some(&'"') {
+                    current.push('"');
+                    chars.next();
+                } else {
+                    in_quotes = false;
+                }
+            }
+            ',' if !in_quotes => {
+                fields.push(current);
+                current = String::new();
+            }
+            _ => {
+                current.push(c);
+            }
+        }
+    }
+    fields.push(current);
+    fields
+}
+
 #[derive(Debug, serde::Deserialize)]
 pub struct ImportQuery {
     pub entity: String,
@@ -144,24 +177,30 @@ pub async fn import_csv(
 async fn import_products(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::error::ApiResult<usize> {
     let mut count = 0;
     for line in lines.iter().skip(1) {
-        let parts: Vec<&str> = line.split(',').collect();
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts = parse_csv_line(line);
         if parts.len() >= 4 {
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
-            sqlx::query(
+            if let Err(e) = sqlx::query(
                 "INSERT OR IGNORE INTO products (id, sku, name, unit_of_measure, status, created_at, updated_at)
                  VALUES (?, ?, ?, ?, 'Active', ?, ?)"
             )
             .bind(&id)
-            .bind(parts[1])
-            .bind(parts[2])
-            .bind(parts[3])
+            .bind(&parts[1])
+            .bind(&parts[2])
+            .bind(&parts[3])
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
-            .ok();
-            count += 1;
+            {
+                warn!(sku = %parts[1], error = %e, "Failed to import product");
+            } else {
+                count += 1;
+            }
         }
     }
     Ok(count)
@@ -170,24 +209,30 @@ async fn import_products(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::erro
 async fn import_customers(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::error::ApiResult<usize> {
     let mut count = 0;
     for line in lines.iter().skip(1) {
-        let parts: Vec<&str> = line.split(',').collect();
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts = parse_csv_line(line);
         if parts.len() >= 3 {
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
-            sqlx::query(
+            if let Err(e) = sqlx::query(
                 "INSERT OR IGNORE INTO customers (id, code, name, email, status, created_at, updated_at, payment_terms)
                  VALUES (?, ?, ?, ?, 'Active', ?, ?, 30)"
             )
             .bind(&id)
-            .bind(parts[1])
-            .bind(parts[2])
-            .bind(parts.get(3).unwrap_or(&""))
+            .bind(&parts[1])
+            .bind(&parts[2])
+            .bind(parts.get(3).unwrap_or(&"".to_string()))
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
-            .ok();
-            count += 1;
+            {
+                warn!(code = %parts[1], error = %e, "Failed to import customer");
+            } else {
+                count += 1;
+            }
         }
     }
     Ok(count)
@@ -196,24 +241,30 @@ async fn import_customers(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::err
 async fn import_vendors(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::error::ApiResult<usize> {
     let mut count = 0;
     for line in lines.iter().skip(1) {
-        let parts: Vec<&str> = line.split(',').collect();
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts = parse_csv_line(line);
         if parts.len() >= 3 {
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
-            sqlx::query(
+            if let Err(e) = sqlx::query(
                 "INSERT OR IGNORE INTO vendors (id, code, name, email, status, created_at, updated_at, payment_terms)
                  VALUES (?, ?, ?, ?, 'Active', ?, ?, 30)"
             )
             .bind(&id)
-            .bind(parts[1])
-            .bind(parts[2])
-            .bind(parts.get(3).unwrap_or(&""))
+            .bind(&parts[1])
+            .bind(&parts[2])
+            .bind(parts.get(3).unwrap_or(&"".to_string()))
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
-            .ok();
-            count += 1;
+            {
+                warn!(code = %parts[1], error = %e, "Failed to import vendor");
+            } else {
+                count += 1;
+            }
         }
     }
     Ok(count)
@@ -222,24 +273,30 @@ async fn import_vendors(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::error
 async fn import_accounts(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::error::ApiResult<usize> {
     let mut count = 0;
     for line in lines.iter().skip(1) {
-        let parts: Vec<&str> = line.split(',').collect();
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts = parse_csv_line(line);
         if parts.len() >= 4 {
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
-            sqlx::query(
+            if let Err(e) = sqlx::query(
                 "INSERT OR IGNORE INTO accounts (id, code, name, account_type, status, created_at, updated_at)
                  VALUES (?, ?, ?, ?, 'Active', ?, ?)"
             )
             .bind(&id)
-            .bind(parts[1])
-            .bind(parts[2])
-            .bind(parts[3])
+            .bind(&parts[1])
+            .bind(&parts[2])
+            .bind(&parts[3])
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
-            .ok();
-            count += 1;
+            {
+                warn!(code = %parts[1], error = %e, "Failed to import account");
+            } else {
+                count += 1;
+            }
         }
     }
     Ok(count)
@@ -248,24 +305,30 @@ async fn import_accounts(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::erro
 async fn import_employees(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::error::ApiResult<usize> {
     let mut count = 0;
     for line in lines.iter().skip(1) {
-        let parts: Vec<&str> = line.split(',').collect();
+        if line.trim().is_empty() {
+            continue;
+        }
+        let parts = parse_csv_line(line);
         if parts.len() >= 4 {
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
-            sqlx::query(
+            if let Err(e) = sqlx::query(
                 "INSERT OR IGNORE INTO employees (id, employee_number, first_name, last_name, email, status, created_at, updated_at, hire_date, birth_date)
                  VALUES (?, ?, ?, ?, '', 'Active', ?, ?, date('now'), date('now'))"
             )
             .bind(&id)
-            .bind(parts[1])
-            .bind(parts[2])
-            .bind(parts[3])
+            .bind(&parts[1])
+            .bind(&parts[2])
+            .bind(&parts[3])
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
-            .ok();
-            count += 1;
+            {
+                warn!(employee_number = %parts[1], error = %e, "Failed to import employee");
+            } else {
+                count += 1;
+            }
         }
     }
     Ok(count)

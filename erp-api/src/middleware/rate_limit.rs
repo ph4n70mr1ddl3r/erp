@@ -64,6 +64,17 @@ impl RateLimiter {
             now.duration_since(entry.window_start) <= Duration::from_secs(WINDOW_SECS * 2)
         });
     }
+
+    pub fn spawn_cleanup_task(&self) -> tokio::task::JoinHandle<()> {
+        let limiter = self.clone();
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(WINDOW_SECS));
+            loop {
+                interval.tick().await;
+                limiter.cleanup().await;
+            }
+        })
+    }
 }
 
 pub async fn rate_limit_middleware(

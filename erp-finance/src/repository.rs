@@ -129,11 +129,9 @@ impl AccountRepository for SqliteAccountRepository {
 
     async fn create(&self, pool: &SqlitePool, account: Account) -> Result<Account> {
         let now = Utc::now();
-        sqlx::query(
-            "INSERT INTO accounts (id, code, name, account_type, parent_id, status, description,
+        sqlx::query("INSERT INTO accounts (id, code, name, account_type, parent_id, status, description,
              created_at, updated_at, created_by, updated_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(account.base.id.to_string())
         .bind(&account.code)
         .bind(&account.name)
@@ -153,11 +151,9 @@ impl AccountRepository for SqliteAccountRepository {
 
     async fn update(&self, pool: &SqlitePool, account: Account) -> Result<Account> {
         let now = Utc::now();
-        let rows = sqlx::query(
-            "UPDATE accounts SET code = ?, name = ?, account_type = ?, parent_id = ?, 
+        let rows = sqlx::query("UPDATE accounts SET code = ?, name = ?, account_type = ?, parent_id = ?, 
              status = ?, description = ?, updated_at = ?, updated_by = ?
-             WHERE id = ?"
-        )
+             WHERE id = ?")
         .bind(&account.code)
         .bind(&account.name)
         .bind(format!("{:?}", account.account_type))
@@ -178,9 +174,7 @@ impl AccountRepository for SqliteAccountRepository {
     }
 
     async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
-        let rows = sqlx::query(
-            "UPDATE accounts SET status = 'Deleted', updated_at = ? WHERE id = ?"
-        )
+        let rows = sqlx::query("UPDATE accounts SET status = 'Deleted', updated_at = ? WHERE id = ?")
         .bind(Utc::now().to_rfc3339())
         .bind(id.to_string())
         .execute(pool)
@@ -271,11 +265,14 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         .fetch_all(pool)
         .await?;
         
+        let entry_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+        let all_lines = self.load_lines_batch(pool, &entry_ids).await?;
+        
         let mut entries = Vec::new();
         for row in rows {
             let id = Uuid::parse_str(&row.id)
                 .map_err(|_| Error::validation("Invalid journal entry ID format"))?;
-            let lines = self.load_lines(pool, id).await?;
+            let lines = all_lines.get(&row.id).cloned().unwrap_or_default();
             entries.push(self.row_to_entry(row, lines)?);
         }
         
@@ -286,11 +283,9 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         let now = Utc::now();
         let mut tx = pool.begin().await?;
         
-        sqlx::query(
-            "INSERT INTO journal_entries (id, entry_number, date, description, reference, status,
+        sqlx::query("INSERT INTO journal_entries (id, entry_number, date, description, reference, status,
              created_at, updated_at, created_by, updated_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(entry.base.id.to_string())
         .bind(&entry.entry_number)
         .bind(entry.date.to_rfc3339())
@@ -305,10 +300,8 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         .await?;
         
         for line in &entry.lines {
-            sqlx::query(
-                "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
-                 VALUES (?, ?, ?, ?, ?, ?)"
-            )
+            sqlx::query("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                 VALUES (?, ?, ?, ?, ?, ?)")
             .bind(line.id.to_string())
             .bind(entry.base.id.to_string())
             .bind(line.account_id.to_string())
@@ -332,10 +325,8 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         let now = Utc::now();
         let mut tx = pool.begin().await?;
         
-        sqlx::query(
-            "UPDATE journal_entries SET description = ?, reference = ?, updated_at = ?, updated_by = ?
-             WHERE id = ?"
-        )
+        sqlx::query("UPDATE journal_entries SET description = ?, reference = ?, updated_at = ?, updated_by = ?
+             WHERE id = ?")
         .bind(&entry.description)
         .bind(&entry.reference)
         .bind(now.to_rfc3339())
@@ -350,10 +341,8 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
             .await?;
         
         for line in &entry.lines {
-            sqlx::query(
-                "INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
-                 VALUES (?, ?, ?, ?, ?, ?)"
-            )
+            sqlx::query("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, description)
+                 VALUES (?, ?, ?, ?, ?, ?)")
             .bind(line.id.to_string())
             .bind(entry.base.id.to_string())
             .bind(line.account_id.to_string())
@@ -378,9 +367,7 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
             return Err(Error::business_rule("Journal entry must balance (debits must equal credits)"));
         }
         
-        let rows = sqlx::query(
-            "UPDATE journal_entries SET status = 'Posted', updated_at = ? WHERE id = ? AND status = 'Draft'"
-        )
+        let rows = sqlx::query("UPDATE journal_entries SET status = 'Posted', updated_at = ? WHERE id = ? AND status = 'Draft'")
         .bind(Utc::now().to_rfc3339())
         .bind(id.to_string())
         .execute(pool)
@@ -419,6 +406,51 @@ impl SqliteJournalEntryRepository {
                 description: r.description,
             })
         }).collect()
+    }
+
+    async fn load_lines_batch(&self, pool: &SqlitePool, entry_ids: &[String]) -> Result<std::collections::HashMap<String, Vec<JournalLine>>> {
+        use erp_core::{Money, Currency};
+        use std::collections::HashMap;
+        
+        if entry_ids.is_empty() {
+            return Ok(HashMap::new());
+        }
+        
+        let placeholders = entry_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let query = format!(
+            "SELECT id, journal_entry_id, account_id, debit, credit, description
+             FROM journal_lines WHERE journal_entry_id IN ({})",
+            placeholders
+        );
+        
+        let mut sql_query = sqlx::query_as::<_, JournalLineRow>(&query);
+        for id in entry_ids {
+            sql_query = sql_query.bind(id);
+        }
+        
+        let rows = sql_query.fetch_all(pool).await?;
+        
+        let mut result: HashMap<String, Vec<JournalLine>> = HashMap::new();
+        for r in rows {
+            let id = match Uuid::parse_str(&r.id) {
+                Ok(id) => id,
+                Err(_) => continue,
+            };
+            let account_id = match Uuid::parse_str(&r.account_id) {
+                Ok(id) => id,
+                Err(_) => continue,
+            };
+            let line = JournalLine {
+                id,
+                account_id,
+                debit: Money::new(r.debit, Currency::USD),
+                credit: Money::new(r.credit, Currency::USD),
+                description: r.description,
+            };
+            result.entry(r.journal_entry_id).or_default().push(line);
+        }
+        
+        Ok(result)
     }
 
     fn row_to_entry(&self, row: JournalEntryRow, lines: Vec<JournalLine>) -> Result<JournalEntry> {
@@ -507,10 +539,8 @@ impl FiscalYearRepository for SqliteFiscalYearRepository {
 
     async fn create(&self, pool: &SqlitePool, year: FiscalYear) -> Result<FiscalYear> {
         let now = Utc::now();
-        sqlx::query(
-            "INSERT INTO fiscal_years (id, name, start_date, end_date, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)"
-        )
+        sqlx::query("INSERT INTO fiscal_years (id, name, start_date, end_date, status, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)")
         .bind(year.base.id.to_string())
         .bind(&year.name)
         .bind(year.start_date.to_rfc3339())
@@ -526,10 +556,8 @@ impl FiscalYearRepository for SqliteFiscalYearRepository {
 
     async fn update(&self, pool: &SqlitePool, year: FiscalYear) -> Result<FiscalYear> {
         let now = Utc::now();
-        let rows = sqlx::query(
-            "UPDATE fiscal_years SET name = ?, start_date = ?, end_date = ?, status = ?, updated_at = ?
-             WHERE id = ?"
-        )
+        let rows = sqlx::query("UPDATE fiscal_years SET name = ?, start_date = ?, end_date = ?, status = ?, updated_at = ?
+             WHERE id = ?")
         .bind(&year.name)
         .bind(year.start_date.to_rfc3339())
         .bind(year.end_date.to_rfc3339())

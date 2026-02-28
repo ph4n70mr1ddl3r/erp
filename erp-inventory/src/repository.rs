@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
-use anyhow;
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 
@@ -60,11 +59,9 @@ impl ProductRepository for SqliteProductRepository {
 
     async fn create(&self, pool: &SqlitePool, product: Product) -> Result<Product> {
         let now = Utc::now();
-        sqlx::query(
-            "INSERT INTO products (id, sku, name, description, product_type, category_id, 
+        sqlx::query("INSERT INTO products (id, sku, name, description, product_type, category_id, 
              unit_of_measure, status, created_at, updated_at, created_by, updated_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(product.base.id.to_string())
         .bind(&product.sku)
         .bind(&product.name)
@@ -85,11 +82,9 @@ impl ProductRepository for SqliteProductRepository {
 
     async fn update(&self, pool: &SqlitePool, product: Product) -> Result<Product> {
         let now = Utc::now();
-        let rows = sqlx::query(
-            "UPDATE products SET sku = ?, name = ?, description = ?, product_type = ?, 
+        let rows = sqlx::query("UPDATE products SET sku = ?, name = ?, description = ?, product_type = ?, 
              category_id = ?, unit_of_measure = ?, status = ?, updated_at = ?, updated_by = ?
-             WHERE id = ?"
-        )
+             WHERE id = ?")
         .bind(&product.sku)
         .bind(&product.name)
         .bind(&product.description)
@@ -111,9 +106,7 @@ impl ProductRepository for SqliteProductRepository {
     }
 
     async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
-        let rows = sqlx::query(
-            "UPDATE products SET status = 'Deleted', updated_at = ? WHERE id = ?"
-        )
+        let rows = sqlx::query("UPDATE products SET status = 'Deleted', updated_at = ? WHERE id = ?")
         .bind(Utc::now().to_rfc3339())
         .bind(id.to_string())
         .execute(pool)
@@ -287,11 +280,9 @@ impl WarehouseRepository for SqliteWarehouseRepository {
 
     async fn create(&self, pool: &SqlitePool, warehouse: Warehouse) -> Result<Warehouse> {
         let now = Utc::now();
-        sqlx::query(
-            "INSERT INTO warehouses (id, code, name, address_street, address_city, 
+        sqlx::query("INSERT INTO warehouses (id, code, name, address_street, address_city, 
              address_state, address_postal_code, address_country, status, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(warehouse.base.id.to_string())
         .bind(&warehouse.code)
         .bind(&warehouse.name)
@@ -311,11 +302,9 @@ impl WarehouseRepository for SqliteWarehouseRepository {
 
     async fn update(&self, pool: &SqlitePool, warehouse: Warehouse) -> Result<Warehouse> {
         let now = Utc::now();
-        let rows = sqlx::query(
-            "UPDATE warehouses SET code = ?, name = ?, address_street = ?, address_city = ?, 
+        let rows = sqlx::query("UPDATE warehouses SET code = ?, name = ?, address_street = ?, address_city = ?, 
              address_state = ?, address_postal_code = ?, address_country = ?, status = ?, updated_at = ?
-             WHERE id = ?"
-        )
+             WHERE id = ?")
         .bind(&warehouse.code)
         .bind(&warehouse.name)
         .bind(&warehouse.address.street)
@@ -375,11 +364,9 @@ impl StockMovementRepository for SqliteStockMovementRepository {
         let now = Utc::now();
         let mut tx = pool.begin().await?;
         
-        sqlx::query(
-            "INSERT INTO stock_movements (id, movement_number, movement_type, product_id, 
+        sqlx::query("INSERT INTO stock_movements (id, movement_number, movement_type, product_id, 
              from_location_id, to_location_id, quantity, reference, movement_date, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        )
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(movement.base.id.to_string())
         .bind(&movement.movement_number)
         .bind(format!("{:?}", movement.movement_type))
@@ -405,10 +392,8 @@ impl StockMovementRepository for SqliteStockMovementRepository {
         
         match existing {
             Some(_) => {
-                sqlx::query(
-                    "UPDATE stock_levels SET quantity = quantity + ?, available_quantity = available_quantity + ?, reserved_quantity = reserved_quantity
-                     WHERE product_id = ? AND location_id = ?"
-                )
+                sqlx::query("UPDATE stock_levels SET quantity = quantity + ?, available_quantity = available_quantity + ?, reserved_quantity = reserved_quantity
+                     WHERE product_id = ? AND location_id = ?")
                 .bind(movement.quantity)
                 .bind(movement.quantity)
                 .bind(movement.product_id.to_string())
@@ -417,10 +402,8 @@ impl StockMovementRepository for SqliteStockMovementRepository {
                 .await?;
             }
             None => {
-                sqlx::query(
-                    "INSERT INTO stock_levels (id, product_id, location_id, quantity, reserved_quantity, available_quantity)
-                     VALUES (?, ?, ?, ?, 0, ?)"
-                )
+                sqlx::query("INSERT INTO stock_levels (id, product_id, location_id, quantity, reserved_quantity, available_quantity)
+                     VALUES (?, ?, ?, ?, 0, ?)")
                 .bind(Uuid::new_v4().to_string())
                 .bind(movement.product_id.to_string())
                 .bind(movement.to_location_id.to_string())

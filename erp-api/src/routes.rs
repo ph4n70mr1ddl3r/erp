@@ -14,6 +14,7 @@ const MAX_REQUEST_BODY_SIZE: usize = 1024 * 1024;
 
 pub fn create_router(state: AppState) -> Router {
     let rate_limiter = RateLimiter::new();
+    rate_limiter.spawn_cleanup_task();
 
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::list(

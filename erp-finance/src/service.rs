@@ -236,7 +236,7 @@ impl CurrencyService {
 
     pub async fn convert_amount(pool: &SqlitePool, amount: i64, from: &str, to: &str) -> Result<i64> {
         let rate = Self::get_exchange_rate(pool, from, to).await?;
-        Ok((amount as f64 * rate) as i64)
+        Ok((amount as f64 * rate).round() as i64)
     }
 }
 

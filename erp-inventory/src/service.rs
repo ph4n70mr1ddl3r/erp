@@ -114,6 +114,28 @@ impl StockService {
             return Err(Error::validation("Movement quantity must be positive"));
         }
         
+        match movement.movement_type {
+            MovementType::Issue | MovementType::Transfer => {
+                if let Some(from_location_id) = movement.from_location_id {
+                    match self.repo.get_stock_level(pool, movement.product_id, from_location_id).await {
+                        Ok(level) => {
+                            if level.available_quantity < movement.quantity {
+                                return Err(Error::business_rule(&format!(
+                                    "Insufficient stock. Available: {}, Requested: {}",
+                                    level.available_quantity, movement.quantity
+                                )));
+                            }
+                        }
+                        Err(Error::NotFound { .. }) => {
+                            return Err(Error::business_rule("No stock available at source location"));
+                        }
+                        Err(e) => return Err(e),
+                    }
+                }
+            }
+            MovementType::Receipt | MovementType::Adjustment => {}
+        }
+        
         movement.base = BaseEntity::new();
         movement.movement_number = self.generate_movement_number();
         movement.date = Utc::now();
@@ -501,7 +523,7 @@ impl QualityInspectionService {
         criterion: &str,
         expected_value: Option<&str>,
     ) -> Result<InspectionItem> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         let item = InspectionItem {
             id: Uuid::new_v4(),
             inspection_id,
@@ -534,7 +556,7 @@ impl QualityInspectionService {
         pass_fail: PassFail,
         notes: Option<&str>,
     ) -> Result<InspectionItem> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         
         sqlx::query(
             "UPDATE inspection_items SET actual_value = ?, pass_fail = ?, notes = ? WHERE id = ?"
@@ -565,7 +587,7 @@ impl QualityInspectionService {
         result: InspectionResult,
         notes: Option<&str>,
     ) -> Result<QualityInspection> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         
         sqlx::query(
             "UPDATE quality_inspections SET status = 'Completed', result = ?, notes = ? WHERE id = ?"
@@ -2409,7 +2431,7 @@ impl RFQService {
     }
 
     pub async fn award_rfq(pool: &SqlitePool, rfq_id: Uuid, vendor_id: Uuid) -> Result<RFQ> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         
         sqlx::query(
             "UPDATE rfqs SET status = 'Awarded' WHERE id = ?"
