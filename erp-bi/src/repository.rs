@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::models::*;
-use erp_core::Result;
+use erp_core::{Result, BaseEntity};
 
 #[async_trait]
 pub trait KPIRepository: Send + Sync {
