@@ -452,11 +452,22 @@ pub struct PerformanceCycle {
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "TEXT")]
 pub enum CycleType {
+    MidYear,
     Annual,
-    SemiAnnual,
     Quarterly,
-    Monthly,
-    Project,
+}
+
+pub type PerformanceCycleType = CycleType;
+pub type PerformanceCycleStatus = Status;
+pub type PerformanceGoalStatus = Status;
+pub type EmployeeTrainingStatus = TrainingStatus;
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum JobPostingStatus {
+    Draft,
+    Published,
+    Closed,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -621,7 +632,7 @@ pub struct JobPosting {
     pub closing_date: Option<NaiveDate>,
     pub openings: i32,
     pub filled: i32,
-    pub status: Status,
+    pub status: JobPostingStatus,
     pub hiring_manager: Option<String>,
     pub created_at: DateTime<Utc>,
 }

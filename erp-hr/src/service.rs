@@ -750,7 +750,7 @@ impl TrainingService {
         let now = chrono::Utc::now();
         let course = TrainingCourse {
             id: Uuid::new_v4(), course_code: code.to_string(), title: title.to_string(),
-            description: None, category: None, duration_hours: duration, delivery_method: delivery,
+            description: None, category: None, duration_hours: Some(duration), delivery_method: delivery,
             provider: None, cost: 0, required_for: None, certification_valid_days: None, status: Status::Active, created_at: now,
         };
         sqlx::query("INSERT INTO training_courses (id, course_code, title, description, category, duration_hours, delivery_method, provider, cost, required_for, certification_valid_days, status, created_at) VALUES (?, ?, ?, NULL, NULL, ?, ?, NULL, 0, NULL, NULL, 'Active', ?)")
@@ -859,7 +859,7 @@ impl From<JobPostingRow> for JobPosting {
             closing_date: r.closing_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
             openings: r.openings as i32, filled: r.filled as i32,
             status: match r.status.as_str() { "Published" => JobPostingStatus::Published, "Closed" => JobPostingStatus::Closed, _ => JobPostingStatus::Draft },
-            hiring_manager: r.hiring_manager.and_then(|id| Uuid::parse_str(&id).ok()),
+            hiring_manager: r.hiring_manager,
             created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at).map(|d| d.with_timezone(&chrono::Utc)).unwrap(),
         }
     }
