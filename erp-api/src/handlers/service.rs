@@ -1,11 +1,10 @@
 use axum::{extract::{Path, Query, State}, Json};
 use uuid::Uuid;
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{BaseEntity, Status, Pagination};
-use erp_service::{ServiceTicket, KnowledgeArticle, SLA, ServiceTicketService, KnowledgeArticleService, SLAService, TicketPriority, TicketStatus, TicketType, TicketSource, ArticleStatus};
+use erp_core::{Status, Pagination};
+use erp_service::{ServiceTicket, KnowledgeArticle, SLA, ServiceTicketService, KnowledgeArticleService, SLAService, TicketPriority, TicketStatus, TicketType, TicketSource};
 
 #[derive(Deserialize)]
 pub struct CreateTicketRequest {

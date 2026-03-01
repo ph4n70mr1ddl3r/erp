@@ -38,7 +38,7 @@ export default function Finance() {
       ]);
       setAccounts(accRes.data.items);
       setEntries(jeRes.data.items);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load finance data');
     } finally {
       setLoading(false);

@@ -1,14 +1,14 @@
-use axum::{extract::{Path, Query, State}, Json, routing::{get, post}};
+use axum::{extract::{Query, State}, Json, routing::{get, post}};
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{Pagination, BaseEntity, Money, Currency, Status};
+use erp_core::{Pagination, BaseEntity, Status};
 use erp_tax::{
     TaxJurisdiction, TaxRate, TaxType, TaxCalculationMethod,
-    TaxTransaction, TaxTransactionSource, TaxExemption, ExemptionType,
-    TaxJurisdictionService, TaxRateService, TaxCalculationService, TaxTransactionService, TaxExemptionService,
+    TaxExemption, ExemptionType,
+    TaxJurisdictionService, TaxRateService, TaxCalculationService, TaxExemptionService,
 };
 
 #[derive(Serialize)]
@@ -116,7 +116,7 @@ pub struct CreateTaxRateRequest {
 
 pub async fn list_tax_rates(
     State(state): State<AppState>,
-    Query(jurisdiction_id): Query<Option<Uuid>>,
+    Query(_jurisdiction_id): Query<Option<Uuid>>,
     Query(pagination): Query<Pagination>,
 ) -> ApiResult<Json<erp_core::Paginated<TaxRateResponse>>> {
     let svc = TaxRateService::new();

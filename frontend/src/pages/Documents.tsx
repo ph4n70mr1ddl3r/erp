@@ -25,11 +25,6 @@ const Documents: React.FC = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [newDoc, setNewDoc] = useState({ title: '', file_name: '' });
 
-  useEffect(() => {
-    loadFolders();
-    loadDocuments();
-  }, [selectedFolder]);
-
   const loadFolders = async () => {
     try {
       const res = await documentsApi.listFolders(selectedFolder);
@@ -47,6 +42,11 @@ const Documents: React.FC = () => {
       console.error('Failed to load documents:', error);
     }
   };
+
+  useEffect(() => {
+    void loadFolders();
+    void loadDocuments();
+  }, [selectedFolder]);
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();

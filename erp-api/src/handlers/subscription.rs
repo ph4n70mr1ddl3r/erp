@@ -3,7 +3,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::json;
 use uuid::Uuid;
 
@@ -137,7 +137,7 @@ async fn create_subscription(
     }
 }
 
-async fn get_subscription(State(state): State<AppState>, Path(id): Path<Uuid>) -> Json<serde_json::Value> {
+async fn get_subscription(State(_state): State<AppState>, Path(_id): Path<Uuid>) -> Json<serde_json::Value> {
     Json(json!({ "error": "Use customer subscriptions endpoint" }))
 }
 

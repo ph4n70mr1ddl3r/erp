@@ -33,16 +33,6 @@ const Sourcing: React.FC = () => {
     estimated_value: 0,
   });
 
-  useEffect(() => {
-    loadEvents();
-  }, []);
-
-  useEffect(() => {
-    if (selectedEvent) {
-      loadBids(selectedEvent);
-    }
-  }, [selectedEvent]);
-
   const loadEvents = async () => {
     try {
       const res = await sourcing.listEvents();
@@ -60,6 +50,16 @@ const Sourcing: React.FC = () => {
       console.error('Failed to load bids:', error);
     }
   };
+
+  useEffect(() => {
+    void loadEvents();
+  }, []);
+
+  useEffect(() => {
+    if (selectedEvent) {
+      void loadBids(selectedEvent);
+    }
+  }, [selectedEvent]);
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();

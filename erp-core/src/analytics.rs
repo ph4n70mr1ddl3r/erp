@@ -42,7 +42,7 @@ impl DashboardService {
         .bind(dashboard.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(dashboard)
     }
@@ -65,7 +65,7 @@ impl DashboardService {
         let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM dashboards")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(|e| Error::Database(e))?;
 
         let rows = sqlx::query_as::<_, DashboardRow>(
             "SELECT id, name, description, dashboard_type, is_default, layout, created_by, created_at
@@ -75,7 +75,7 @@ impl DashboardService {
         .bind(pagination.offset() as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(Paginated::new(
             rows.into_iter().map(|r| r.into()).collect(),
@@ -131,7 +131,7 @@ impl DashboardService {
         .bind(&widget.config)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(widget)
     }
@@ -146,7 +146,7 @@ impl DashboardService {
             .bind(widget_id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(|e| Error::Database(e))?;
 
         let row = sqlx::query_as::<_, DashboardWidgetRow>(
             "SELECT id, dashboard_id, widget_type, title, data_source, query_text, refresh_interval, position_x, position_y, width, height, config
@@ -244,7 +244,7 @@ impl KPIService {
         .bind(format!("{:?}", kpi.status))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(kpi)
     }
@@ -324,7 +324,7 @@ impl KPIService {
         .bind(kpi_value.calculated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(kpi_value)
     }
@@ -336,7 +336,7 @@ impl KPIService {
             let result: Option<(f64,)> = sqlx::query_as(formula)
                 .fetch_optional(pool)
                 .await
-                .map_err(|e| Error::Database(e.into()))?;
+                .map_err(|e| Error::Database(e))?;
             result.map(|r| r.0).unwrap_or(0.0)
         } else {
             0.0
@@ -354,7 +354,7 @@ impl KPIService {
         .bind(periods as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -406,7 +406,7 @@ impl AlertService {
         .bind(rule.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(rule)
     }
@@ -448,7 +448,7 @@ impl AlertService {
                 .bind(entity_id.to_string())
                 .fetch_optional(pool)
                 .await
-                .map_err(|e| Error::Database(e.into()))?;
+                .map_err(|e| Error::Database(e))?;
 
             if let Some((field_value,)) = value {
                 let should_alert = match rule.operator.as_str() {
@@ -524,7 +524,7 @@ impl AlertService {
         .bind(alert.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(alert)
     }
@@ -540,7 +540,7 @@ impl AlertService {
         .bind(alert_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         let row = sqlx::query_as::<_, AlertRow>(
             "SELECT id, alert_type, severity, title, message, source_entity, source_id, rule_id, acknowledged, acknowledged_by, acknowledged_at, created_at
@@ -617,7 +617,7 @@ impl PredictiveService {
         .bind(format!("{:?}", model.status))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(model)
     }
@@ -632,7 +632,7 @@ impl PredictiveService {
         .bind(model_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         let row = sqlx::query_as::<_, ForecastModelRow>(
             "SELECT id, name, model_type, target_entity, features, parameters, accuracy_score, last_trained, status
@@ -694,7 +694,7 @@ impl PredictiveService {
         .bind(prediction.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(prediction)
     }
@@ -717,7 +717,7 @@ impl PredictiveService {
         .bind(to_date.map(|d| d.to_rfc3339()))
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -734,7 +734,7 @@ impl PredictiveService {
         .bind(prediction_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(|e| Error::Database(e))?;
 
         let row = sqlx::query_as::<_, PredictionRow>(
             "SELECT id, model_id, entity_id, prediction_date, predicted_value, confidence_lower, confidence_upper, actual_value, created_at

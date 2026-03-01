@@ -447,7 +447,7 @@ pub async fn cancel_request(
     let user_id = Uuid::parse_str(&auth_user.0.user_id)
         .map_err(|_| erp_core::Error::Unauthorized)?;
     let service = ApprovalRequestService::new();
-    let request = service.get_request(&state.pool, id).await?;
+    let _request = service.get_request(&state.pool, id).await?;
     let request = service.cancel(&state.pool, id, user_id).await?;
     Ok(Json(RequestResponse::from(request)))
 }

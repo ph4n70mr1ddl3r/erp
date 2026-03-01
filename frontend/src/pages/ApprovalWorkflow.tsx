@@ -39,7 +39,7 @@ export default function ApprovalWorkflowPage() {
       ]);
       setWorkflows(wfRes.data.items);
       setRequests(reqRes.data.items);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load approval workflow data');
     } finally {
       setLoading(false);
@@ -120,7 +120,7 @@ export default function ApprovalWorkflowPage() {
     }
   };
 
-  const updateLevel = (index: number, field: string, value: any) => {
+  const updateLevel = (index: number, field: string, value: string | string[] | number) => {
     const levels = [...newWorkflow.levels];
     levels[index] = { ...levels[index], [field]: value };
     setNewWorkflow({ ...newWorkflow, levels });

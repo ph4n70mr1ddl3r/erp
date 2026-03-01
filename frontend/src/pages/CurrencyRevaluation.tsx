@@ -69,7 +69,7 @@ export default function CurrencyRevaluation() {
       setLoading(true);
       const res = await api.get('/api/v1/finance/currency-revaluations');
       setRevaluations(res.data);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load currency revaluations');
     } finally {
       setLoading(false);
@@ -135,7 +135,7 @@ export default function CurrencyRevaluation() {
       const res = await api.get(`/api/v1/finance/currency-revaluations/${reval.id}/lines`);
       setDetailLines(res.data);
       setShowDetailModal(true);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load revaluation details');
     }
   };

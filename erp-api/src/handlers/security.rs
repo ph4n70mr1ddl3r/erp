@@ -5,7 +5,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_security::{SecurityService, TwoFactorSetupRequest, TwoFactorVerifyRequest, TwoFactorSetupResponse};
+use erp_security::{SecurityService, TwoFactorSetupResponse};
 use crate::handlers::auth::AuthUser;
 use uuid::Uuid;
 

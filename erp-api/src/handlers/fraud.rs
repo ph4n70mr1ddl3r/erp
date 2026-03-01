@@ -49,7 +49,7 @@ async fn create_alert(
     State(_state): State<AppState>,
     Json(_request): Json<serde_json::Value>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let service = FraudService::new();
+    let _service = FraudService::new();
     Ok(Json(serde_json::json!({"id": Uuid::new_v4()})))
 }
 

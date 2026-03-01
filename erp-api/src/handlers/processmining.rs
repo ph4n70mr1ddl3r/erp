@@ -8,7 +8,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_processmining::{ProcessMiningService, ProcessDefinition, ProcessCategory, ProcessStatus, ImportEventsRequest, ProcessEventImport, SimulationScenario};
+use erp_processmining::{ProcessMiningService, ProcessCategory, ProcessStatus, ImportEventsRequest, ProcessEventImport, SimulationScenario};
 
 #[derive(Deserialize)]
 pub struct ListProcessesQuery {
@@ -177,7 +177,7 @@ async fn create_simulation(
 }
 
 async fn get_simulation(
-    Path(id): Path<Uuid>,
+    Path(_id): Path<Uuid>,
     State(_state): State<AppState>,
 ) -> ApiResult<Json<serde_json::Value>> {
     Ok(Json(serde_json::json!({})))

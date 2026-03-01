@@ -6,7 +6,7 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{Pagination, WorkflowService, ApprovalService, NotificationService, Workflow, ApprovalRequest, Approval, Notification, NotificationType, WorkflowStatus, ApprovalStatus};
+use erp_core::{Pagination, WorkflowService, ApprovalService, NotificationService, Workflow, Approval, Notification, NotificationType, WorkflowStatus, ApprovalStatus};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateWorkflowRequest {

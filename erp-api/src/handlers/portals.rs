@@ -215,7 +215,7 @@ pub async fn process_payment(
 
 pub async fn submit_supplier_quote(
     State(state): State<AppState>,
-    Json(req): Json<serde_json::Value>,
+    Json(_req): Json<serde_json::Value>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let _ = state;
     Ok(Json(serde_json::json!({

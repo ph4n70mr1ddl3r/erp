@@ -47,10 +47,6 @@ const RulesPage: React.FC = () => {
     context: '{}',
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     try {
       const [rulesRes, rulesetsRes] = await Promise.all([
@@ -63,6 +59,10 @@ const RulesPage: React.FC = () => {
       console.error('Failed to load rules:', error);
     }
   };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
 
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault();

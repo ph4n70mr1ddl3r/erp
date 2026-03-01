@@ -1,8 +1,26 @@
 import { useEffect, useState } from 'react';
 
+interface BOM {
+  id: string;
+  bom_number: string;
+  product_name: string;
+  status: string;
+  name: string;
+  quantity: number;
+  components?: unknown[];
+}
+
+interface WorkOrder {
+  id: string;
+  order_number: string;
+  product_name: string;
+  status: string;
+  quantity: number;
+}
+
 export default function Manufacturing() {
-  const [boms, setBoms] = useState<any[]>([]);
-  const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [boms, setBoms] = useState<BOM[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

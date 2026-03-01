@@ -31,11 +31,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const timeoutRefs = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
+    const refs = timeoutRefs.current;
     return () => {
-      timeoutRefs.current.forEach((timeoutId) => {
+      refs.forEach((timeoutId) => {
         clearTimeout(timeoutId);
       });
-      timeoutRefs.current.clear();
+      refs.clear();
     };
   }, []);
 

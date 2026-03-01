@@ -8,11 +8,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::Row;
 use crate::db::AppState;
 use crate::error::{ApiError, ApiResult};
-use erp_core::BaseEntity;
-use erp_auth::{
-    CustomRole, Permission, RolePermission, UserRoleAssignment, DataPermission, FieldPermission,
-    get_default_permissions,
-};
+use erp_auth::get_default_permissions;
 
 fn parse_uuid(s: &str) -> ApiResult<Uuid> {
     Uuid::parse_str(s).map_err(|e| ApiError(erp_core::Error::Validation(format!("Invalid UUID: {}", e))))

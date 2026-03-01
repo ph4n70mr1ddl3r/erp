@@ -57,7 +57,7 @@ export default function CreditManagement() {
       setProfiles(profilesRes.data.data || []);
       setOnHold(onHoldRes.data.data || []);
       setHighRisk(highRiskRes.data.data || []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load credit data');
     } finally {
       setLoading(false);
@@ -73,7 +73,7 @@ export default function CreditManagement() {
       ]);
       setTransactions(txnsRes.data.data || []);
       setHolds(holdsRes.data.data || []);
-    } catch (err) {
+    } catch {
       toast.error('Failed to load profile details');
     }
   };

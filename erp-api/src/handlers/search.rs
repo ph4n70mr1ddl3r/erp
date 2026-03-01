@@ -2,7 +2,7 @@ use axum::{
     extract::{Path, Query, State},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_enterprise::{SearchService, SearchRequest, SearchResponse, IndexRequest, SearchStats};

@@ -10,8 +10,8 @@ interface AuditLog {
   entity_type: string;
   entity_id: string;
   action: string;
-  old_values: any;
-  new_values: any;
+  old_values: Record<string, unknown>;
+  new_values: Record<string, unknown>;
   user_id: string | null;
   username: string | null;
   created_at: string;
@@ -30,7 +30,7 @@ export default function AuditLogs() {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      const params: any = { per_page: 100 };
+      const params: { per_page: number; entity_type?: string } = { per_page: 100 };
       if (entityTypeFilter) params.entity_type = entityTypeFilter;
       const res = await audit.getLogs(params);
       setLogs(res.data.items);

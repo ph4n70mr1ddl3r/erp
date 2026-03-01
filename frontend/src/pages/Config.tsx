@@ -30,10 +30,6 @@ const ConfigPage: React.FC = () => {
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     try {
       const [configsRes, companyRes, auditRes] = await Promise.all([
@@ -48,6 +44,10 @@ const ConfigPage: React.FC = () => {
       console.error('Failed to load config:', error);
     }
   };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
 
   const handleSetConfig = async (e: React.FormEvent) => {
     e.preventDefault();

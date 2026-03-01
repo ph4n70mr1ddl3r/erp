@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { service, type Ticket, type CreateTicketRequest } from '../api/client';
+import { service, type Ticket, type CreateTicketRequest, type KnowledgeArticle } from '../api/client';
 
 const priorityColors: Record<string, string> = {
   Critical: 'bg-red-100 text-red-800',
@@ -22,7 +22,7 @@ export default function ServiceDesk() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [articles, setArticles] = useState<any[]>([]);
+  const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
   const [activeTab, setActiveTab] = useState<'tickets' | 'knowledge'>('tickets');
   const [form, setForm] = useState<CreateTicketRequest>({
     subject: '',

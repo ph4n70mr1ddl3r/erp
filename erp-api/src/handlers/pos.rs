@@ -6,7 +6,7 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{Pagination, BaseEntity, Money, Currency};
 use erp_pos::{
-    POSStore, POSStatus, POSTerminal, Register, POSTransaction, POSTransactionLine, POSTransactionPayment,
+    POSStore, POSStatus, POSTransaction, POSTransactionLine, POSTransactionPayment,
     TransactionType, PaymentMethod, GiftCard, GiftCardStatus,
     POSStoreService, POSTransactionService, GiftCardService,
 };

@@ -15,7 +15,7 @@ use erp_warranty::{
     CreateWarrantyPolicyRequest, CreateProductWarrantyRequest, CreateWarrantyClaimRequest,
     AddClaimLineRequest, AddClaimLaborRequest, ResolveClaimRequest, TransferWarrantyRequest,
     ExtendWarrantyRequest,
-    WarrantyType, WarrantyDurationUnit, WarrantyStatus, WarrantyClaimStatus, ClaimResolutionType,
+    WarrantyType, WarrantyDurationUnit, WarrantyClaimStatus, ClaimResolutionType,
 };
 
 #[derive(Serialize)]
@@ -500,7 +500,7 @@ pub async fn get_policy(
 
 pub async fn list_policies(
     State(_state): State<AppState>,
-    Query(query): Query<PaginationQuery>,
+    Query(_query): Query<PaginationQuery>,
 ) -> ApiResult<Json<ApiResponse<Vec<WarrantyPolicyResponse>>>> {
     let repo = SqliteWarrantyRepository::new();
     let svc = WarrantyService::new(repo);

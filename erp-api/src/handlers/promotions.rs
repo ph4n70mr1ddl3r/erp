@@ -6,13 +6,12 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::AppState;
-use crate::error::ApiResult;
 use erp_promotions::{
     PromotionService, CouponService, PromotionReportingService,
     CreatePromotionRequest, UpdatePromotionRequest, CreateCouponRequest, GenerateCouponBatchRequest,
-    Promotion, Coupon, CouponValidation, PromotionReport,
+    Promotion, Coupon,
 };
-use erp_core::{Pagination, Status};
+use erp_core::Pagination;
 
 #[derive(Deserialize)]
 pub struct ListQuery {

@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::State,
     Json,
 };
 use uuid::Uuid;
@@ -8,8 +8,8 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::BaseEntity;
 use erp_pricing::{
-    PricingService, PriceBook, PriceBookEntry, PriceRule, Discount, Promotion, Coupon,
-    PriceTier, CustomerPriceGroup, PriceRuleType, PriceRuleScope, DiscountType, PromotionType, PromotionStatus,
+    PricingService, Discount, Promotion, Coupon,
+    DiscountType, PromotionType, PromotionStatus,
 };
 
 #[derive(Serialize)]

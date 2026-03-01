@@ -1,4 +1,4 @@
-use axum::{extract::{Path, Query, State}, Json, routing::{get, post}};
+use axum::{extract::{Query, State}, Json, routing::{get, post}};
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -6,9 +6,9 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{Pagination, BaseEntity, Status};
 use erp_reports::{
-    ReportDefinition, ReportCategory, ReportFormat, ReportParameter, ReportColumn,
+    ReportDefinition, ReportCategory, ReportFormat,
     ReportSchedule, ScheduleFrequency, DeliveryMethod,
-    ReportExecution, ReportDashboard, DashboardWidget, WidgetType,
+    ReportExecution, ReportDashboard,
     ReportDefinitionService, ReportScheduleService, ReportExecutionService,
 };
 
@@ -231,7 +231,7 @@ pub async fn run_report(
     let def_svc = ReportDefinitionService::new();
     let report = def_svc.get(&state.pool, req.report_definition_id).await?;
     
-    let (csv, row_count) = erp_reports::ReportGeneratorService::generate_csv(
+    let (_csv, row_count) = erp_reports::ReportGeneratorService::generate_csv(
         &state.pool,
         &report.query_template,
         &report.columns,

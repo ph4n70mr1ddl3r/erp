@@ -38,10 +38,6 @@ const Pricing: React.FC = () => {
   const [newDiscount, setNewDiscount] = useState({ name: '', code: '', discount_type: 'Percentage', value: 0 });
   const [newPromotion, setNewPromotion] = useState({ name: '', code: '', start_date: '', end_date: '', rules: '{}', rewards: '{}' });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
   const loadData = async () => {
     try {
       const [pbRes, discRes, promoRes] = await Promise.all([
@@ -56,6 +52,10 @@ const Pricing: React.FC = () => {
       console.error('Failed to load pricing data:', error);
     }
   };
+
+  useEffect(() => {
+    void loadData();
+  }, []);
 
   const handleCreatePriceBook = async (e: React.FormEvent) => {
     e.preventDefault();

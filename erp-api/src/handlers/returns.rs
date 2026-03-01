@@ -8,7 +8,7 @@ use erp_core::{Pagination, BaseEntity, Money, Currency};
 use erp_returns::{
     ReturnOrder, ReturnLine, ReturnType, ReturnReason, ReturnStatus, ReturnDisposition, ItemCondition,
     CreditMemo, CreditMemoLine, CreditMemoStatus,
-    Refund, RefundMethod, RefundStatus,
+    Refund, RefundMethod,
     ReturnService, CreditMemoService, RefundService,
 };
 

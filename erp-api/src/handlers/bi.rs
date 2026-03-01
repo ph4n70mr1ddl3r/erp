@@ -104,7 +104,7 @@ pub struct KPIValueResponse {
 }
 
 pub async fn record_kpi_value(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(req): Json<RecordKPIValueRequest>,
 ) -> ApiResult<Json<KPIValueResponse>> {

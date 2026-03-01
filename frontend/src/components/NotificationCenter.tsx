@@ -22,8 +22,8 @@ export default function NotificationCenter() {
   }, []);
 
   useEffect(() => {
-    loadNotifications();
-    const interval = setInterval(loadNotifications, 30000);
+    void loadNotifications();
+    const interval = setInterval(() => void loadNotifications(), 30000);
     return () => clearInterval(interval);
   }, [loadNotifications]);
 

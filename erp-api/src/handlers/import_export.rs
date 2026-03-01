@@ -281,7 +281,7 @@ async fn import_customers(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::err
         if parts.len() >= 3 {
             let code = &parts[1];
             let name = &parts[2];
-            let email = parts.get(3).unwrap_or(&"".to_string());
+            let email = parts.get(3).map(|s| s.as_str()).unwrap_or("");
             
             validate_csv_field(code, "code")?;
             validate_csv_field(name, "name")?;

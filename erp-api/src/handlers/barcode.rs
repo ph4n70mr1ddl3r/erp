@@ -248,7 +248,7 @@ pub struct ValidationResponse {
 }
 
 pub async fn validate_barcode(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path((code, btype)): Path<(String, String)>,
 ) -> ApiResult<Json<ValidationResponse>> {
     let barcode_type = match btype.as_str() {
