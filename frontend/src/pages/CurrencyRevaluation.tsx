@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import api from '../api/client';
+import { getErrorMessage } from '../utils/errors';
 
 interface CurrencyRevaluation {
   id: string;
@@ -84,8 +85,8 @@ export default function CurrencyRevaluation() {
       });
       setPreview(res.data);
       setShowPreviewModal(true);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to preview revaluation');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to preview revaluation'));
     } finally {
       setSaving(false);
     }
@@ -100,8 +101,8 @@ export default function CurrencyRevaluation() {
       setShowPreviewModal(false);
       setPreview(null);
       loadRevaluations();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create revaluation');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create revaluation'));
     } finally {
       setSaving(false);
     }
@@ -112,8 +113,8 @@ export default function CurrencyRevaluation() {
       await api.post(`/api/v1/finance/currency-revaluations/${id}/post`);
       toast.success('Revaluation posted successfully');
       loadRevaluations();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to post revaluation');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to post revaluation'));
     }
   };
 
@@ -123,8 +124,8 @@ export default function CurrencyRevaluation() {
       await api.post(`/api/v1/finance/currency-revaluations/${id}/reverse`);
       toast.success('Revaluation reversed successfully');
       loadRevaluations();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to reverse revaluation');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to reverse revaluation'));
     }
   };
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { crm, type CreateLeadRequest, type CreateOpportunityRequest } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
+import { getErrorMessage } from '../utils/errors';
 import type { Lead, Opportunity } from '../types';
 
 const STAGES = ['Prospecting', 'Qualification', 'Proposal', 'Negotiation', 'ClosedWon', 'ClosedLost'];
@@ -49,8 +50,8 @@ export default function CRM() {
       setShowLeadModal(false);
       setNewLead({ company_name: '', contact_name: '', email: '', phone: '', source: '', industry: '', estimated_value: 0 });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create lead');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create lead'));
     } finally {
       setSaving(false);
     }
@@ -65,8 +66,8 @@ export default function CRM() {
       setShowOppModal(false);
       setNewOpp({ name: '', amount: 0, expected_close_date: '', description: '' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create opportunity');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create opportunity'));
     } finally {
       setSaving(false);
     }
@@ -77,8 +78,8 @@ export default function CRM() {
       await crm.updateOpportunityStage(opp.id, newStage);
       toast.success('Stage updated');
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to update stage');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update stage'));
     }
   };
 

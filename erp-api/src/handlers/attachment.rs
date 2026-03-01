@@ -28,12 +28,25 @@ fn sanitize_filename(filename: &str) -> String {
 }
 
 fn validate_entity_type(entity_type: &str) -> Result<(), erp_core::Error> {
+    if entity_type.contains("..") || entity_type.contains('/') || entity_type.contains('\\') {
+        return Err(erp_core::Error::validation("Invalid entity_type: path traversal detected"));
+    }
     if !ALLOWED_ENTITY_TYPES.contains(&entity_type) {
         return Err(erp_core::Error::validation(&format!(
             "Invalid entity_type: '{}'. Allowed types: {}",
             entity_type,
             ALLOWED_ENTITY_TYPES.join(", ")
         )));
+    }
+    Ok(())
+}
+
+fn validate_entity_id(entity_id: &str) -> Result<(), erp_core::Error> {
+    if entity_id.contains("..") || entity_id.contains('/') || entity_id.contains('\\') {
+        return Err(erp_core::Error::validation("Invalid entity_id: path traversal detected"));
+    }
+    if uuid::Uuid::parse_str(entity_id).is_err() {
+        return Err(erp_core::Error::validation("Invalid entity_id: must be a valid UUID"));
     }
     Ok(())
 }
@@ -75,6 +88,9 @@ pub async fn list_attachments(
     State(state): State<AppState>,
     Query(query): Query<AttachmentQuery>,
 ) -> ApiResult<Json<Vec<AttachmentResponse>>> {
+    validate_entity_type(&query.entity_type)?;
+    validate_entity_id(&query.entity_id)?;
+    
     let attachments = AttachmentService::list_for_entity(
         &state.pool,
         &query.entity_type,
@@ -90,6 +106,7 @@ pub async fn upload_attachment(
     mut multipart: Multipart,
 ) -> ApiResult<Json<AttachmentResponse>> {
     validate_entity_type(&query.entity_type)?;
+    validate_entity_id(&query.entity_id)?;
     
     while let Some(field) = multipart.next_field().await.map_err(|e| {
         erp_core::Error::validation(&format!("Failed to read multipart: {}", e))

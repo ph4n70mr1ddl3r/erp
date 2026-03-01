@@ -3,6 +3,7 @@ import { credit } from '../api/client';
 import type { CreditProfile, CreditSummary, CreditTransaction, CreditHold } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
+import { getErrorMessage } from '../utils/errors';
 
 function formatCurrency(cents: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100);
@@ -96,8 +97,8 @@ export default function CreditManagement() {
         const updated = profiles.find(p => p.customer_id === selectedProfile.customer_id);
         if (updated) loadProfileDetails({ ...updated, credit_limit: newLimit });
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to update credit limit');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update credit limit'));
     } finally {
       setSaving(false);
     }
@@ -115,8 +116,8 @@ export default function CreditManagement() {
       setShowHoldModal(false);
       setHoldReason('');
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to place credit hold');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to place credit hold'));
     } finally {
       setSaving(false);
     }
@@ -137,8 +138,8 @@ export default function CreditManagement() {
       if (selectedProfile) {
         loadProfileDetails({ ...selectedProfile, is_on_hold: false });
       }
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to release credit hold');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to release credit hold'));
     } finally {
       setSaving(false);
     }

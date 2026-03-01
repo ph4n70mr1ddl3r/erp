@@ -378,6 +378,41 @@ impl OpportunityService {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
+    async fn get_activities_batch(pool: &SqlitePool, opportunity_ids: &[String]) -> Result<std::collections::HashMap<String, Vec<OpportunityActivity>>> {
+        if opportunity_ids.is_empty() {
+            return Ok(std::collections::HashMap::new());
+        }
+        
+        let placeholders = opportunity_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+        let query = format!(
+            "SELECT id, opportunity_id, activity_type, subject, description, due_date, completed, created_at
+             FROM opportunity_activities WHERE opportunity_id IN ({}) ORDER BY created_at DESC",
+            placeholders
+        );
+        
+        let mut query_builder = sqlx::query_as::<_, ActivityRow>(&query);
+        for id in opportunity_ids {
+            query_builder = query_builder.bind(id);
+        }
+        
+        let rows = query_builder
+            .fetch_all(pool)
+            .await
+            .map_err(|e| Error::Database(e))?;
+        
+        let mut map: std::collections::HashMap<String, Vec<OpportunityActivity>> = 
+            opportunity_ids.iter().map(|id| (id.clone(), Vec::new())).collect();
+        
+        for row in rows {
+            let activity: OpportunityActivity = row.into();
+            if let Some(activities) = map.get_mut(&activity.opportunity_id.to_string()) {
+                activities.push(activity);
+            }
+        }
+        
+        Ok(map)
+    }
+
     pub async fn list(pool: &SqlitePool, stage: Option<OpportunityStage>) -> Result<Vec<Opportunity>> {
         let rows = match stage {
             Some(s) => {
@@ -399,11 +434,17 @@ impl OpportunityService {
             }
         }.map_err(|e| Error::Database(e))?;
         
-        let mut opportunities = Vec::new();
-        for row in rows {
-            let activities = Self::get_activities(pool, row.id.parse().unwrap_or_default()).await?;
-            opportunities.push(row.into_opportunity(activities));
-        }
+        let ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+        let activities_map = Self::get_activities_batch(pool, &ids).await?;
+        
+        let opportunities = rows
+            .into_iter()
+            .map(|row| {
+                let activities = activities_map.get(&row.id).cloned().unwrap_or_default();
+                row.into_opportunity(activities)
+            })
+            .collect();
+        
         Ok(opportunities)
     }
 

@@ -115,6 +115,49 @@ fn escape_csv(s: &str) -> String {
     }
 }
 
+const MAX_CSV_SIZE: usize = 10 * 1024 * 1024;
+const MAX_CSV_ROWS: usize = 10000;
+const MAX_FIELD_LENGTH: usize = 500;
+
+fn validate_csv_field(value: &str, field_name: &str) -> Result<(), erp_core::Error> {
+    if value.len() > MAX_FIELD_LENGTH {
+        return Err(erp_core::Error::validation(&format!(
+            "Field '{}' exceeds maximum length of {} characters",
+            field_name, MAX_FIELD_LENGTH
+        )));
+    }
+    if value.contains('\0') {
+        return Err(erp_core::Error::validation(&format!(
+            "Field '{}' contains null bytes",
+            field_name
+        )));
+    }
+    Ok(())
+}
+
+fn validate_sku(sku: &str) -> Result<(), erp_core::Error> {
+    if sku.is_empty() {
+        return Err(erp_core::Error::validation("SKU cannot be empty"));
+    }
+    if sku.len() > 50 {
+        return Err(erp_core::Error::validation("SKU exceeds maximum length of 50 characters"));
+    }
+    if !sku.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.') {
+        return Err(erp_core::Error::validation("SKU contains invalid characters"));
+    }
+    Ok(())
+}
+
+fn validate_email(email: &str) -> Result<(), erp_core::Error> {
+    if email.is_empty() {
+        return Ok(());
+    }
+    if !email.contains('@') || email.len() > 255 {
+        return Err(erp_core::Error::validation("Invalid email format"));
+    }
+    Ok(())
+}
+
 fn parse_csv_line(line: &str) -> Vec<String> {
     let mut fields = Vec::new();
     let mut current = String::new();
@@ -157,9 +200,23 @@ pub async fn import_csv(
     Query(query): Query<ImportQuery>,
     body: String,
 ) -> ApiResult<axum::Json<serde_json::Value>> {
+    if body.len() > MAX_CSV_SIZE {
+        return Err(erp_core::Error::validation(&format!(
+            "CSV file exceeds maximum size of {} bytes",
+            MAX_CSV_SIZE
+        )).into());
+    }
+    
     let lines: Vec<&str> = body.lines().collect();
     if lines.is_empty() {
         return Err(erp_core::Error::validation("Empty CSV").into());
+    }
+    
+    if lines.len() > MAX_CSV_ROWS {
+        return Err(erp_core::Error::validation(&format!(
+            "CSV exceeds maximum of {} rows",
+            MAX_CSV_ROWS
+        )).into());
     }
     
     let count = match query.entity.as_str() {
@@ -182,6 +239,14 @@ async fn import_products(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::erro
         }
         let parts = parse_csv_line(line);
         if parts.len() >= 4 {
+            let sku = &parts[1];
+            let name = &parts[2];
+            let uom = &parts[3];
+            
+            validate_sku(sku)?;
+            validate_csv_field(name, "name")?;
+            validate_csv_field(uom, "unit_of_measure")?;
+            
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
             if let Err(e) = sqlx::query(
@@ -189,15 +254,15 @@ async fn import_products(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::erro
                  VALUES (?, ?, ?, ?, 'Active', ?, ?)"
             )
             .bind(&id)
-            .bind(&parts[1])
-            .bind(&parts[2])
-            .bind(&parts[3])
+            .bind(sku)
+            .bind(name)
+            .bind(uom)
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
             {
-                warn!(sku = %parts[1], error = %e, "Failed to import product");
+                warn!(sku = %sku, error = %e, "Failed to import product");
             } else {
                 count += 1;
             }
@@ -214,6 +279,14 @@ async fn import_customers(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::err
         }
         let parts = parse_csv_line(line);
         if parts.len() >= 3 {
+            let code = &parts[1];
+            let name = &parts[2];
+            let email = parts.get(3).unwrap_or(&"".to_string());
+            
+            validate_csv_field(code, "code")?;
+            validate_csv_field(name, "name")?;
+            validate_email(email)?;
+            
             let id = uuid::Uuid::new_v4().to_string();
             let now = chrono::Utc::now().to_rfc3339();
             if let Err(e) = sqlx::query(
@@ -221,15 +294,15 @@ async fn import_customers(pool: &sqlx::SqlitePool, lines: &[&str]) -> crate::err
                  VALUES (?, ?, ?, ?, 'Active', ?, ?, 30)"
             )
             .bind(&id)
-            .bind(&parts[1])
-            .bind(&parts[2])
-            .bind(parts.get(3).unwrap_or(&"".to_string()))
+            .bind(code)
+            .bind(name)
+            .bind(email)
             .bind(&now)
             .bind(&now)
             .execute(pool)
             .await
             {
-                warn!(code = %parts[1], error = %e, "Failed to import customer");
+                warn!(code = %code, error = %e, "Failed to import customer");
             } else {
                 count += 1;
             }

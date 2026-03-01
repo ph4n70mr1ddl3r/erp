@@ -3,6 +3,7 @@ import { approvalWorkflow, type ApprovalWorkflow as ApprovalWorkflowType, type A
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
+import { getErrorMessage } from '../utils/errors';
 
 export default function ApprovalWorkflowPage() {
   const toast = useToast();
@@ -75,8 +76,8 @@ export default function ApprovalWorkflowPage() {
         levels: [{ name: 'Level 1', approver_type: 'SpecificUser', approver_ids: [], min_approvers: 1 }],
       });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create workflow');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create workflow'));
     } finally {
       setSaving(false);
     }
@@ -89,8 +90,8 @@ export default function ApprovalWorkflowPage() {
       toast.success('Request approved successfully');
       setSelectedRequest(null);
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to approve request');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to approve request'));
     }
   };
 
@@ -101,8 +102,8 @@ export default function ApprovalWorkflowPage() {
       toast.success('Request rejected');
       setSelectedRequest(null);
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to reject request');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to reject request'));
     }
   };
 

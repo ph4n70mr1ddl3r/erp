@@ -3,6 +3,7 @@ import { audit } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
+import { getErrorMessage } from '../utils/errors';
 
 interface AuditLog {
   id: string;
@@ -33,8 +34,8 @@ export default function AuditLogs() {
       if (entityTypeFilter) params.entity_type = entityTypeFilter;
       const res = await audit.getLogs(params);
       setLogs(res.data.items);
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to load audit logs');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load audit logs'));
     } finally {
       setLoading(false);
     }

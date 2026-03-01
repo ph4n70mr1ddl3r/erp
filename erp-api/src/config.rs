@@ -52,12 +52,18 @@ impl Default for Config {
 
 impl Config {
     pub fn from_env() -> Self {
-        let production_mode = env::var("ENVIRONMENT").unwrap_or_default() == "production";
+        let environment = env::var("ENVIRONMENT").unwrap_or_default();
+        let production_mode = environment == "production";
+        let development_mode = environment == "development";
 
         let jwt_secret = env::var("JWT_SECRET").unwrap_or_else(|_| {
             if production_mode {
                 eprintln!("ERROR: JWT_SECRET environment variable must be set in production mode");
                 std::process::exit(1);
+            }
+            if !development_mode {
+                eprintln!("WARNING: JWT_SECRET not set. Set ENVIRONMENT=development to use generated secret, or provide JWT_SECRET.");
+                eprintln!("WARNING: Using generated dev secret. This is insecure for production!");
             }
             generate_dev_secret()
         });

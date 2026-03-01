@@ -3,6 +3,7 @@ import { sales } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
+import { getErrorMessage } from '../utils/errors';
 import type { Customer, SalesOrder } from '../types';
 
 export default function Sales() {
@@ -40,8 +41,8 @@ export default function Sales() {
       setShowCustomerModal(false);
       setNewCustomer({ code: '', name: '', email: '' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create customer');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create customer'));
     } finally {
       setSaving(false);
     }
@@ -52,8 +53,8 @@ export default function Sales() {
       await sales.confirmOrder(id);
       toast.success('Order confirmed successfully');
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to confirm order');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to confirm order'));
     }
   };
 

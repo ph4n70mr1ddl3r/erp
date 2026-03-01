@@ -6,6 +6,9 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
+use std::time::Duration;
+
+const STRIPE_API_TIMEOUT_SECS: u64 = 30;
 
 pub struct StripeConfig {
     pub secret_key: String,
@@ -36,10 +39,11 @@ pub struct StripeService {
 
 impl StripeService {
     pub fn new(config: StripeConfig) -> Self {
-        Self {
-            client: Client::new(),
-            config,
-        }
+        let client = Client::builder()
+            .timeout(Duration::from_secs(STRIPE_API_TIMEOUT_SECS))
+            .build()
+            .expect("Failed to create HTTP client");
+        Self { client, config }
     }
     
     pub fn from_env() -> Self {

@@ -102,6 +102,15 @@ use axum::{extract::State, Json};
 use serde_json::json;
 use crate::db::AppState;
 
-pub async fn health(State(_state): State<AppState>) -> Json<serde_json::Value> {
-    Json(json!({ "status": "healthy", "service": "erp-api" }))
+pub async fn health(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let db_healthy = sqlx::query("SELECT 1")
+        .fetch_one(&state.pool)
+        .await
+        .is_ok();
+    
+    Json(json!({ 
+        "status": if db_healthy { "healthy" } else { "degraded" }, 
+        "service": "erp-api",
+        "database": if db_healthy { "connected" } else { "disconnected" }
+    }))
 }

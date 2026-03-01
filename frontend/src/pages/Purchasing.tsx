@@ -3,6 +3,7 @@ import { purchasing } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
+import { getErrorMessage } from '../utils/errors';
 import type { Vendor, PurchaseOrder } from '../types';
 
 export default function Purchasing() {
@@ -40,8 +41,8 @@ export default function Purchasing() {
       setShowVendorModal(false);
       setNewVendor({ code: '', name: '', email: '' });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create vendor');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create vendor'));
     } finally {
       setSaving(false);
     }
@@ -52,8 +53,8 @@ export default function Purchasing() {
       await purchasing.approveOrder(id);
       toast.success('Order approved successfully');
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to approve order');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to approve order'));
     }
   };
 

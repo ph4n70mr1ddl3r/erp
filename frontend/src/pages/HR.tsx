@@ -3,6 +3,7 @@ import { hr } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
+import { getErrorMessage } from '../utils/errors';
 import type { Employee } from '../types';
 
 export default function HR() {
@@ -43,8 +44,8 @@ export default function HR() {
       setShowModal(false);
       setNewEmployee({ employee_number: '', first_name: '', last_name: '', email: '', hire_date: new Date().toISOString().split('T')[0] });
       loadData();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create employee');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create employee'));
     } finally {
       setSaving(false);
     }
@@ -54,8 +55,8 @@ export default function HR() {
     try {
       await hr.checkIn(id);
       toast.success('Checked in successfully');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to check in');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to check in'));
     }
   };
 
@@ -63,8 +64,8 @@ export default function HR() {
     try {
       await hr.checkOut(id);
       toast.success('Checked out successfully');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to check out');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to check out'));
     }
   };
 

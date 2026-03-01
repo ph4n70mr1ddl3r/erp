@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { finance } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
+import { getErrorMessage } from '../utils/errors';
 import type { AccountBalanceResponse } from '../types';
 
 interface BalanceSheetResponse {
@@ -45,8 +46,8 @@ export default function Reports() {
       const res = await finance.getBalanceSheet();
       setBalanceSheet(res.data);
       setActiveReport('balance-sheet');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to load balance sheet');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load balance sheet'));
     } finally {
       setLoading(false);
     }
@@ -58,8 +59,8 @@ export default function Reports() {
       const res = await finance.getProfitAndLoss();
       setProfitLoss(res.data);
       setActiveReport('profit-loss');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to load P&L');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load P&L'));
     } finally {
       setLoading(false);
     }
@@ -71,8 +72,8 @@ export default function Reports() {
       const res = await finance.getTrialBalance();
       setTrialBalance(res.data);
       setActiveReport('trial-balance');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to load trial balance');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load trial balance'));
     } finally {
       setLoading(false);
     }
