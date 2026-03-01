@@ -3,7 +3,7 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{Status, Pagination};
+use erp_core::Pagination;
 use erp_service::{ServiceTicket, KnowledgeArticle, SLA, ServiceTicketService, KnowledgeArticleService, SLAService, TicketPriority, TicketStatus, TicketType, TicketSource};
 
 #[derive(Deserialize)]
@@ -135,7 +135,7 @@ pub async fn set_satisfaction(State(state): State<AppState>, Path(id): Path<Uuid
 pub async fn ticket_stats(State(state): State<AppState>) -> ApiResult<Json<serde_json::Value>> {
     let svc = ServiceTicketService::new();
     let stats = svc.get_stats(&state.pool).await?;
-    Ok(Json(serde_json::json!({ "by_status": stats.into_iter().map(|(s, c)| (s, c)).collect::<std::collections::HashMap<_, _>>() })))
+    Ok(Json(serde_json::json!({ "by_status": stats.into_iter().collect::<std::collections::HashMap<_, _>>() })))
 }
 
 #[derive(Deserialize)]

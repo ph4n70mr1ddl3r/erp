@@ -198,7 +198,7 @@ impl StripeService {
     
     pub async fn retrieve_payment_intent(&self, payment_intent_id: &str) -> Result<StripePaymentIntentResponse> {
         let response = self.client
-            .get(&format!("{}/payment_intents/{}", self.config.api_base_url(), payment_intent_id))
+            .get(format!("{}/payment_intents/{}", self.config.api_base_url(), payment_intent_id))
             .basic_auth(&self.config.secret_key, Some(""))
             .send()
             .await
@@ -214,7 +214,7 @@ impl StripeService {
     
     pub async fn cancel_payment_intent(&self, payment_intent_id: &str) -> Result<StripePaymentIntentResponse> {
         let response = self.client
-            .post(format!("{}/payment_intents/{}/cancel", self.config.api_base_url().to_string(), payment_intent_id))
+            .post(format!("{}/payment_intents/{}/cancel", self.config.api_base_url(), payment_intent_id))
             .basic_auth(&self.config.secret_key, Some(""))
             .send()
             .await
@@ -246,7 +246,7 @@ impl StripeService {
         }
         
         let response = self.client
-            .post(format!("{}/refunds", self.config.api_base_url().to_string()))
+            .post(format!("{}/refunds", self.config.api_base_url()))
             .basic_auth(&self.config.secret_key, Some(""))
             .form(&form_data)
             .send()

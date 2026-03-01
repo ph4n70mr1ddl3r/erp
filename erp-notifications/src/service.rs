@@ -11,6 +11,12 @@ pub struct NotificationService {
     template_repo: SqliteNotificationTemplateRepository,
 }
 
+impl Default for NotificationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotificationService {
     pub fn new() -> Self {
         Self {
@@ -214,6 +220,12 @@ pub struct NotificationPreferenceService {
     preference_repo: SqliteNotificationPreferenceRepository,
 }
 
+impl Default for NotificationPreferenceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NotificationPreferenceService {
     pub fn new() -> Self {
         Self {
@@ -273,6 +285,12 @@ impl NotificationPreferenceService {
 
 pub struct NotificationTemplateService {
     template_repo: SqliteNotificationTemplateRepository,
+}
+
+impl Default for NotificationTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl NotificationTemplateService {

@@ -168,12 +168,10 @@ impl WebhookService {
             request = apply_auth(request, auth);
         }
         
-        if let Some(headers) = &endpoint.headers {
-            if let serde_json::Value::Object(map) = headers {
-                for (key, value) in map {
-                    if let serde_json::Value::String(v) = value {
-                        request = request.header(key, v);
-                    }
+        if let Some(serde_json::Value::Object(map)) = &endpoint.headers {
+            for (key, value) in map {
+                if let serde_json::Value::String(v) = value {
+                    request = request.header(key, v);
                 }
             }
         }
@@ -184,7 +182,7 @@ impl WebhookService {
                 let status = response.status().as_u16() as i32;
                 let body = response.text().await.unwrap_or_default();
                 
-                if status >= 200 && status < 300 {
+                if (200..300).contains(&status) {
                     delivery.status = DeliveryStatus::Delivered;
                     delivery.delivered_at = Some(chrono::Utc::now());
                     self.endpoint_repo.update_stats(pool, endpoint.base.id, true).await?;

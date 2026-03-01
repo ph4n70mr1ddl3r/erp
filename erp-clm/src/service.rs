@@ -9,6 +9,12 @@ pub struct ClmService {
     repo: SqliteClmRepository,
 }
 
+impl Default for ClmService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClmService {
     pub fn new() -> Self {
         Self {
@@ -16,7 +22,7 @@ impl ClmService {
         }
     }
     
-    pub async fn create_contract(&self, pool: &SqlitePool, mut contract: ContractRecord) -> Result<ContractRecord> {
+    pub async fn create_contract(&self, _pool: &SqlitePool, mut contract: ContractRecord) -> Result<ContractRecord> {
         contract.id = Uuid::new_v4();
         contract.contract_number = format!("CTR-{}", Utc::now().format("%Y%m%d%H%M%S"));
         contract.created_at = Utc::now();
@@ -27,15 +33,15 @@ impl ClmService {
         Ok(contract)
     }
     
-    pub async fn get_contract(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<ContractRecord>> {
+    pub async fn get_contract(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<ContractRecord>> {
         self.repo.get_contract(id).await
     }
     
-    pub async fn list_contracts(&self, pool: &SqlitePool) -> Result<Vec<ContractRecord>> {
+    pub async fn list_contracts(&self, _pool: &SqlitePool) -> Result<Vec<ContractRecord>> {
         self.repo.list_contracts().await
     }
     
-    pub async fn submit_for_approval(&self, pool: &SqlitePool, contract_id: Uuid, approver_id: Uuid) -> Result<ContractApproval> {
+    pub async fn submit_for_approval(&self, _pool: &SqlitePool, contract_id: Uuid, approver_id: Uuid) -> Result<ContractApproval> {
         self.repo.update_contract_status(contract_id, ContractStatus::InReview).await?;
         
         let approval = ContractApproval {
@@ -54,23 +60,23 @@ impl ClmService {
         Ok(approval)
     }
     
-    pub async fn approve_contract(&self, pool: &SqlitePool, approval_id: Uuid) -> Result<()> {
+    pub async fn approve_contract(&self, _pool: &SqlitePool, _approval_id: Uuid) -> Result<()> {
         Ok(())
     }
     
-    pub async fn list_pending_approvals(&self, pool: &SqlitePool, approver_id: Uuid) -> Result<Vec<ContractApproval>> {
+    pub async fn list_pending_approvals(&self, _pool: &SqlitePool, approver_id: Uuid) -> Result<Vec<ContractApproval>> {
         self.repo.list_pending_approvals(approver_id).await
     }
     
-    pub async fn activate_contract(&self, pool: &SqlitePool, contract_id: Uuid) -> Result<()> {
+    pub async fn activate_contract(&self, _pool: &SqlitePool, contract_id: Uuid) -> Result<()> {
         self.repo.update_contract_status(contract_id, ContractStatus::Active).await
     }
     
-    pub async fn terminate_contract(&self, pool: &SqlitePool, contract_id: Uuid, reason: String) -> Result<()> {
+    pub async fn terminate_contract(&self, _pool: &SqlitePool, contract_id: Uuid, _reason: String) -> Result<()> {
         self.repo.update_contract_status(contract_id, ContractStatus::Terminated).await
     }
     
-    pub async fn create_renewal(&self, pool: &SqlitePool, mut renewal: ContractRenewal) -> Result<ContractRenewal> {
+    pub async fn create_renewal(&self, _pool: &SqlitePool, mut renewal: ContractRenewal) -> Result<ContractRenewal> {
         renewal.id = Uuid::new_v4();
         renewal.status = "Pending".to_string();
         renewal.initiated_at = Utc::now();
@@ -79,11 +85,11 @@ impl ClmService {
         Ok(renewal)
     }
     
-    pub async fn list_expiring_contracts(&self, pool: &SqlitePool, days: i32) -> Result<Vec<ContractRecord>> {
+    pub async fn list_expiring_contracts(&self, _pool: &SqlitePool, days: i32) -> Result<Vec<ContractRecord>> {
         self.repo.list_expiring_contracts(days).await
     }
     
-    pub async fn assess_contract_risk(&self, pool: &SqlitePool, contract_id: Uuid) -> Result<ContractRiskAssessment> {
+    pub async fn assess_contract_risk(&self, _pool: &SqlitePool, contract_id: Uuid) -> Result<ContractRiskAssessment> {
         let assessment = ContractRiskAssessment {
             id: Uuid::new_v4(),
             contract_id,

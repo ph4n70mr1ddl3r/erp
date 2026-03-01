@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
-use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
+use erp_core::{Error, Result, Pagination, Paginated, BaseEntity};
 use crate::models::*;
 use uuid::Uuid;
 use chrono::Utc;
@@ -27,7 +27,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("IoTDevice", &id.to_string()))?;
         
         Ok(row.into())
@@ -40,7 +40,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         .bind(device_id)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("IoTDevice", device_id))?;
         
         Ok(row.into())
@@ -50,7 +50,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM iot_devices WHERE status = 'Active'")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let rows = sqlx::query_as::<_, IoTDeviceRow>(
             "SELECT * FROM iot_devices WHERE status = 'Active' ORDER BY created_at DESC LIMIT ? OFFSET ?"
@@ -59,7 +59,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         .bind(pagination.offset())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -92,7 +92,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         .bind(device.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(device)
     }
@@ -110,7 +110,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         .bind(device.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
     
@@ -123,7 +123,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
     
@@ -132,7 +132,7 @@ impl IoTDeviceRepository for SqliteIoTDeviceRepository {
             .bind(id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -295,7 +295,7 @@ impl TelemetryRepository for SqliteTelemetryRepository {
         .bind(data.received_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(data)
     }
@@ -308,7 +308,7 @@ impl TelemetryRepository for SqliteTelemetryRepository {
         .bind(limit)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -321,7 +321,7 @@ impl TelemetryRepository for SqliteTelemetryRepository {
         .bind(metric_name)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.map(|r| r.into()))
     }
@@ -417,7 +417,7 @@ impl IoTAlertRepository for SqliteIoTAlertRepository {
         .bind(alert.base.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(alert)
     }
@@ -429,7 +429,7 @@ impl IoTAlertRepository for SqliteIoTAlertRepository {
         .bind(limit)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -443,7 +443,7 @@ impl IoTAlertRepository for SqliteIoTAlertRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
     
@@ -456,7 +456,7 @@ impl IoTAlertRepository for SqliteIoTAlertRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }

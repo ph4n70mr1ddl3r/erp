@@ -9,6 +9,12 @@ pub struct CompensationService {
     repo: SqliteCompensationRepository,
 }
 
+impl Default for CompensationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CompensationService {
     pub fn new() -> Self {
         Self {
@@ -16,7 +22,7 @@ impl CompensationService {
         }
     }
     
-    pub async fn create_plan(&self, pool: &SqlitePool, mut plan: CompensationPlan) -> Result<CompensationPlan> {
+    pub async fn create_plan(&self, _pool: &SqlitePool, mut plan: CompensationPlan) -> Result<CompensationPlan> {
         plan.id = Uuid::new_v4();
         plan.created_at = Utc::now();
         plan.updated_at = Utc::now();
@@ -25,15 +31,15 @@ impl CompensationService {
         Ok(plan)
     }
     
-    pub async fn get_plan(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<CompensationPlan>> {
+    pub async fn get_plan(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<CompensationPlan>> {
         self.repo.get_plan(id).await
     }
     
-    pub async fn list_plans(&self, pool: &SqlitePool) -> Result<Vec<CompensationPlan>> {
+    pub async fn list_plans(&self, _pool: &SqlitePool) -> Result<Vec<CompensationPlan>> {
         self.repo.list_plans().await
     }
     
-    pub async fn set_employee_compensation(&self, pool: &SqlitePool, mut comp: EmployeeCompensation) -> Result<EmployeeCompensation> {
+    pub async fn set_employee_compensation(&self, _pool: &SqlitePool, mut comp: EmployeeCompensation) -> Result<EmployeeCompensation> {
         comp.id = Uuid::new_v4();
         comp.created_at = Utc::now();
         comp.is_current = true;
@@ -46,15 +52,15 @@ impl CompensationService {
         Ok(comp)
     }
     
-    async fn calculate_compa_ratio(&self, salary: i64, range_id: Uuid) -> Result<f64> {
+    async fn calculate_compa_ratio(&self, _salary: i64, _range_id: Uuid) -> Result<f64> {
         Ok(1.0)
     }
     
-    pub async fn get_employee_compensation(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Option<EmployeeCompensation>> {
+    pub async fn get_employee_compensation(&self, _pool: &SqlitePool, employee_id: Uuid) -> Result<Option<EmployeeCompensation>> {
         self.repo.get_employee_compensation(employee_id).await
     }
     
-    pub async fn create_adjustment(&self, pool: &SqlitePool, mut adjustment: CompensationAdjustment) -> Result<CompensationAdjustment> {
+    pub async fn create_adjustment(&self, _pool: &SqlitePool, mut adjustment: CompensationAdjustment) -> Result<CompensationAdjustment> {
         adjustment.id = Uuid::new_v4();
         adjustment.created_at = Utc::now();
         adjustment.status = "Pending".to_string();
@@ -68,15 +74,15 @@ impl CompensationService {
         Ok(adjustment)
     }
     
-    pub async fn approve_adjustment(&self, pool: &SqlitePool, id: Uuid, approver_id: Uuid) -> Result<()> {
+    pub async fn approve_adjustment(&self, _pool: &SqlitePool, id: Uuid, _approver_id: Uuid) -> Result<()> {
         self.repo.update_adjustment_status(id, "Approved").await
     }
     
-    pub async fn list_adjustments(&self, pool: &SqlitePool, employee_id: Option<Uuid>) -> Result<Vec<CompensationAdjustment>> {
+    pub async fn list_adjustments(&self, _pool: &SqlitePool, employee_id: Option<Uuid>) -> Result<Vec<CompensationAdjustment>> {
         self.repo.list_adjustments(employee_id).await
     }
     
-    pub async fn create_review(&self, pool: &SqlitePool, mut review: CompensationReview) -> Result<CompensationReview> {
+    pub async fn create_review(&self, _pool: &SqlitePool, mut review: CompensationReview) -> Result<CompensationReview> {
         review.id = Uuid::new_v4();
         review.review_date = Utc::now();
         review.created_at = Utc::now();
@@ -90,11 +96,11 @@ impl CompensationService {
         Ok(review)
     }
     
-    pub async fn list_reviews(&self, pool: &SqlitePool, plan_id: Uuid) -> Result<Vec<CompensationReview>> {
+    pub async fn list_reviews(&self, _pool: &SqlitePool, plan_id: Uuid) -> Result<Vec<CompensationReview>> {
         self.repo.list_reviews(plan_id).await
     }
     
-    pub async fn calculate_bonus(&self, pool: &SqlitePool, employee_id: Uuid, plan_id: Uuid) -> Result<EmployeeBonus> {
+    pub async fn calculate_bonus(&self, _pool: &SqlitePool, employee_id: Uuid, plan_id: Uuid) -> Result<EmployeeBonus> {
         let bonus = EmployeeBonus {
             id: Uuid::new_v4(),
             employee_id,
@@ -115,7 +121,7 @@ impl CompensationService {
         Ok(bonus)
     }
     
-    pub async fn generate_total_rewards_statement(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<TotalRewardsStatement> {
+    pub async fn generate_total_rewards_statement(&self, _pool: &SqlitePool, employee_id: Uuid) -> Result<TotalRewardsStatement> {
         let statement = TotalRewardsStatement {
             id: Uuid::new_v4(),
             employee_id,
@@ -132,7 +138,7 @@ impl CompensationService {
         Ok(statement)
     }
     
-    pub async fn analyze_pay_equity(&self, pool: &SqlitePool, group_type: String, group_id: Option<Uuid>) -> Result<PayEquityAnalysis> {
+    pub async fn analyze_pay_equity(&self, _pool: &SqlitePool, group_type: String, group_id: Option<Uuid>) -> Result<PayEquityAnalysis> {
         let analysis = PayEquityAnalysis {
             id: Uuid::new_v4(),
             analysis_date: Utc::now(),
@@ -153,7 +159,7 @@ impl CompensationService {
         Ok(analysis)
     }
     
-    pub async fn get_market_benchmark(&self, pool: &SqlitePool, position_id: Uuid) -> Result<CompensationBenchmark> {
+    pub async fn get_market_benchmark(&self, _pool: &SqlitePool, position_id: Uuid) -> Result<CompensationBenchmark> {
         let benchmark = CompensationBenchmark {
             id: Uuid::new_v4(),
             employee_id: None,

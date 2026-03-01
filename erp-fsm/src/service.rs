@@ -216,7 +216,7 @@ impl<R: FSMRepository> FSMService<R> {
             let travel_time = (distance * 1.5) as i32;
             total_duration += travel_time + 60;
             
-            arrival_time = arrival_time + chrono::Duration::minutes(travel_time as i64);
+            arrival_time += chrono::Duration::minutes(travel_time as i64);
             let departure_time = arrival_time + chrono::Duration::hours(1);
             
             let stop = ServiceRouteStop {

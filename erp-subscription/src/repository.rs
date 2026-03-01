@@ -35,7 +35,7 @@ impl SubscriptionPlanRepository {
             r#"SELECT id, code, name, description, price, currency, billing_interval, interval_count, trial_days, features, max_users, max_transactions, is_active, created_at, updated_at FROM subscription_plans WHERE is_active = 1 ORDER BY price"#
         )
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| Self::row_to_plan(r)).collect())
+        Ok(rows.iter().map(Self::row_to_plan).collect())
     }
 
     fn row_to_plan(r: &sqlx::sqlite::SqliteRow) -> SubscriptionPlan {
@@ -100,7 +100,7 @@ impl SubscriptionRepository {
         )
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| Self::row_to_sub(r)).collect())
+        Ok(rows.iter().map(Self::row_to_sub).collect())
     }
 
     pub fn row_to_sub(r: &sqlx::sqlite::SqliteRow) -> Subscription {

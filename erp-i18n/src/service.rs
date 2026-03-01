@@ -6,6 +6,12 @@ use erp_core::Result;
 
 pub struct I18nService;
 
+impl Default for I18nService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl I18nService {
     pub fn new() -> Self { Self }
 

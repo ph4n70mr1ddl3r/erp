@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 use anyhow::Result;
 use crate::models::*;

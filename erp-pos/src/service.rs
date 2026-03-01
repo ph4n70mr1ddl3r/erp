@@ -7,6 +7,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct POSStoreService { repo: SqlitePOSStoreRepository }
+impl Default for POSStoreService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl POSStoreService {
     pub fn new() -> Self { Self { repo: SqlitePOSStoreRepository } }
     
@@ -34,6 +40,12 @@ impl POSStoreService {
 }
 
 pub struct POSTransactionService { repo: SqlitePOSTransactionRepository }
+impl Default for POSTransactionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl POSTransactionService {
     pub fn new() -> Self { Self { repo: SqlitePOSTransactionRepository } }
     
@@ -146,6 +158,12 @@ pub struct DailySummary {
 }
 
 pub struct GiftCardService { repo: SqliteGiftCardRepository }
+impl Default for GiftCardService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GiftCardService {
     pub fn new() -> Self { Self { repo: SqliteGiftCardRepository } }
     
@@ -214,6 +232,12 @@ impl GiftCardService {
 }
 
 pub struct LoyaltyService;
+impl Default for LoyaltyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LoyaltyService {
     pub fn new() -> Self { Self }
     

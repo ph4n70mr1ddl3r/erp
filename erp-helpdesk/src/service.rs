@@ -436,7 +436,7 @@ impl SurveyService {
         feedback: Option<String>,
         categories: Vec<SurveyCategoryRating>,
     ) -> Result<TicketSurvey> {
-        if rating < 1 || rating > 5 {
+        if !(1..=5).contains(&rating) {
             return Err(Error::validation("Rating must be between 1 and 5".to_string()));
         }
         let survey = TicketSurvey {

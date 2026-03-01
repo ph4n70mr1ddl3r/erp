@@ -9,6 +9,12 @@ pub struct SpendAnalyticsService {
     repo: SqliteSpendAnalyticsRepository,
 }
 
+impl Default for SpendAnalyticsService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SpendAnalyticsService {
     pub fn new() -> Self {
         Self {
@@ -16,7 +22,7 @@ impl SpendAnalyticsService {
         }
     }
     
-    pub async fn record_spend(&self, pool: &SqlitePool, mut txn: SpendTransaction) -> Result<SpendTransaction> {
+    pub async fn record_spend(&self, _pool: &SqlitePool, mut txn: SpendTransaction) -> Result<SpendTransaction> {
         txn.id = Uuid::new_v4();
         txn.transaction_number = format!("SPN-{}", Utc::now().format("%Y%m%d%H%M%S"));
         txn.created_at = Utc::now();
@@ -25,7 +31,7 @@ impl SpendAnalyticsService {
         Ok(txn)
     }
     
-    pub async fn analyze_spend(&self, pool: &SqlitePool, period_type: AnalysisPeriod, start_date: chrono::DateTime<Utc>, end_date: chrono::DateTime<Utc>) -> Result<SpendSummary> {
+    pub async fn analyze_spend(&self, _pool: &SqlitePool, period_type: AnalysisPeriod, start_date: chrono::DateTime<Utc>, end_date: chrono::DateTime<Utc>) -> Result<SpendSummary> {
         let summary = self.repo.get_spend_summary(period_type.clone(), start_date).await?
             .unwrap_or(SpendSummary {
                 id: Uuid::new_v4(),
@@ -52,27 +58,27 @@ impl SpendAnalyticsService {
         Ok(summary)
     }
     
-    pub async fn analyze_vendor_spend(&self, pool: &SqlitePool, vendor_id: Uuid) -> Result<Option<VendorSpendAnalysis>> {
+    pub async fn analyze_vendor_spend(&self, _pool: &SqlitePool, vendor_id: Uuid) -> Result<Option<VendorSpendAnalysis>> {
         self.repo.get_vendor_analysis(vendor_id).await
     }
     
-    pub async fn analyze_category_spend(&self, pool: &SqlitePool, category_id: Uuid) -> Result<Option<CategorySpendAnalysis>> {
+    pub async fn analyze_category_spend(&self, _pool: &SqlitePool, category_id: Uuid) -> Result<Option<CategorySpendAnalysis>> {
         self.repo.get_category_analysis(category_id).await
     }
     
-    pub async fn identify_maverick_spend(&self, pool: &SqlitePool) -> Result<Vec<MaverickSpend>> {
+    pub async fn identify_maverick_spend(&self, _pool: &SqlitePool) -> Result<Vec<MaverickSpend>> {
         Ok(Vec::new())
     }
     
-    pub async fn identify_duplicate_spend(&self, pool: &SqlitePool) -> Result<Vec<DuplicateSpend>> {
+    pub async fn identify_duplicate_spend(&self, _pool: &SqlitePool) -> Result<Vec<DuplicateSpend>> {
         Ok(Vec::new())
     }
     
-    pub async fn identify_savings_opportunities(&self, pool: &SqlitePool) -> Result<Vec<SavingsOpportunity>> {
+    pub async fn identify_savings_opportunities(&self, _pool: &SqlitePool) -> Result<Vec<SavingsOpportunity>> {
         self.repo.list_savings_opportunities().await
     }
     
-    pub async fn create_savings_opportunity(&self, pool: &SqlitePool, mut opportunity: SavingsOpportunity) -> Result<SavingsOpportunity> {
+    pub async fn create_savings_opportunity(&self, _pool: &SqlitePool, mut opportunity: SavingsOpportunity) -> Result<SavingsOpportunity> {
         opportunity.id = Uuid::new_v4();
         opportunity.opportunity_number = format!("SAV-{}", Utc::now().format("%Y%m%d%H%M%S"));
         opportunity.created_at = Utc::now();
@@ -81,15 +87,15 @@ impl SpendAnalyticsService {
         Ok(opportunity)
     }
     
-    pub async fn get_spend_trends(&self, pool: &SqlitePool, entity_type: String, entity_id: Uuid) -> Result<Vec<SpendTrend>> {
+    pub async fn get_spend_trends(&self, _pool: &SqlitePool, _entity_type: String, _entity_id: Uuid) -> Result<Vec<SpendTrend>> {
         Ok(Vec::new())
     }
     
-    pub async fn forecast_spend(&self, pool: &SqlitePool, entity_type: String, entity_id: Option<Uuid>, months: i32) -> Result<Vec<SpendForecast>> {
+    pub async fn forecast_spend(&self, _pool: &SqlitePool, _entity_type: String, _entity_id: Option<Uuid>, _months: i32) -> Result<Vec<SpendForecast>> {
         Ok(Vec::new())
     }
     
-    pub async fn analyze_tail_spend(&self, pool: &SqlitePool) -> Result<TailSpendAnalysis> {
+    pub async fn analyze_tail_spend(&self, _pool: &SqlitePool) -> Result<TailSpendAnalysis> {
         let analysis = TailSpendAnalysis {
             id: Uuid::new_v4(),
             analysis_date: Utc::now(),
@@ -108,11 +114,11 @@ impl SpendAnalyticsService {
         Ok(analysis)
     }
     
-    pub async fn get_supplier_risk_scores(&self, pool: &SqlitePool) -> Result<Vec<SupplierRiskScore>> {
+    pub async fn get_supplier_risk_scores(&self, _pool: &SqlitePool) -> Result<Vec<SupplierRiskScore>> {
         Ok(Vec::new())
     }
     
-    pub async fn analyze_contract_compliance(&self, pool: &SqlitePool, contract_id: Uuid) -> Result<ContractCompliance> {
+    pub async fn analyze_contract_compliance(&self, _pool: &SqlitePool, contract_id: Uuid) -> Result<ContractCompliance> {
         let compliance = ContractCompliance {
             id: Uuid::new_v4(),
             contract_id,

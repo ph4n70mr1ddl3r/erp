@@ -241,3 +241,13 @@ erp-credit = { path = "erp-credit" }
 erp-kanban = { path = "erp-kanban" }
 erp-bundles = { path = "erp-bundles" }
 erp-warranty = { path = "erp-warranty" }
+
+[workspace.lints.clippy]
+too_many_arguments = "allow"
+type_complexity = "allow"
+new_ret_no_self = "allow"
+new_without_default = "allow"
+module_name_repetitions = "allow"
+
+[workspace.lints.rust]
+dead_code = "allow"

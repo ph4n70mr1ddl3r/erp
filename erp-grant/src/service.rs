@@ -35,7 +35,7 @@ impl GrantService {
         if start_date >= end_date {
             return Err(Error::validation("Start date must be before end date".to_string()));
         }
-        if indirect_cost_rate < 0.0 || indirect_cost_rate > 100.0 {
+        if !(0.0..=100.0).contains(&indirect_cost_rate) {
             return Err(Error::validation("Invalid indirect cost rate".to_string()));
         }
         let grant = Grant {

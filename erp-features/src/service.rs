@@ -1,7 +1,7 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
-use erp_core::{BaseEntity, Result};
+use erp_core::Result;
 use crate::models::*;
 use crate::repository::{FeatureFlagRepository, SqliteFeatureFlagRepository, FlagUsageStats};
 

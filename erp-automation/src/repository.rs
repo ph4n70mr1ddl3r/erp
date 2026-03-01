@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
-use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
+use erp_core::{Error, Result, Pagination, Paginated, BaseEntity};
 use crate::models::*;
 use uuid::Uuid;
 use chrono::{Utc, DateTime};
@@ -351,7 +351,7 @@ impl From<ExecutionRow> for WorkflowExecution {
             current_step: r.current_step,
             total_steps: r.total_steps,
             completed_steps: r.completed_steps,
-            progress_percent: if r.total_steps > 0 { (r.completed_steps * 100 / r.total_steps) } else { 0 },
+            progress_percent: if r.total_steps > 0 { r.completed_steps * 100 / r.total_steps  } else { 0 },
             started_at: DateTime::parse_from_rfc3339(&r.started_at)
                 .map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
             completed_at: r.completed_at.and_then(|d| DateTime::parse_from_rfc3339(&d).ok())

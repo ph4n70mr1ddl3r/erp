@@ -13,6 +13,12 @@ pub struct APIKeyService {
     api_key_repo: SqliteAPIKeyRepository,
 }
 
+impl Default for APIKeyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl APIKeyService {
     pub fn new() -> Self {
         Self {
@@ -167,6 +173,12 @@ pub struct ExternalConnectionService {
     connection_repo: SqliteExternalConnectionRepository,
 }
 
+impl Default for ExternalConnectionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ExternalConnectionService {
     pub fn new() -> Self {
         Self {
@@ -252,6 +264,12 @@ impl ExternalConnectionService {
 
 pub struct IntegrationFlowService {
     flow_repo: SqliteIntegrationFlowRepository,
+}
+
+impl Default for IntegrationFlowService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IntegrationFlowService {

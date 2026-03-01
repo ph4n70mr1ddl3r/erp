@@ -333,7 +333,7 @@ impl<R: WarrantyRepository> WarrantyService<R> {
             .map_err(|e| e.to_string())?
             .ok_or("Policy not found")?;
 
-        let total_cost = ((req.labor_hours * req.hourly_rate as f64) as i64);
+        let total_cost = (req.labor_hours * req.hourly_rate as f64) as i64;
         let covered_amount = if policy.labor_covered { total_cost } else { 0 };
         let customer_amount = total_cost - covered_amount;
 
@@ -367,11 +367,11 @@ impl<R: WarrantyRepository> WarrantyService<R> {
         match unit {
             WarrantyDurationUnit::Days => start + Duration::days(duration_value as i64),
             WarrantyDurationUnit::Months => {
-                let months = duration_value as i32;
+                let months = duration_value;
                 start + Duration::days((months * 30) as i64)
             }
             WarrantyDurationUnit::Years => {
-                let years = duration_value as i32;
+                let years = duration_value;
                 start + Duration::days((years * 365) as i64)
             }
         }

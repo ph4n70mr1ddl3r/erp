@@ -10,6 +10,12 @@ pub struct ProcessMiningService {
     repo: SqliteProcessMiningRepository,
 }
 
+impl Default for ProcessMiningService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProcessMiningService {
     pub fn new() -> Self {
         Self {
@@ -31,7 +37,7 @@ impl ProcessMiningService {
     }
     
     pub async fn import_events(&self, request: ImportEventsRequest) -> Result<Vec<ProcessInstance>> {
-        let process = self.repo.get_process(request.process_id).await?
+        let _process = self.repo.get_process(request.process_id).await?
             .ok_or_else(|| anyhow::anyhow!("Process not found"))?;
         
         let mut cases: HashMap<String, Vec<ProcessEventImport>> = HashMap::new();
@@ -66,11 +72,11 @@ impl ProcessMiningService {
                 let process_event = ProcessEvent {
                     base: BaseEntity::new(),
                     instance_id: instance.base.id,
-                    event_type: event.event_type.and_then(|s| match s.as_str() {
-                        "start" => Some(EventType::Start),
-                        "complete" => Some(EventType::Complete),
-                        "assign" => Some(EventType::Assign),
-                        _ => Some(EventType::Start),
+                    event_type: event.event_type.map(|s| match s.as_str() {
+                        "start" => EventType::Start,
+                        "complete" => EventType::Complete,
+                        "assign" => EventType::Assign,
+                        _ => EventType::Start,
                     }).unwrap_or(EventType::Start),
                     activity_name: event.activity,
                     timestamp: event.timestamp,
@@ -143,7 +149,7 @@ impl ProcessMiningService {
             avg_case_duration_hours: 24.0,
             median_case_duration_hours: 18.0,
             activity_frequencies: serde_json::to_value(&activity_freq)?,
-            transition_frequencies: serde_json::to_value(&transitions.iter().map(|((from, to), count)| serde_json::json!({"from": from, "to": to, "count": count})).collect::<Vec<_>>())?,
+            transition_frequencies: serde_json::to_value(transitions.iter().map(|((from, to), count)| serde_json::json!({"from": from, "to": to, "count": count})).collect::<Vec<_>>())?,
             start_activities: start_activities.into_keys().collect(),
             end_activities: end_activities.into_keys().collect(),
             self_loops,
@@ -207,7 +213,7 @@ impl ProcessMiningService {
     }
     
     pub async fn analyze_bottlenecks(&self, process_id: Uuid) -> Result<BottleneckAnalysis> {
-        let events = self.repo.list_events_by_process(process_id, Utc::now() - chrono::Duration::days(30), Utc::now()).await?;
+        let _events = self.repo.list_events_by_process(process_id, Utc::now() - chrono::Duration::days(30), Utc::now()).await?;
         
         let bottlenecks = vec![Bottleneck {
             activity_name: "Review".to_string(),

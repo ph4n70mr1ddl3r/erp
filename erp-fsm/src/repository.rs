@@ -1113,7 +1113,7 @@ impl From<TechnicianTerritoryRow> for TechnicianTerritory {
             territory_id: Uuid::parse_str(&row.territory_id).unwrap_or(Uuid::nil()),
             is_primary: row.is_primary,
             effective_date: chrono::DateTime::parse_from_rfc3339(&row.effective_date).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-            expiry_date: row.expiry_date.as_ref().map(|d| chrono::DateTime::parse_from_rfc3339(d).ok()).flatten().map(|d| d.with_timezone(&chrono::Utc)),
+            expiry_date: row.expiry_date.as_ref().and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok()).map(|d| d.with_timezone(&chrono::Utc)),
             created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
         }
     }

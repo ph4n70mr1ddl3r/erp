@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 use anyhow::Result;
 use crate::models::*;
@@ -27,6 +26,12 @@ pub trait OcrRepository: Send + Sync {
 }
 
 pub struct SqliteOcrRepository;
+
+impl Default for SqliteOcrRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SqliteOcrRepository {
     pub fn new() -> Self {

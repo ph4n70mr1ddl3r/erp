@@ -7,6 +7,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct EmployeeService { repo: SqliteEmployeeRepository }
+impl Default for EmployeeService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmployeeService {
     pub fn new() -> Self { Self { repo: SqliteEmployeeRepository } }
     pub async fn get(&self, pool: &SqlitePool, id: Uuid) -> Result<Employee> { self.repo.find_by_id(pool, id).await }
@@ -25,6 +31,12 @@ impl EmployeeService {
 }
 
 pub struct AttendanceService { repo: SqliteAttendanceRepository }
+impl Default for AttendanceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AttendanceService {
     pub fn new() -> Self { Self { repo: SqliteAttendanceRepository } }
     pub async fn check_in(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<()> {
@@ -40,6 +52,12 @@ impl AttendanceService {
 }
 
 pub struct PayrollService { repo: SqlitePayrollRepository }
+impl Default for PayrollService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PayrollService {
     pub fn new() -> Self { Self { repo: SqlitePayrollRepository } }
     pub async fn list_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<Payroll>> {
@@ -61,6 +79,12 @@ impl PayrollService {
 }
 
 pub struct LeaveService;
+
+impl Default for LeaveService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl LeaveService {
     pub fn new() -> Self { Self }
@@ -182,7 +206,7 @@ impl LeaveService {
     }
 
     pub async fn reject_leave_request(pool: &SqlitePool, id: Uuid, reason: &str) -> Result<LeaveRequestExtended> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         
         sqlx::query(
             "UPDATE leave_requests SET status = 'Rejected', rejection_reason = ? WHERE id = ?"
@@ -320,6 +344,12 @@ impl From<LeaveRequestRow> for LeaveRequestExtended {
 }
 
 pub struct ExpenseService;
+
+impl Default for ExpenseService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ExpenseService {
     pub fn new() -> Self { Self }

@@ -9,7 +9,7 @@ use chrono::Utc;
 use erp_core::Pagination;
 use crate::db::AppState;
 use erp_automation::{WorkflowService, WorkflowExecutionService, ScheduledJobService, WebhookService, ActionTemplateService};
-use erp_automation::{AutomationWorkflow, AutomationType, AutomationStatus, WorkflowExecution, TriggerType, ExecutionStatus};
+use erp_automation::{AutomationWorkflow, AutomationType, AutomationStatus, WorkflowExecution, TriggerType};
 
 fn new_automation_workflow() -> AutomationWorkflow {
     AutomationWorkflow {

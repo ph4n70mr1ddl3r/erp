@@ -1,13 +1,13 @@
-use axum::{extract::{Path, Query, State}, Json, routing::{get, post}};
+use axum::{extract::{Path, State}, Json, routing::{get, post}};
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{Pagination, BaseEntity, Status};
+use erp_core::{BaseEntity, Status};
 use erp_barcode::{
-    Barcode, BarcodeType, BarcodeEntityType, BarcodePrinter, BarcodeTemplate,
-    ScanEvent, ScanAction, BarcodeValidation,
+    Barcode, BarcodeType, BarcodeEntityType,
+    ScanEvent, ScanAction,
     BarcodeService, BarcodePrintService, ScanService, BarcodeValidationService,
 };
 
@@ -71,8 +71,8 @@ pub async fn create_barcode(
     
     let barcode_type = match req.barcode_type.as_str() {
         "EAN8" => BarcodeType::EAN8,
-        "UPC_A" => BarcodeType::UPC_A,
-        "UPC_E" => BarcodeType::UPC_E,
+        "UPC_A" => BarcodeType::UpcA,
+        "UPC_E" => BarcodeType::UpcE,
         "Code128" => BarcodeType::Code128,
         "Code39" => BarcodeType::Code39,
         "Code93" => BarcodeType::Code93,
@@ -200,8 +200,8 @@ pub async fn scan(
     
     let barcode_type = match req.barcode_type.as_str() {
         "EAN8" => BarcodeType::EAN8,
-        "UPC_A" => BarcodeType::UPC_A,
-        "UPC_E" => BarcodeType::UPC_E,
+        "UPC_A" => BarcodeType::UpcA,
+        "UPC_E" => BarcodeType::UpcE,
         "Code128" => BarcodeType::Code128,
         "Code39" => BarcodeType::Code39,
         "QRCode" => BarcodeType::QRCode,
@@ -253,8 +253,8 @@ pub async fn validate_barcode(
 ) -> ApiResult<Json<ValidationResponse>> {
     let barcode_type = match btype.as_str() {
         "EAN8" => BarcodeType::EAN8,
-        "UPC_A" => BarcodeType::UPC_A,
-        "UPC_E" => BarcodeType::UPC_E,
+        "UPC_A" => BarcodeType::UpcA,
+        "UPC_E" => BarcodeType::UpcE,
         "Code128" => BarcodeType::Code128,
         "Code39" => BarcodeType::Code39,
         "QRCode" => BarcodeType::QRCode,

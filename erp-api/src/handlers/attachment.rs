@@ -32,7 +32,7 @@ fn validate_entity_type(entity_type: &str) -> Result<(), erp_core::Error> {
         return Err(erp_core::Error::validation("Invalid entity_type: path traversal detected"));
     }
     if !ALLOWED_ENTITY_TYPES.contains(&entity_type) {
-        return Err(erp_core::Error::validation(&format!(
+        return Err(erp_core::Error::validation(format!(
             "Invalid entity_type: '{}'. Allowed types: {}",
             entity_type,
             ALLOWED_ENTITY_TYPES.join(", ")
@@ -108,17 +108,18 @@ pub async fn upload_attachment(
     validate_entity_type(&query.entity_type)?;
     validate_entity_id(&query.entity_id)?;
     
+    #[allow(clippy::never_loop)]
     while let Some(field) = multipart.next_field().await.map_err(|e| {
-        erp_core::Error::validation(&format!("Failed to read multipart: {}", e))
+        erp_core::Error::validation(format!("Failed to read multipart: {}", e))
     })? {
         let original_filename = sanitize_filename(field.file_name().unwrap_or("unknown"));
         let mime_type = field.content_type().unwrap_or("application/octet-stream").to_string();
         let data = field.bytes().await.map_err(|e| {
-            erp_core::Error::validation(&format!("Failed to read file data: {}", e))
+            erp_core::Error::validation(format!("Failed to read file data: {}", e))
         })?;
         
         if data.len() > MAX_FILE_SIZE {
-            return Err(erp_core::Error::validation(&format!(
+            return Err(erp_core::Error::validation(format!(
                 "File too large. Maximum size is {} bytes",
                 MAX_FILE_SIZE
             )).into());
@@ -128,7 +129,7 @@ pub async fn upload_attachment(
         
         let upload_dir = std::path::PathBuf::from("uploads").join(&query.entity_type);
         std::fs::create_dir_all(&upload_dir).map_err(|e| {
-            erp_core::Error::validation(&format!("Failed to create upload directory: {}", e))
+            erp_core::Error::validation(format!("Failed to create upload directory: {}", e))
         })?;
         
         let attachment = Attachment::new(
@@ -142,7 +143,7 @@ pub async fn upload_attachment(
         
         let file_path = std::path::PathBuf::from(&attachment.file_path);
         std::fs::write(&file_path, &data).map_err(|e| {
-            erp_core::Error::validation(&format!("Failed to write file: {}", e))
+            erp_core::Error::validation(format!("Failed to write file: {}", e))
         })?;
         
         let created = AttachmentService::create(&state.pool, attachment).await?;

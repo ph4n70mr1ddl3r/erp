@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct ReturnService { repo: SqliteReturnRepository }
+impl Default for ReturnService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReturnService {
     pub fn new() -> Self { Self { repo: SqliteReturnRepository } }
     
@@ -105,6 +111,12 @@ impl ReturnService {
 }
 
 pub struct CreditMemoService { repo: SqliteCreditMemoRepository }
+impl Default for CreditMemoService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CreditMemoService {
     pub fn new() -> Self { Self { repo: SqliteCreditMemoRepository } }
     
@@ -207,6 +219,12 @@ impl CreditMemoService {
 }
 
 pub struct RefundService;
+impl Default for RefundService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RefundService {
     pub fn new() -> Self { Self }
     
@@ -359,6 +377,12 @@ impl From<RefundRow> for Refund {
 }
 
 pub struct ReturnPolicyService;
+impl Default for ReturnPolicyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReturnPolicyService {
     pub fn new() -> Self { Self }
     

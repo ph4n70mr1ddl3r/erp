@@ -11,6 +11,12 @@ pub struct EmailTemplateService {
     template_repo: SqliteEmailTemplateRepository,
 }
 
+impl Default for EmailTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmailTemplateService {
     pub fn new() -> Self {
         Self {
@@ -98,6 +104,12 @@ pub struct EmailCampaignService {
     campaign_repo: SqliteEmailCampaignRepository,
     template_repo: SqliteEmailTemplateRepository,
     queue_repo: SqliteEmailQueueRepository,
+}
+
+impl Default for EmailCampaignService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EmailCampaignService {
@@ -294,6 +306,12 @@ pub struct CampaignStats {
 }
 
 pub struct EmailListService;
+
+impl Default for EmailListService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl EmailListService {
     pub fn new() -> Self {

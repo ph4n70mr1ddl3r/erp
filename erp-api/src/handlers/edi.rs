@@ -1,26 +1,16 @@
 use axum::{
-    extract::{Path, Query, State},
+    extract::{State, Query},
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::error::ApiResult;
 use crate::db::AppState;
+use crate::error::ApiResult;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
-    page: Option<i32>,
-    page_size: Option<i32>,
     partner_type: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct PaginatedResponse<T> {
-    items: Vec<T>,
-    total: i64,
-    page: i32,
-    page_size: i32,
 }
 
 pub async fn list_partners(

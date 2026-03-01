@@ -144,7 +144,7 @@ impl GatewayService {
     }
 
     pub async fn process_payment(pool: &SqlitePool, req: ProcessPaymentRequest) -> Result<Payment> {
-        let gateway = GatewayRepository::list_active(pool).await?
+        let _gateway = GatewayRepository::list_active(pool).await?
             .into_iter().find(|g| g.id == req.gateway_id)
             .ok_or_else(|| anyhow::anyhow!("Gateway not found"))?;
         

@@ -1,7 +1,7 @@
 use axum::{
     extract::{Query, State},
     body::Body,
-    http::{header, Response, StatusCode},
+    http::{header, Response},
 };
 use crate::db::AppState;
 use crate::error::ApiResult;
@@ -38,7 +38,7 @@ async fn export_products(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<Str
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e))?;
+    .map_err(erp_core::Error::Database)?;
     
     let mut csv = String::from("id,sku,name,unit_of_measure,status\n");
     for (id, sku, name, uom, status) in rows {
@@ -53,7 +53,7 @@ async fn export_customers(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<St
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e))?;
+    .map_err(erp_core::Error::Database)?;
     
     let mut csv = String::from("id,code,name,email,status\n");
     for (id, code, name, email, status) in rows {
@@ -68,7 +68,7 @@ async fn export_vendors(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<Stri
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e))?;
+    .map_err(erp_core::Error::Database)?;
     
     let mut csv = String::from("id,code,name,email,status\n");
     for (id, code, name, email, status) in rows {
@@ -83,7 +83,7 @@ async fn export_accounts(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<Str
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e))?;
+    .map_err(erp_core::Error::Database)?;
     
     let mut csv = String::from("id,code,name,account_type,status\n");
     for (id, code, name, account_type, status) in rows {
@@ -98,7 +98,7 @@ async fn export_employees(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<St
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e))?;
+    .map_err(erp_core::Error::Database)?;
     
     let mut csv = String::from("id,employee_number,first_name,last_name,status\n");
     for (id, emp_num, first, last, status) in rows {
@@ -121,13 +121,13 @@ const MAX_FIELD_LENGTH: usize = 500;
 
 fn validate_csv_field(value: &str, field_name: &str) -> Result<(), erp_core::Error> {
     if value.len() > MAX_FIELD_LENGTH {
-        return Err(erp_core::Error::validation(&format!(
+        return Err(erp_core::Error::validation(format!(
             "Field '{}' exceeds maximum length of {} characters",
             field_name, MAX_FIELD_LENGTH
         )));
     }
     if value.contains('\0') {
-        return Err(erp_core::Error::validation(&format!(
+        return Err(erp_core::Error::validation(format!(
             "Field '{}' contains null bytes",
             field_name
         )));
@@ -201,7 +201,7 @@ pub async fn import_csv(
     body: String,
 ) -> ApiResult<axum::Json<serde_json::Value>> {
     if body.len() > MAX_CSV_SIZE {
-        return Err(erp_core::Error::validation(&format!(
+        return Err(erp_core::Error::validation(format!(
             "CSV file exceeds maximum size of {} bytes",
             MAX_CSV_SIZE
         )).into());
@@ -213,7 +213,7 @@ pub async fn import_csv(
     }
     
     if lines.len() > MAX_CSV_ROWS {
-        return Err(erp_core::Error::validation(&format!(
+        return Err(erp_core::Error::validation(format!(
             "CSV exceeds maximum of {} rows",
             MAX_CSV_ROWS
         )).into());

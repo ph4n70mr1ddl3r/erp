@@ -1,10 +1,9 @@
 use axum::{
     extract::State,
-    routing::{get, post, put, delete},
+    routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
 use uuid::Uuid;
 use crate::db::AppState;
 

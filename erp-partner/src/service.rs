@@ -9,7 +9,7 @@ pub struct PartnerService { repo: SqlitePartnerRepository }
 impl PartnerService {
     pub fn new(pool: SqlitePool) -> Self { Self { repo: SqlitePartnerRepository::new(pool) } }
 
-    pub async fn create_partner(&self, pool: &SqlitePool, req: CreatePartnerRequest) -> Result<Partner> {
+    pub async fn create_partner(&self, _pool: &SqlitePool, req: CreatePartnerRequest) -> Result<Partner> {
         let partner = Partner {
             base: BaseEntity::new(),
             partner_number: format!("PTR-{}", Uuid::new_v4()),
@@ -52,7 +52,7 @@ impl PartnerService {
         self.repo.create_partner(&partner).await
     }
 
-    pub async fn create_deal(&self, pool: &SqlitePool, req: CreateDealRequest) -> Result<PartnerDeal> {
+    pub async fn create_deal(&self, _pool: &SqlitePool, req: CreateDealRequest) -> Result<PartnerDeal> {
         let deal = PartnerDeal {
             base: BaseEntity::new(),
             deal_number: format!("DEAL-{}", Uuid::new_v4()),
@@ -82,7 +82,7 @@ impl PartnerService {
         self.repo.create_deal(&deal).await
     }
 
-    pub async fn register_deal(&self, pool: &SqlitePool, req: RegisterDealRequest) -> Result<PartnerDealRegistration> {
+    pub async fn register_deal(&self, _pool: &SqlitePool, req: RegisterDealRequest) -> Result<PartnerDealRegistration> {
         let reg = PartnerDealRegistration {
             base: BaseEntity::new(),
             registration_number: format!("REG-{}", Uuid::new_v4()),
@@ -105,7 +105,7 @@ impl PartnerService {
         self.repo.create_deal_registration(&reg).await
     }
 
-    pub async fn calculate_commission(&self, pool: &SqlitePool, partner_id: Uuid, deal_id: Uuid, revenue: i64, rate: f64) -> Result<PartnerCommission> {
+    pub async fn calculate_commission(&self, _pool: &SqlitePool, partner_id: Uuid, deal_id: Uuid, revenue: i64, rate: f64) -> Result<PartnerCommission> {
         let commission = PartnerCommission {
             base: BaseEntity::new(),
             commission_number: format!("COMM-{}", Uuid::new_v4()),

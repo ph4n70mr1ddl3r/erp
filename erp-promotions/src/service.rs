@@ -8,6 +8,12 @@ use crate::repository::*;
 
 pub struct PromotionService;
 
+impl Default for PromotionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PromotionService {
     pub fn new() -> Self {
         Self
@@ -34,7 +40,7 @@ impl PromotionService {
             return Err(Error::Conflict(format!("Promotion code '{}' already exists", req.code)));
         }
 
-        let now = Utc::now();
+        let _now = Utc::now();
         let promotion = Promotion {
             base: BaseEntity::new(),
             code: req.code,
@@ -255,6 +261,12 @@ pub struct UpdatePromotionRequest {
 }
 
 pub struct CouponService;
+
+impl Default for CouponService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl CouponService {
     pub fn new() -> Self {
@@ -553,6 +565,12 @@ pub struct GenerateCouponBatchRequest {
 }
 
 pub struct PromotionReportingService;
+
+impl Default for PromotionReportingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl PromotionReportingService {
     pub fn new() -> Self { Self }

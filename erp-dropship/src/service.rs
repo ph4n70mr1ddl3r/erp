@@ -56,8 +56,7 @@ impl DropShipOrderService {
         
         let order_lines: Vec<DropShipOrderLine> = lines
             .into_iter()
-            .enumerate()
-            .map(|(_i, l)| DropShipOrderLine {
+            .map(|l| DropShipOrderLine {
                 id: Uuid::new_v4(),
                 drop_ship_order_id: order_id,
                 sales_order_line_id: l.sales_order_line_id,

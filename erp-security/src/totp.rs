@@ -131,6 +131,7 @@ mod base32 {
         }
 
         if padding {
+            #[allow(clippy::manual_is_multiple_of)]
             while result.len() % 8 != 0 {
                 result.push('=');
             }

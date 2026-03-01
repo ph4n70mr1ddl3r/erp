@@ -2,7 +2,7 @@ use axum::{
     extract::State,
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use crate::db::AppState;
 use crate::error::ApiResult;

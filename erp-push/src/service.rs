@@ -6,6 +6,12 @@ use erp_core::Result;
 
 pub struct PushService;
 
+impl Default for PushService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PushService {
     pub fn new() -> Self { Self }
 
@@ -57,31 +63,53 @@ impl PushService {
             updated_at: now,
         })
     }
+}
 
+#[derive(sqlx::FromRow)]
+struct DeviceRow {
+    id: String,
+    user_id: String,
+    device_token: String,
+    platform: String,
+    device_name: Option<String>,
+    device_model: Option<String>,
+    os_version: Option<String>,
+    app_version: Option<String>,
+    language: Option<String>,
+    timezone: Option<String>,
+    is_active: bool,
+    last_used_at: Option<String>,
+    push_enabled: bool,
+    badge_count: i32,
+    created_at: String,
+    updated_at: String,
+}
+
+impl PushService {
     pub async fn get_user_devices(&self, pool: &SqlitePool, user_id: Uuid) -> Result<Vec<Device>> {
-        let rows: Vec<(String, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, bool, Option<String>, bool, i32, String, String)> = 
+        let rows: Vec<DeviceRow> = 
             sqlx::query_as("SELECT id, user_id, device_token, platform, device_name, device_model, os_version, app_version, language, timezone, is_active, last_used_at, push_enabled, badge_count, created_at, updated_at FROM push_devices WHERE user_id = ? AND is_active = 1")
                 .bind(user_id.to_string())
                 .fetch_all(pool)
                 .await?;
 
         Ok(rows.into_iter().map(|r| Device {
-            id: r.0.parse().unwrap_or_default(),
-            user_id: r.1.parse().unwrap_or_default(),
-            device_token: r.2,
-            platform: r.3,
-            device_name: r.4,
-            device_model: r.5,
-            os_version: r.6,
-            app_version: r.7,
-            language: r.8,
-            timezone: r.9,
-            is_active: r.10,
-            last_used_at: r.11.and_then(|s| s.parse().ok()),
-            push_enabled: r.12,
-            badge_count: r.13,
-            created_at: r.14.parse().unwrap_or_default(),
-            updated_at: r.15.parse().unwrap_or_default(),
+            id: r.id.parse().unwrap_or_default(),
+            user_id: r.user_id.parse().unwrap_or_default(),
+            device_token: r.device_token,
+            platform: r.platform,
+            device_name: r.device_name,
+            device_model: r.device_model,
+            os_version: r.os_version,
+            app_version: r.app_version,
+            language: r.language,
+            timezone: r.timezone,
+            is_active: r.is_active,
+            last_used_at: r.last_used_at.and_then(|s| s.parse().ok()),
+            push_enabled: r.push_enabled,
+            badge_count: r.badge_count,
+            created_at: r.created_at.parse().unwrap_or_default(),
+            updated_at: r.updated_at.parse().unwrap_or_default(),
         }).collect())
     }
 

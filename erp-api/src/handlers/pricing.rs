@@ -8,7 +8,7 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::BaseEntity;
 use erp_pricing::{
-    PricingService, Discount, Promotion, Coupon,
+    PricingService, Discount, Promotion,
     DiscountType, PromotionType, PromotionStatus,
 };
 

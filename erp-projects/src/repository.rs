@@ -18,15 +18,15 @@ pub struct SqliteProjectRepository;
 
 #[async_trait]
 impl ProjectRepository for SqliteProjectRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Project> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<Project> {
         Err(Error::not_found("Project", &id.to_string()))
     }
 
-    async fn find_by_number(&self, pool: &SqlitePool, number: &str) -> Result<Project> {
+    async fn find_by_number(&self, _pool: &SqlitePool, number: &str) -> Result<Project> {
         Err(Error::not_found("Project", number))
     }
 
-    async fn find_all(&self, pool: &SqlitePool, _pagination: Pagination) -> Result<Paginated<Project>> {
+    async fn find_all(&self, _pool: &SqlitePool, _pagination: Pagination) -> Result<Paginated<Project>> {
         Ok(Paginated::new(vec![], 0, _pagination))
     }
 
@@ -38,7 +38,7 @@ impl ProjectRepository for SqliteProjectRepository {
         Ok(project)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("Project", &id.to_string()))
     }
 }
@@ -56,7 +56,7 @@ pub struct SqliteProjectTaskRepository;
 
 #[async_trait]
 impl ProjectTaskRepository for SqliteProjectTaskRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectTask> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectTask> {
         Err(Error::not_found("ProjectTask", &id.to_string()))
     }
 
@@ -72,7 +72,7 @@ impl ProjectTaskRepository for SqliteProjectTaskRepository {
         Ok(task)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectTask", &id.to_string()))
     }
 }
@@ -90,7 +90,7 @@ pub struct SqliteProjectMilestoneRepository;
 
 #[async_trait]
 impl ProjectMilestoneRepository for SqliteProjectMilestoneRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectMilestone> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectMilestone> {
         Err(Error::not_found("ProjectMilestone", &id.to_string()))
     }
 
@@ -106,7 +106,7 @@ impl ProjectMilestoneRepository for SqliteProjectMilestoneRepository {
         Ok(milestone)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectMilestone", &id.to_string()))
     }
 }
@@ -124,7 +124,7 @@ pub struct SqliteProjectExpenseRepository;
 
 #[async_trait]
 impl ProjectExpenseRepository for SqliteProjectExpenseRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectExpense> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectExpense> {
         Err(Error::not_found("ProjectExpense", &id.to_string()))
     }
 
@@ -140,7 +140,7 @@ impl ProjectExpenseRepository for SqliteProjectExpenseRepository {
         Ok(expense)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectExpense", &id.to_string()))
     }
 }
@@ -160,11 +160,11 @@ pub struct SqliteTimesheetRepository;
 
 #[async_trait]
 impl TimesheetRepository for SqliteTimesheetRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Timesheet> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<Timesheet> {
         Err(Error::not_found("Timesheet", &id.to_string()))
     }
 
-    async fn find_by_number(&self, pool: &SqlitePool, number: &str) -> Result<Timesheet> {
+    async fn find_by_number(&self, _pool: &SqlitePool, number: &str) -> Result<Timesheet> {
         Err(Error::not_found("Timesheet", number))
     }
 
@@ -184,7 +184,7 @@ impl TimesheetRepository for SqliteTimesheetRepository {
         Ok(timesheet)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("Timesheet", &id.to_string()))
     }
 }
@@ -202,7 +202,7 @@ pub struct SqliteTimesheetEntryRepository;
 
 #[async_trait]
 impl TimesheetEntryRepository for SqliteTimesheetEntryRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<TimesheetEntry> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<TimesheetEntry> {
         Err(Error::not_found("TimesheetEntry", &id.to_string()))
     }
 
@@ -218,7 +218,7 @@ impl TimesheetEntryRepository for SqliteTimesheetEntryRepository {
         Ok(entry)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("TimesheetEntry", &id.to_string()))
     }
 }
@@ -237,11 +237,11 @@ pub struct SqliteProjectBillingRepository;
 
 #[async_trait]
 impl ProjectBillingRepository for SqliteProjectBillingRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectBilling> {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectBilling> {
         Err(Error::not_found("ProjectBilling", &id.to_string()))
     }
 
-    async fn find_by_number(&self, pool: &SqlitePool, number: &str) -> Result<ProjectBilling> {
+    async fn find_by_number(&self, _pool: &SqlitePool, number: &str) -> Result<ProjectBilling> {
         Err(Error::not_found("ProjectBilling", number))
     }
 
@@ -257,7 +257,7 @@ impl ProjectBillingRepository for SqliteProjectBillingRepository {
         Ok(billing)
     }
 
-    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectBilling", &id.to_string()))
     }
 }

@@ -11,6 +11,12 @@ pub struct ITAssetService {
     assignment_repo: SqliteAssetAssignmentRepository,
 }
 
+impl Default for ITAssetService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ITAssetService {
     pub fn new() -> Self {
         Self { repo: SqliteITAssetRepository, assignment_repo: SqliteAssetAssignmentRepository }
@@ -132,6 +138,12 @@ impl ITAssetService {
 
 pub struct SoftwareLicenseService {
     repo: SqliteSoftwareLicenseRepository,
+}
+
+impl Default for SoftwareLicenseService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SoftwareLicenseService {

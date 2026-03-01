@@ -34,7 +34,7 @@ impl BundleService {
     }
 
     pub async fn create_bundle(&self, pool: &SqlitePool, req: CreateBundleRequest) -> Result<ProductBundle> {
-        if let Some(_) = self.repo.find_by_code(pool, &req.bundle_code).await? {
+        if self.repo.find_by_code(pool, &req.bundle_code).await?.is_some() {
             return Err(Error::DuplicateError(format!("Bundle with code {} already exists", req.bundle_code)));
         }
 

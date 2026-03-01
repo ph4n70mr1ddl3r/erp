@@ -8,9 +8,7 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::BaseEntity;
 use erp_config::{
-    ConfigService, SystemConfig, CompanySetting, NumberSequence, EmailConfig,
-    StorageConfig, PaymentGateway, ShippingProvider, Localization, AuditSetting,
-    IntegrationConfig, ConfigValueType, StorageType,
+    ConfigService, CompanySetting, AuditSetting,
 };
 
 #[derive(Deserialize)]

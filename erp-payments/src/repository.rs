@@ -65,7 +65,7 @@ impl StripeRepository {
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(|r| Self::row_to_payment_intent(&r)).collect())
+        Ok(rows.iter().map(Self::row_to_payment_intent).collect())
     }
     
     fn row_to_payment_intent(r: &sqlx::sqlite::SqliteRow) -> StripePaymentIntent {
@@ -226,7 +226,7 @@ impl PaymentRepository {
         )
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| Self::row_to_payment(&r)).collect())
+        Ok(rows.iter().map(Self::row_to_payment).collect())
     }
 
     fn row_to_payment(r: &sqlx::sqlite::SqliteRow) -> Payment {

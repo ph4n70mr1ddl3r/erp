@@ -15,7 +15,7 @@ impl BankService {
         Self { repo: SqliteBankRepository::new(pool) }
     }
 
-    pub async fn create_connection(&self, pool: &SqlitePool, req: CreateConnectionRequest) -> Result<BankConnection> {
+    pub async fn create_connection(&self, _pool: &SqlitePool, req: CreateConnectionRequest) -> Result<BankConnection> {
         let conn = BankConnection {
             base: BaseEntity::new(),
             connection_number: format!("BCN-{}", Uuid::new_v4()),
@@ -40,7 +40,7 @@ impl BankService {
         self.repo.create_connection(&conn).await
     }
 
-    pub async fn create_bank_account(&self, pool: &SqlitePool, req: CreateBankAccountRequest) -> Result<BankAccount> {
+    pub async fn create_bank_account(&self, _pool: &SqlitePool, req: CreateBankAccountRequest) -> Result<BankAccount> {
         let masked = mask_account_number(&req.account_number);
         let account = BankAccount {
             base: BaseEntity::new(),
@@ -64,7 +64,7 @@ impl BankService {
         self.repo.create_bank_account(&account).await
     }
 
-    pub async fn import_statement(&self, pool: &SqlitePool, req: ImportStatementRequest) -> Result<BankStatement> {
+    pub async fn import_statement(&self, _pool: &SqlitePool, req: ImportStatementRequest) -> Result<BankStatement> {
         let stmt = BankStatement {
             base: BaseEntity::new(),
             statement_number: format!("STMT-{}", Uuid::new_v4()),
@@ -87,7 +87,7 @@ impl BankService {
         self.repo.create_statement(&stmt).await
     }
 
-    pub async fn create_transaction(&self, pool: &SqlitePool, req: CreateTransactionRequest) -> Result<BankTransaction> {
+    pub async fn create_transaction(&self, _pool: &SqlitePool, req: CreateTransactionRequest) -> Result<BankTransaction> {
         let tx = BankTransaction {
             base: BaseEntity::new(),
             statement_id: req.statement_id,
@@ -118,7 +118,7 @@ impl BankService {
         self.repo.create_transaction(&tx).await
     }
 
-    pub async fn reconcile(&self, pool: &SqlitePool, account_id: Uuid, period_start: NaiveDate, period_end: NaiveDate) -> Result<ReconciliationSession> {
+    pub async fn reconcile(&self, _pool: &SqlitePool, account_id: Uuid, period_start: NaiveDate, period_end: NaiveDate) -> Result<ReconciliationSession> {
         let session = ReconciliationSession {
             base: BaseEntity::new(),
             session_number: format!("REC-{}", Uuid::new_v4()),
@@ -144,7 +144,7 @@ impl BankService {
         self.repo.create_reconciliation_session(&session).await
     }
 
-    pub async fn create_match(&self, pool: &SqlitePool, req: CreateMatchRequest) -> Result<ReconciliationMatch> {
+    pub async fn create_match(&self, _pool: &SqlitePool, req: CreateMatchRequest) -> Result<ReconciliationMatch> {
         let match_rec = ReconciliationMatch {
             id: Uuid::new_v4(),
             session_id: req.session_id,
@@ -167,7 +167,7 @@ impl BankService {
         self.repo.create_match(&match_rec).await
     }
 
-    pub async fn generate_payment_file(&self, pool: &SqlitePool, req: GeneratePaymentFileRequest) -> Result<PaymentFileGeneration> {
+    pub async fn generate_payment_file(&self, _pool: &SqlitePool, req: GeneratePaymentFileRequest) -> Result<PaymentFileGeneration> {
         let file = PaymentFileGeneration {
             base: BaseEntity::new(),
             file_number: format!("PAY-{}", Uuid::new_v4()),
@@ -189,7 +189,7 @@ impl BankService {
         self.repo.create_payment_file(&file).await
     }
 
-    pub async fn parse_bai2(&self, pool: &SqlitePool, content: &str) -> Result<Vec<BankTransaction>> {
+    pub async fn parse_bai2(&self, _pool: &SqlitePool, content: &str) -> Result<Vec<BankTransaction>> {
         let mut transactions = Vec::new();
         for line in content.lines() {
             if line.starts_with("16") {

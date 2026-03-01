@@ -1,6 +1,5 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use erp_core::BaseEntity;
-use sha2::{Sha256, Digest};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -13,6 +12,12 @@ pub struct SigningService {
     field_repo: SqliteSignatureFieldRepository,
 }
 
+impl Default for SigningService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SigningService {
     pub fn new() -> Self {
         Self {
@@ -22,6 +27,7 @@ impl SigningService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_document(
         &self,
         pool: &SqlitePool,
@@ -79,6 +85,7 @@ impl SigningService {
         self.document_repo.list(pool, sender_id, status).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_signer(
         &self,
         pool: &SqlitePool,
@@ -121,6 +128,7 @@ impl SigningService {
         self.signer_repo.create(pool, &signer).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_signature_field(
         &self,
         pool: &SqlitePool,
@@ -273,11 +281,18 @@ impl SigningService {
 
 pub struct SigningTemplateService;
 
+impl Default for SigningTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SigningTemplateService {
     pub fn new() -> Self {
         Self
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,

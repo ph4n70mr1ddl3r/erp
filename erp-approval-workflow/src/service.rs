@@ -12,6 +12,12 @@ pub struct ApprovalWorkflowService {
     request_repo: SqliteApprovalRequestRepository,
 }
 
+impl Default for ApprovalWorkflowService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApprovalWorkflowService {
     pub fn new() -> Self {
         Self {
@@ -123,6 +129,12 @@ pub struct ApprovalRequestService {
     request_repo: SqliteApprovalRequestRepository,
 }
 
+impl Default for ApprovalRequestService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ApprovalRequestService {
     pub fn new() -> Self {
         Self {
@@ -139,7 +151,7 @@ impl ApprovalRequestService {
         let workflows = self.workflow_repo.find_by_document_type(pool, &req.document_type).await?;
         
         let workflow = workflows.into_iter()
-            .filter(|w| {
+            .find(|w| {
                 let amount_ok = match (w.min_amount, w.max_amount) {
                     (None, None) => true,
                     (Some(min), None) => req.amount >= min,
@@ -148,7 +160,6 @@ impl ApprovalRequestService {
                 };
                 amount_ok && w.status == ApprovalWorkflowStatus::Active
             })
-            .next()
             .ok_or_else(|| Error::business_rule("No applicable approval workflow found"))?;
 
         if let Some(auto_approve) = workflow.auto_approve_below {
@@ -320,7 +331,7 @@ impl ApprovalRequestService {
         to_approver_id: Uuid,
         reason: Option<String>,
     ) -> Result<ApprovalRequest> {
-        let mut request = self.request_repo.find_by_id(pool, request_id).await?;
+        let request = self.request_repo.find_by_id(pool, request_id).await?;
 
         if request.status != ApprovalRequestStatus::Pending {
             return Err(Error::business_rule("Request is not pending approval"));

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_assistant::{AssistantService, CreateConversationRequest, SendMessageRequest, MessageFeedbackRequest, AssistantSkill, QuickAction, IntentDefinition};
+use erp_assistant::{AssistantService, CreateConversationRequest, SendMessageRequest, MessageFeedbackRequest};
 
 pub fn routes() -> axum::Router<AppState> {
     axum::Router::new()

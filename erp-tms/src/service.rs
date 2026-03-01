@@ -199,7 +199,7 @@ impl<R: TMSRepository> TMSService<R> {
             total_distance += dist * 69.0;
             
             let travel_minutes = (dist * 69.0 * 1.5) as i32;
-            arrival_time = arrival_time + chrono::Duration::minutes(travel_minutes as i64);
+            arrival_time += chrono::Duration::minutes(travel_minutes as i64);
             let departure_time = arrival_time + chrono::Duration::minutes(stop.duration_minutes as i64);
 
             optimized.push(OptimizedStop {

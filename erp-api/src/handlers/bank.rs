@@ -3,7 +3,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use uuid::Uuid;
 use crate::db::AppState;
 

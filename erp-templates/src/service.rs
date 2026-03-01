@@ -13,6 +13,12 @@ pub struct TemplateService {
     document_repo: SqliteGeneratedDocumentRepository,
 }
 
+impl Default for TemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TemplateService {
     pub fn new() -> Self {
         Self {
@@ -185,6 +191,12 @@ fn render_string(template: &str, variables: &serde_json::Value) -> anyhow::Resul
 
 pub struct EmailTemplateService {
     email_template_repo: SqliteEmailTemplateRepository,
+}
+
+impl Default for EmailTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl EmailTemplateService {

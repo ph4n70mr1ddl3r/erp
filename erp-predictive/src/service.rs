@@ -10,7 +10,7 @@ pub struct PredictiveService { repo: SqlitePredictiveRepository }
 impl PredictiveService {
     pub fn new(pool: SqlitePool) -> Self { Self { repo: SqlitePredictiveRepository::new(pool) } }
 
-    pub async fn register_sensor(&self, pool: &SqlitePool, req: RegisterSensorRequest) -> Result<AssetSensor> {
+    pub async fn register_sensor(&self, _pool: &SqlitePool, req: RegisterSensorRequest) -> Result<AssetSensor> {
         let sensor = AssetSensor {
             base: BaseEntity::new(),
             sensor_number: format!("SNS-{}", Uuid::new_v4()),
@@ -38,7 +38,7 @@ impl PredictiveService {
         self.repo.create_sensor(&sensor).await
     }
 
-    pub async fn record_reading(&self, pool: &SqlitePool, sensor_id: Uuid, value: f64, unit: String) -> Result<SensorReading> {
+    pub async fn record_reading(&self, _pool: &SqlitePool, sensor_id: Uuid, value: f64, unit: String) -> Result<SensorReading> {
         let reading = SensorReading {
             id: Uuid::new_v4(),
             sensor_id,
@@ -54,7 +54,7 @@ impl PredictiveService {
         self.repo.create_reading(&reading).await
     }
 
-    pub async fn create_model(&self, pool: &SqlitePool, req: CreateModelRequest) -> Result<PredictiveModel> {
+    pub async fn create_model(&self, _pool: &SqlitePool, req: CreateModelRequest) -> Result<PredictiveModel> {
         let model = PredictiveModel {
             base: BaseEntity::new(),
             model_number: format!("MDL-{}", Uuid::new_v4()),
@@ -87,7 +87,7 @@ impl PredictiveService {
         self.repo.create_model(&model).await
     }
 
-    pub async fn calculate_health_score(&self, pool: &SqlitePool, asset_id: Uuid) -> Result<AssetHealthScore> {
+    pub async fn calculate_health_score(&self, _pool: &SqlitePool, asset_id: Uuid) -> Result<AssetHealthScore> {
         let prev = self.repo.get_latest_health_score(asset_id).await?;
         let prev_score = prev.as_ref().map(|p| p.overall_score);
         let score = AssetHealthScore {
@@ -110,7 +110,7 @@ impl PredictiveService {
         self.repo.create_health_score(&score).await
     }
 
-    pub async fn predict_failure(&self, pool: &SqlitePool, req: PredictFailureRequest) -> Result<FailurePrediction> {
+    pub async fn predict_failure(&self, _pool: &SqlitePool, req: PredictFailureRequest) -> Result<FailurePrediction> {
         let prediction = FailurePrediction {
             base: BaseEntity::new(),
             prediction_number: format!("PRD-{}", Uuid::new_v4()),
@@ -138,7 +138,7 @@ impl PredictiveService {
         self.repo.create_prediction(&prediction).await
     }
 
-    pub async fn schedule_maintenance(&self, pool: &SqlitePool, req: ScheduleMaintenanceRequest) -> Result<MaintenanceSchedule> {
+    pub async fn schedule_maintenance(&self, _pool: &SqlitePool, req: ScheduleMaintenanceRequest) -> Result<MaintenanceSchedule> {
         let schedule = MaintenanceSchedule {
             base: BaseEntity::new(),
             schedule_number: format!("MS-{}", Uuid::new_v4()),
@@ -163,7 +163,7 @@ impl PredictiveService {
         self.repo.create_schedule(&schedule).await
     }
 
-    pub async fn detect_anomaly(&self, pool: &SqlitePool, req: DetectAnomalyRequest) -> Result<AnomalyDetection> {
+    pub async fn detect_anomaly(&self, _pool: &SqlitePool, req: DetectAnomalyRequest) -> Result<AnomalyDetection> {
         let anomaly = AnomalyDetection {
             base: BaseEntity::new(),
             detection_number: format!("ANM-{}", Uuid::new_v4()),

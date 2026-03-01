@@ -1,13 +1,13 @@
 use axum::{
     extract::{Path, State},
-    routing::{delete, get, post},
+    routing::{get, post},
     Json, Router,
 };
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_keys::{KeyService, EncryptionKey, KeyType, KeyPolicy};
+use erp_keys::{KeyService, EncryptionKey, KeyType};
 
 #[derive(Serialize)]
 pub struct KeyResponse {

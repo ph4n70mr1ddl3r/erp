@@ -124,7 +124,7 @@ impl FraudService {
         Ok(alerts)
     }
     
-    fn matches_rule(&self, rule: &FraudRule, entity_type: &str, data: &serde_json::Value) -> Result<bool> {
+    fn matches_rule(&self, rule: &FraudRule, _entity_type: &str, data: &serde_json::Value) -> Result<bool> {
         let mut matches = true;
         
         for condition in &rule.conditions {
@@ -154,7 +154,7 @@ impl FraudService {
         Ok(matches)
     }
     
-    fn calculate_score(&self, rule: &FraudRule, data: &serde_json::Value) -> f64 {
+    fn calculate_score(&self, rule: &FraudRule, _data: &serde_json::Value) -> f64 {
         let mut score = 0.5;
         
         for condition in &rule.conditions {
@@ -164,7 +164,7 @@ impl FraudService {
         score.min(1.0)
     }
     
-    fn extract_risk_factors(&self, rule: &FraudRule, data: &serde_json::Value) -> Vec<RiskFactor> {
+    fn extract_risk_factors(&self, rule: &FraudRule, _data: &serde_json::Value) -> Vec<RiskFactor> {
         rule.conditions.iter().map(|c| RiskFactor {
             factor_type: c.field.clone(),
             description: format!("{} condition matched", c.field),

@@ -8,7 +8,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_fraud::{FraudService, CreateAlertRequest, ReviewAlertRequest, FraudRule, FraudCase, CaseResolution, Evidence, EvidenceType};
+use erp_fraud::{FraudService, ReviewAlertRequest, CaseResolution, Evidence, EvidenceType};
 
 #[derive(Deserialize)]
 pub struct ListAlertsQuery {

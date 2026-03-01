@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct PortalUserService { repo: SqlitePortalUserRepository }
+impl Default for PortalUserService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PortalUserService {
     pub fn new() -> Self { Self { repo: SqlitePortalUserRepository } }
     
@@ -170,6 +176,12 @@ impl PortalUserService {
 }
 
 pub struct PortalOrderService { repo: SqlitePortalOrderRepository }
+impl Default for PortalOrderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PortalOrderService {
     pub fn new() -> Self { Self { repo: SqlitePortalOrderRepository } }
     
@@ -249,6 +261,12 @@ impl PortalOrderService {
 }
 
 pub struct PortalInvoiceService;
+impl Default for PortalInvoiceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PortalInvoiceService {
     pub fn new() -> Self { Self }
     
@@ -264,6 +282,12 @@ impl PortalInvoiceService {
 }
 
 pub struct PortalPaymentService;
+impl Default for PortalPaymentService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PortalPaymentService {
     pub fn new() -> Self { Self }
     
@@ -298,6 +322,12 @@ impl PortalPaymentService {
 }
 
 pub struct PortalNotificationService;
+impl Default for PortalNotificationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PortalNotificationService {
     pub fn new() -> Self { Self }
     
@@ -319,13 +349,19 @@ impl PortalNotificationService {
         })
     }
     
-    pub async fn mark_read(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    pub async fn mark_read(&self, pool: &SqlitePool, _id: Uuid) -> Result<()> {
         let _ = pool;
         Ok(())
     }
 }
 
 pub struct SupplierPortalService;
+impl Default for SupplierPortalService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SupplierPortalService {
     pub fn new() -> Self { Self }
     

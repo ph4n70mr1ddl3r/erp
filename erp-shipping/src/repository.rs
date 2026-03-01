@@ -121,7 +121,7 @@ impl ShipmentRepository {
         )
         .bind(status)
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| Self::row_to_shipment(&r)).collect())
+        Ok(rows.iter().map(Self::row_to_shipment).collect())
     }
 
     fn row_to_shipment(r: &sqlx::sqlite::SqliteRow) -> Shipment {

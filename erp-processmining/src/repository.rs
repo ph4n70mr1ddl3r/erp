@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 use anyhow::Result;
 use crate::models::*;
@@ -49,6 +48,12 @@ pub trait ProcessMiningRepository: Send + Sync {
 }
 
 pub struct SqliteProcessMiningRepository;
+
+impl Default for SqliteProcessMiningRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SqliteProcessMiningRepository {
     pub fn new() -> Self {

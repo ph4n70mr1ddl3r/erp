@@ -14,6 +14,12 @@ pub struct JobService {
     schedule_repo: SqliteJobScheduleRepository,
 }
 
+impl Default for JobService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JobService {
     pub fn new() -> Self {
         Self {
@@ -36,7 +42,7 @@ impl JobService {
         let job = ScheduledJob {
             base: BaseEntity::new(),
             name,
-            job_type: if scheduled_at.is_some() { JobType::OneTime } else { JobType::OneTime },
+            job_type: JobType::OneTime,
             handler,
             payload,
             priority: priority.unwrap_or(JobPriority::Normal),
@@ -263,6 +269,12 @@ impl JobService {
 pub struct JobScheduleService {
     schedule_repo: SqliteJobScheduleRepository,
     job_service: JobService,
+}
+
+impl Default for JobScheduleService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl JobScheduleService {

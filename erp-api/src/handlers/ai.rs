@@ -5,10 +5,10 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use erp_core::{Pagination, Paginated};
+use erp_core::Pagination;
 use crate::db::AppState;
 use erp_ai::{AIModelService, PredictionService, AnomalyService, ForecastService, RecommendationService, CustomerInsightService};
-use erp_ai::{AIModel, ModelType, ModelStatus, PredictionRequest, AnomalyDetection, DemandForecast};
+use erp_ai::{AIModel, ModelType, ModelStatus};
 
 #[derive(Deserialize)]
 pub struct CreateModelRequest {

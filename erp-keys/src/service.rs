@@ -10,6 +10,12 @@ pub struct KeyService {
     repo: SqliteKeyRepository,
 }
 
+impl Default for KeyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KeyService {
     pub fn new() -> Self {
         Self { repo: SqliteKeyRepository }
@@ -23,17 +29,17 @@ impl KeyService {
             KeyType::Aes256Gcm | KeyType::Symmetric | KeyType::DataEncryption => {
                 let mut key_bytes = [0u8; 32];
                 rand::thread_rng().fill_bytes(&mut key_bytes);
-                ("AES-256-GCM".to_string(), Some(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &key_bytes)))
+                ("AES-256-GCM".to_string(), Some(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, key_bytes)))
             }
             KeyType::Aes256Cbc => {
                 let mut key_bytes = [0u8; 32];
                 rand::thread_rng().fill_bytes(&mut key_bytes);
-                ("AES-256-CBC".to_string(), Some(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &key_bytes)))
+                ("AES-256-CBC".to_string(), Some(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, key_bytes)))
             }
             KeyType::Hmac => {
                 let mut key_bytes = [0u8; 64];
                 rand::thread_rng().fill_bytes(&mut key_bytes);
-                ("HMAC-SHA256".to_string(), Some(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &key_bytes)))
+                ("HMAC-SHA256".to_string(), Some(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, key_bytes)))
             }
             _ => ("UNKNOWN".to_string(), None),
         };
@@ -133,7 +139,7 @@ impl KeyService {
             field_name: field_name.to_string(),
             key_id: key.base.id,
             key_version: key.key_version,
-            iv: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &iv),
+            iv: base64::Engine::encode(&base64::engine::general_purpose::STANDARD, iv),
             auth_tag: None,
             encrypted_value: encrypted,
             encryption_algorithm: key.algorithm.clone(),
@@ -185,6 +191,7 @@ impl KeyService {
         String::from_utf8(data).map_err(|e| erp_core::Error::Validation(format!("Invalid UTF-8: {}", e)))
     }
 
+    #[allow(clippy::too_many_arguments)]
     async fn log_key_usage(&self, pool: &SqlitePool, key_id: Uuid, operation: KeyOperation, entity_type: Option<&str>, entity_id: Option<&str>, success: bool, error: Option<&str>) {
         let log = KeyUsageLog {
             base: BaseEntity::new(),

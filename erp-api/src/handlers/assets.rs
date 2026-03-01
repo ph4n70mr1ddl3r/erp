@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{BaseEntity, Status, Pagination};
+use erp_core::Pagination;
 use erp_assets::{ITAsset, SoftwareLicense, ITAssetService, SoftwareLicenseService, ITAssetType, ITAssetStatus, LicenseType};
 
 #[derive(Deserialize)]
@@ -132,7 +132,7 @@ pub async fn update_asset_status(State(state): State<AppState>, Path(id): Path<U
 pub async fn asset_stats(State(state): State<AppState>) -> ApiResult<Json<serde_json::Value>> {
     let svc = ITAssetService::new();
     let stats = svc.get_stats(&state.pool).await?;
-    Ok(Json(serde_json::json!({ "by_status": stats.into_iter().map(|(s, c)| (s, c)).collect::<std::collections::HashMap<_, _>>() })))
+    Ok(Json(serde_json::json!({ "by_status": stats.into_iter().collect::<std::collections::HashMap<_, _>>() })))
 }
 
 #[derive(Deserialize)]

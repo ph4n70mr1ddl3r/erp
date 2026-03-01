@@ -57,6 +57,12 @@ pub struct BulkOperationResponse {
 
 pub struct BulkOperationsService;
 
+impl Default for BulkOperationsService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BulkOperationsService {
     pub fn new() -> Self {
         Self

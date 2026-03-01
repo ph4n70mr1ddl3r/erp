@@ -192,7 +192,7 @@ impl<R: MDMRepository> MDMService<R> {
         let primary = self.repo.get_master_entity(req.primary_entity_id).await?
             .ok_or_else(|| anyhow::anyhow!("Primary entity not found"))?;
         
-        let mut golden = GoldenRecord {
+        let golden = GoldenRecord {
             id: Uuid::new_v4(),
             entity_type: primary.entity_type.clone(),
             golden_code: format!("GR-{}", Utc::now().format("%Y%m%d%H%M%S")),
@@ -228,7 +228,7 @@ impl<R: MDMRepository> MDMService<R> {
 
     pub async fn get_quality_dashboard(&self, entity_type: &str) -> anyhow::Result<DataQualityDashboard> {
         let entities = self.repo.list_master_entities(Some(entity_type), 10000, 0).await?;
-        let violations = self.repo.list_quality_violations(None, Some("Open")).await?;
+        let _violations = self.repo.list_quality_violations(None, Some("Open")).await?;
         
         let total = entities.len() as i64;
         let with_issues = entities.iter().filter(|e| e.quality_score < 80).count() as i64;

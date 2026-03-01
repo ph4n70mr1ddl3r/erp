@@ -76,6 +76,12 @@ pub struct EmailTemplateService {
     handlebars: Handlebars<'static>,
 }
 
+impl Default for EmailTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmailTemplateService {
     pub fn new() -> Self {
         Self {
@@ -197,12 +203,12 @@ impl EmailTemplateService {
         let subject = self
             .handlebars
             .render_template(&template.subject, variables)
-            .map_err(|e| erp_core::Error::validation(&format!("Subject template error: {}", e)))?;
+            .map_err(|e| erp_core::Error::validation(format!("Subject template error: {}", e)))?;
 
         let body = self
             .handlebars
             .render_template(&template.body, variables)
-            .map_err(|e| erp_core::Error::validation(&format!("Body template error: {}", e)))?;
+            .map_err(|e| erp_core::Error::validation(format!("Body template error: {}", e)))?;
 
         Ok(RenderedEmail { subject, body })
     }
@@ -216,8 +222,8 @@ impl EmailTemplateService {
             let variables = req.variables.unwrap_or(serde_json::json!({}));
             let rendered = self.render_template(&template, &variables)?;
             (rendered.subject, rendered.body, Some(template.id))
-        } else if req.subject.is_some() && req.body.is_some() {
-            (req.subject.unwrap(), req.body.unwrap(), None)
+        } else if let (Some(s), Some(b)) = (req.subject.as_ref(), req.body.as_ref()) {
+            (s.clone(), b.clone(), None)
         } else {
             return Err(erp_core::Error::validation("Either template_name or subject/body must be provided"));
         };

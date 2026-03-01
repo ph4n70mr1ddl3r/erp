@@ -253,7 +253,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_profile(r)).collect()
+        rows.iter().map(Self::row_to_profile).collect()
     }
     
     async fn list_on_hold(&self, pool: &SqlitePool) -> Result<Vec<CustomerCreditProfile>> {
@@ -265,7 +265,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_profile(r)).collect()
+        rows.iter().map(Self::row_to_profile).collect()
     }
     
     async fn list_high_risk(&self, pool: &SqlitePool) -> Result<Vec<CustomerCreditProfile>> {
@@ -277,7 +277,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_profile(r)).collect()
+        rows.iter().map(Self::row_to_profile).collect()
     }
     
     async fn create_transaction(&self, pool: &SqlitePool, txn: &CreditTransaction) -> Result<()> {
@@ -314,7 +314,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_transaction(r)).collect()
+        rows.iter().map(Self::row_to_transaction).collect()
     }
     
     async fn create_hold(&self, pool: &SqlitePool, hold: &CreditHold) -> Result<()> {
@@ -382,7 +382,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_hold(r)).collect()
+        rows.iter().map(Self::row_to_hold).collect()
     }
     
     async fn create_limit_change(&self, pool: &SqlitePool, change: &CreditLimitChange) -> Result<()> {
@@ -416,7 +416,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_limit_change(r)).collect()
+        rows.iter().map(Self::row_to_limit_change).collect()
     }
     
     async fn create_alert(&self, pool: &SqlitePool, alert: &CreditAlert) -> Result<()> {
@@ -450,7 +450,7 @@ impl CreditRepository for SqliteCreditRepository {
         .fetch_all(pool)
         .await?;
         
-        rows.iter().map(|r| Self::row_to_alert(r)).collect()
+        rows.iter().map(Self::row_to_alert).collect()
     }
     
     async fn acknowledge_alert(&self, pool: &SqlitePool, alert_id: Uuid, user_id: Uuid) -> Result<()> {

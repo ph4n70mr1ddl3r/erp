@@ -9,6 +9,12 @@ pub struct BPMService {
     process_repo: SqliteProcessRepository,
 }
 
+impl Default for BPMService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BPMService {
     pub fn new() -> Self {
         Self { process_repo: SqliteProcessRepository }
@@ -98,9 +104,9 @@ impl BPMService {
         .bind(&instance.variables)
         .bind(instance.started_by.to_string())
         .bind(instance.started_at.to_rfc3339())
-        .bind(&instance.completed_at.map(|d| d.to_rfc3339()))
+        .bind(instance.completed_at.map(|d| d.to_rfc3339()))
         .bind(&instance.current_node_id)
-        .bind(&instance.parent_instance_id.map(|id| id.to_string()))
+        .bind(instance.parent_instance_id.map(|id| id.to_string()))
         .bind(instance.created_at.to_rfc3339())
         .bind(instance.updated_at.to_rfc3339())
         .execute(pool)
@@ -200,18 +206,18 @@ impl BPMService {
         .bind(&task.name)
         .bind(&task.task_type)
         .bind(&task.status)
-        .bind(&task.assignee_id.map(|id| id.to_string()))
+        .bind(task.assignee_id.map(|id| id.to_string()))
         .bind(&task.candidate_users)
         .bind(&task.candidate_groups)
         .bind(&task.form_key)
         .bind(&task.form_data)
         .bind(&task.variables)
         .bind(task.priority)
-        .bind(&task.due_date.map(|d| d.to_rfc3339()))
+        .bind(task.due_date.map(|d| d.to_rfc3339()))
         .bind(task.created_at.to_rfc3339())
-        .bind(&task.claimed_at.map(|d| d.to_rfc3339()))
-        .bind(&task.completed_at.map(|d| d.to_rfc3339()))
-        .bind(&task.completed_by.map(|id| id.to_string()))
+        .bind(task.claimed_at.map(|d| d.to_rfc3339()))
+        .bind(task.completed_at.map(|d| d.to_rfc3339()))
+        .bind(task.completed_by.map(|id| id.to_string()))
         .bind(&task.outcome)
         .bind(task.updated_at.to_rfc3339())
         .execute(pool)

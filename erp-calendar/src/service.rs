@@ -12,6 +12,12 @@ pub struct CalendarEventService {
     calendar_repo: SqliteCalendarRepository,
 }
 
+impl Default for CalendarEventService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CalendarEventService {
     pub fn new() -> Self {
         Self {
@@ -158,6 +164,12 @@ pub struct CalendarService {
     calendar_repo: SqliteCalendarRepository,
 }
 
+impl Default for CalendarService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CalendarService {
     pub fn new() -> Self {
         Self {
@@ -217,6 +229,12 @@ impl CalendarService {
 }
 
 pub struct EventReminderService;
+
+impl Default for EventReminderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl EventReminderService {
     pub fn new() -> Self {

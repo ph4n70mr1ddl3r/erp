@@ -8,8 +8,8 @@ use uuid::Uuid;
 pub enum BarcodeType {
     EAN13,
     EAN8,
-    UPC_A,
-    UPC_E,
+    UpcA,
+    UpcE,
     Code128,
     Code39,
     Code93,

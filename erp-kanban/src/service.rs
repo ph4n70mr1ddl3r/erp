@@ -10,6 +10,12 @@ pub struct KanbanService {
     repo: SqliteKanbanRepository,
 }
 
+impl Default for KanbanService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KanbanService {
     pub fn new() -> Self {
         Self { repo: SqliteKanbanRepository }
@@ -195,7 +201,7 @@ impl KanbanService {
             card_id: Some(req.card_id),
             action_type: KanbanActionType::CardMoved,
             actor_id: user_id,
-            description: format!("Moved card from column to new column"),
+            description: "Moved card from column to new column".to_string(),
             old_value: Some(from_column_id.to_string()),
             new_value: Some(req.to_column_id.to_string()),
             created_at: now,
@@ -296,7 +302,7 @@ impl KanbanService {
 
     pub async fn toggle_checklist_item(&self, pool: &SqlitePool, item_id: Uuid, completed: bool, user_id: Uuid) -> Result<KanbanCardChecklistItem> {
         let now = Utc::now();
-        let mut item = KanbanCardChecklistItem {
+        let item = KanbanCardChecklistItem {
             id: item_id,
             checklist_id: Uuid::nil(),
             content: String::new(),

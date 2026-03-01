@@ -4,10 +4,9 @@ use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
 use crate::handlers::auth::AuthUser;
-use erp_core::Pagination;
 use erp_finance::{CurrencyDef, ExchangeRate, BudgetWithVariance, CurrencyService, BudgetService};
 use erp_inventory::{Lot, LotService};
-use erp_hr::{LeaveTypeDef, LeaveBalance, LeaveRequestExtended, ExpenseReport, ExpenseCategory, LeaveService, ExpenseService, LeaveRequestStatus, ExpenseReportStatus};
+use erp_hr::{LeaveTypeDef, LeaveRequestExtended, ExpenseReport, ExpenseCategory, LeaveService, ExpenseService};
 
 #[derive(Debug, Deserialize)]
 pub struct ExchangeRateRequest {
@@ -492,21 +491,18 @@ pub async fn list_expense_categories(
     Ok(Json(categories.into_iter().map(ExpenseCategoryResponse::from).collect()))
 }
 
-use erp_finance::{FixedAsset, AssetDepreciation, FixedAssetService, DepreciationMethod};
+use erp_finance::{FixedAsset, FixedAssetService, DepreciationMethod};
 use erp_inventory::{
-    QualityInspection, InspectionType, InspectionStatus, InspectionResult, QualityInspectionService,
-    NonConformanceReport, NCRSeverity, NCRStatus, NonConformanceService,
-    DemandForecast, ForecastMethod, DemandForecastService,
-    SafetyStock, SafetyStockService,
-    ReplenishmentOrder, ReplenishmentType, ReplenishmentOrderService,
+    QualityInspection, InspectionType, InspectionResult, QualityInspectionService,
+    NonConformanceReport, NCRSeverity, NonConformanceService,
 };
 use erp_sales::{
-    Lead, LeadStatus, LeadService,
-    Opportunity, OpportunityStage, OpportunityStatus, ActivityType, OpportunityService,
+    Lead, LeadService,
+    Opportunity, OpportunityStage, OpportunityService,
 };
-use erp_manufacturing::{ProductionSchedule, ScheduleStatus, ProductionScheduleService};
-use erp_purchasing::{SupplierScorecard, VendorPerformance, SupplierScorecardService};
-use erp_core::{CustomFieldService, CustomFieldDefinition, CustomFieldType, CustomFieldValue};
+use erp_manufacturing::{ProductionSchedule, ProductionScheduleService};
+use erp_purchasing::{SupplierScorecard, SupplierScorecardService};
+use erp_core::{CustomFieldService, CustomFieldDefinition, CustomFieldType};
 
 #[derive(Debug, Serialize)]
 pub struct FixedAssetResponse {

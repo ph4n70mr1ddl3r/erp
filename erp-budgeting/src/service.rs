@@ -36,7 +36,7 @@ impl BudgetService {
         if start_date >= end_date {
             return Err(Error::validation("Start date must be before end date".to_string()));
         }
-        if fiscal_year < 2000 || fiscal_year > 2100 {
+        if !(2000..=2100).contains(&fiscal_year) {
             return Err(Error::validation("Invalid fiscal year".to_string()));
         }
         let budget = Budget {

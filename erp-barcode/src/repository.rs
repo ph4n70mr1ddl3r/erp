@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
-use erp_core::{Error, Result, Pagination, Paginated, BaseEntity};
+use erp_core::{Error, Result, BaseEntity};
 use crate::models::*;
 use uuid::Uuid;
 
@@ -131,8 +131,8 @@ impl From<BarcodeRow> for Barcode {
             barcode: r.barcode,
             barcode_type: match r.barcode_type.as_str() {
                 "EAN8" => BarcodeType::EAN8,
-                "UPC_A" => BarcodeType::UPC_A,
-                "UPC_E" => BarcodeType::UPC_E,
+                "UPC_A" => BarcodeType::UpcA,
+                "UPC_E" => BarcodeType::UpcE,
                 "Code128" => BarcodeType::Code128,
                 "Code39" => BarcodeType::Code39,
                 "Code93" => BarcodeType::Code93,
@@ -451,8 +451,8 @@ impl From<ScanEventRow> for ScanEvent {
             barcode: r.barcode,
             barcode_type: match r.barcode_type.as_str() {
                 "EAN8" => BarcodeType::EAN8,
-                "UPC_A" => BarcodeType::UPC_A,
-                "UPC_E" => BarcodeType::UPC_E,
+                "UPC_A" => BarcodeType::UpcA,
+                "UPC_E" => BarcodeType::UpcE,
                 "Code128" => BarcodeType::Code128,
                 "Code39" => BarcodeType::Code39,
                 "Code93" => BarcodeType::Code93,

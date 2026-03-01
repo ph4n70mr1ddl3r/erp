@@ -9,6 +9,12 @@ pub struct CpqService {
     repo: SqliteCpqRepository,
 }
 
+impl Default for CpqService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CpqService {
     pub fn new() -> Self {
         Self {
@@ -16,20 +22,20 @@ impl CpqService {
         }
     }
     
-    pub async fn create_template(&self, pool: &SqlitePool, template: ConfigurationTemplate) -> Result<ConfigurationTemplate> {
+    pub async fn create_template(&self, _pool: &SqlitePool, template: ConfigurationTemplate) -> Result<ConfigurationTemplate> {
         self.repo.create_template(&template).await?;
         Ok(template)
     }
     
-    pub async fn get_template(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<ConfigurationTemplate>> {
+    pub async fn get_template(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<ConfigurationTemplate>> {
         self.repo.get_template(id).await
     }
     
-    pub async fn list_templates(&self, pool: &SqlitePool) -> Result<Vec<ConfigurationTemplate>> {
+    pub async fn list_templates(&self, _pool: &SqlitePool) -> Result<Vec<ConfigurationTemplate>> {
         self.repo.list_templates().await
     }
     
-    pub async fn create_configuration(&self, pool: &SqlitePool, mut config: ProductConfiguration) -> Result<ProductConfiguration> {
+    pub async fn create_configuration(&self, _pool: &SqlitePool, mut config: ProductConfiguration) -> Result<ProductConfiguration> {
         config.id = Uuid::new_v4();
         config.configuration_number = format!("CFG-{}", chrono::Utc::now().format("%Y%m%d%H%M%S"));
         config.created_at = Utc::now();
@@ -43,18 +49,18 @@ impl CpqService {
         Ok(config)
     }
     
-    pub async fn get_configuration(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<ProductConfiguration>> {
+    pub async fn get_configuration(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<ProductConfiguration>> {
         self.repo.get_configuration(id).await
     }
     
-    pub async fn list_configurations(&self, pool: &SqlitePool) -> Result<Vec<ProductConfiguration>> {
+    pub async fn list_configurations(&self, _pool: &SqlitePool) -> Result<Vec<ProductConfiguration>> {
         self.repo.list_configurations().await
     }
     
     pub async fn calculate_configuration_price(&self, config: &ProductConfiguration) -> Result<ConfigurationPricingResult> {
-        let mut configured_price = config.base_price;
+        let configured_price = config.base_price;
         let mut price_breakdown = Vec::new();
-        let mut applied_rules = Vec::new();
+        let applied_rules = Vec::new();
         let warnings = Vec::new();
         
         price_breakdown.push(PriceBreakdownItem {
@@ -72,21 +78,21 @@ impl CpqService {
         })
     }
     
-    pub async fn validate_configuration(&self, config: &ProductConfiguration) -> Result<Vec<String>> {
-        let mut errors = Vec::new();
+    pub async fn validate_configuration(&self, _config: &ProductConfiguration) -> Result<Vec<String>> {
+        let errors = Vec::new();
         Ok(errors)
     }
     
-    pub async fn create_quote(&self, pool: &SqlitePool, mut quote: ConfiguredQuote) -> Result<ConfiguredQuote> {
+    pub async fn create_quote(&self, _pool: &SqlitePool, quote: ConfiguredQuote) -> Result<ConfiguredQuote> {
         self.repo.create_configured_quote(&quote).await?;
         Ok(quote)
     }
     
-    pub async fn get_quote(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<ConfiguredQuote>> {
+    pub async fn get_quote(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<ConfiguredQuote>> {
         self.repo.get_configured_quote(id).await
     }
     
-    pub async fn list_quotes(&self, pool: &SqlitePool) -> Result<Vec<ConfiguredQuote>> {
+    pub async fn list_quotes(&self, _pool: &SqlitePool) -> Result<Vec<ConfiguredQuote>> {
         self.repo.list_configured_quotes().await
     }
 }

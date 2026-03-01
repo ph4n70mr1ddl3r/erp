@@ -9,6 +9,12 @@ pub struct RulesService {
     repo: SqliteRulesRepository,
 }
 
+impl Default for RulesService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RulesService {
     pub fn new() -> Self {
         Self { repo: SqliteRulesRepository }

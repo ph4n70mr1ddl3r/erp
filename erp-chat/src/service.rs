@@ -12,6 +12,12 @@ pub struct ChatChannelService {
     message_repo: SqliteChatMessageRepository,
 }
 
+impl Default for ChatChannelService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChatChannelService {
     pub fn new() -> Self {
         Self {
@@ -130,6 +136,12 @@ pub struct ChatMessageService {
     membership_repo: SqliteChatMembershipRepository,
 }
 
+impl Default for ChatMessageService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ChatMessageService {
     pub fn new() -> Self {
         Self {
@@ -173,9 +185,9 @@ impl ChatMessageService {
         
         let message = self.message_repo.create(pool, &message).await?;
         
-        if parent_message_id.is_some() {
-            if let Some(parent) = self.message_repo.get_by_id(pool, parent_message_id.unwrap()).await? {
-                if let Some(membership) = self.membership_repo.get(pool, channel_id, sender_id).await? {
+        if let Some(parent_id) = parent_message_id {
+            if self.message_repo.get_by_id(pool, parent_id).await?.is_some() {
+                if let Some(_membership) = self.membership_repo.get(pool, channel_id, sender_id).await? {
                     self.membership_repo.update_last_read(pool, channel_id, sender_id, message.base.id).await?;
                 }
             }
@@ -214,6 +226,12 @@ impl ChatMessageService {
 }
 
 pub struct DirectMessageService;
+
+impl Default for DirectMessageService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl DirectMessageService {
     pub fn new() -> Self {

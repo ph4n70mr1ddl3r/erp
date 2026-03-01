@@ -154,7 +154,7 @@ impl ChatMessageRepository for SqliteChatMessageRepository {
         .bind(&message.content)
         .bind(&message.formatted_content)
         .bind(&message.attachments)
-        .bind(message.mentions.as_ref().map(|v| serde_json::to_string(v).ok()).flatten())
+        .bind(message.mentions.as_ref().and_then(|v| serde_json::to_string(v).ok()))
         .bind(&message.reactions)
         .bind(message.reply_count)
         .bind(&message.status)

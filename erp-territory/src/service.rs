@@ -9,7 +9,7 @@ pub struct TerritoryService { repo: SqliteTerritoryRepository }
 impl TerritoryService {
     pub fn new(pool: SqlitePool) -> Self { Self { repo: SqliteTerritoryRepository::new(pool) } }
 
-    pub async fn create_territory(&self, pool: &SqlitePool, req: CreateTerritoryRequest) -> Result<SalesTerritory> {
+    pub async fn create_territory(&self, _pool: &SqlitePool, req: CreateTerritoryRequest) -> Result<SalesTerritory> {
         let territory = SalesTerritory {
             base: BaseEntity::new(),
             territory_number: format!("TER-{}", Uuid::new_v4()),
@@ -35,7 +35,7 @@ impl TerritoryService {
         self.repo.create_territory(&territory).await
     }
 
-    pub async fn assign_rep(&self, pool: &SqlitePool, req: AssignRepRequest) -> Result<TerritoryAssignment> {
+    pub async fn assign_rep(&self, _pool: &SqlitePool, req: AssignRepRequest) -> Result<TerritoryAssignment> {
         let assignment = TerritoryAssignment {
             id: Uuid::new_v4(),
             territory_id: req.territory_id,
@@ -51,7 +51,7 @@ impl TerritoryService {
         self.repo.create_assignment(&assignment).await
     }
 
-    pub async fn create_quota(&self, pool: &SqlitePool, req: CreateQuotaRequest) -> Result<SalesQuota> {
+    pub async fn create_quota(&self, _pool: &SqlitePool, req: CreateQuotaRequest) -> Result<SalesQuota> {
         let annual = req.annual_target;
         let quarterly = annual / 4;
         let monthly = annual / 12;
@@ -83,7 +83,7 @@ impl TerritoryService {
         self.repo.create_quota(&quota).await
     }
 
-    pub async fn record_attainment(&self, pool: &SqlitePool, quota_id: Uuid, period_type: QuotaPeriodType, period_number: i32, target: i64, actual: i64) -> Result<QuotaAttainment> {
+    pub async fn record_attainment(&self, _pool: &SqlitePool, quota_id: Uuid, period_type: QuotaPeriodType, period_number: i32, target: i64, actual: i64) -> Result<QuotaAttainment> {
         let attainment = QuotaAttainment {
             base: BaseEntity::new(),
             quota_id,

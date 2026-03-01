@@ -9,6 +9,12 @@ pub struct MonitoringService {
     repo: SqliteMonitoringRepository,
 }
 
+impl Default for MonitoringService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MonitoringService {
     pub fn new() -> Self {
         Self { repo: SqliteMonitoringRepository }
@@ -16,7 +22,7 @@ impl MonitoringService {
 
     pub async fn collect_system_metrics(&self, pool: &SqlitePool) -> Result<Vec<SystemMetric>> {
         let now = Utc::now();
-        let mut metrics = Vec::new();
+        let mut metrics = Vec::with_capacity(4);
         
         metrics.push(SystemMetric {
             base: BaseEntity::new(),

@@ -1,6 +1,5 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
 use crate::models::*;
 use erp_core::Result;
 
@@ -35,8 +34,8 @@ impl ProcessRepository for SqliteProcessRepository {
         .bind(&def.variables)
         .bind(&def.forms)
         .bind(def.owner_id.to_string())
-        .bind(&def.published_at.map(|d| d.to_rfc3339()))
-        .bind(&def.published_by.map(|id| id.to_string()))
+        .bind(def.published_at.map(|d| d.to_rfc3339()))
+        .bind(def.published_by.map(|id| id.to_string()))
         .bind(def.created_at.to_rfc3339())
         .bind(def.updated_at.to_rfc3339())
         .execute(pool)

@@ -10,6 +10,12 @@ pub struct OcrService {
     repo: SqliteOcrRepository,
 }
 
+impl Default for OcrService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OcrService {
     pub fn new() -> Self {
         Self {
@@ -18,7 +24,7 @@ impl OcrService {
     }
     
     pub async fn upload_document(&self, request: UploadDocumentRequest) -> Result<OcrDocument> {
-        let content_bytes = base64::decode(&request.content.replace("data:", "").split(",").last().unwrap_or(""))?;
+        let content_bytes = base64::decode(request.content.replace("data:", "").split(",").last().unwrap_or(""))?;
         
         let doc = OcrDocument {
             base: BaseEntity::new(),

@@ -60,7 +60,7 @@ pub async fn submit_job(
         .transpose()?;
     
     let scheduled_at = req.scheduled_at.as_deref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s))
+        .map(chrono::DateTime::parse_from_rfc3339)
         .transpose()
         .map_err(|e| erp_core::Error::validation(format!("Invalid scheduled_at: {}", e)))?
         .map(|dt| dt.with_timezone(&chrono::Utc));

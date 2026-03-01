@@ -9,11 +9,11 @@ use uuid::Uuid;
 use crate::error::ApiResult;
 use crate::db::AppState;
 use erp_bundles::{
-    BundleService, ProductBundle, BundleComponent, BundleAvailability, BundlePriceRule,
-    BundleAnalytics, CreateBundleRequest, UpdateBundleRequest, CreateBundleComponentRequest,
-    BundleListResponse, ProductBundleSummary, BundleType, BundlePricingMethod,
+    BundleService, ProductBundle, BundlePriceRule,
+    CreateBundleRequest, UpdateBundleRequest, CreateBundleComponentRequest,
+    ProductBundleSummary, BundleType, BundlePricingMethod,
 };
-use erp_core::{Status, Currency};
+use erp_core::Status;
 
 #[derive(Serialize)]
 pub struct ApiResponse<T> {

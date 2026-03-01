@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct BillOfMaterialService { repo: SqliteBillOfMaterialRepository }
+impl Default for BillOfMaterialService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BillOfMaterialService {
     pub fn new() -> Self { Self { repo: SqliteBillOfMaterialRepository } }
     pub async fn get(&self, pool: &SqlitePool, id: Uuid) -> Result<BillOfMaterial> { self.repo.find_by_id(pool, id).await }
@@ -22,6 +28,12 @@ impl BillOfMaterialService {
 }
 
 pub struct WorkOrderService { repo: SqliteWorkOrderRepository }
+impl Default for WorkOrderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkOrderService {
     pub fn new() -> Self { Self { repo: SqliteWorkOrderRepository } }
     pub async fn get(&self, pool: &SqlitePool, id: Uuid) -> Result<WorkOrder> { self.repo.find_by_id(pool, id).await }
@@ -45,6 +57,12 @@ impl WorkOrderService {
 }
 
 pub struct ProductionScheduleService;
+
+impl Default for ProductionScheduleService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ProductionScheduleService {
     pub fn new() -> Self { Self }
@@ -210,6 +228,12 @@ impl From<ScheduleRow> for ProductionSchedule {
 }
 
 pub struct MRPService;
+
+impl Default for MRPService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl MRPService {
     pub fn new() -> Self { Self }
@@ -422,6 +446,12 @@ impl From<MRPPlannedOrderRow> for MRPPlannedOrder {
 
 pub struct CapacityPlanningService;
 
+impl Default for CapacityPlanningService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CapacityPlanningService {
     pub fn new() -> Self { Self }
 
@@ -571,6 +601,12 @@ impl From<CapacityRequirementRow> for CapacityRequirement {
 }
 
 pub struct MESService;
+
+impl Default for MESService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl MESService {
     pub fn new() -> Self { Self }
@@ -779,6 +815,12 @@ impl From<DowntimeEventRow> for DowntimeEvent {
 }
 
 pub struct MaintenanceService;
+
+impl Default for MaintenanceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl MaintenanceService {
     pub fn new() -> Self { Self }
@@ -1087,6 +1129,12 @@ impl From<MaintenanceWorkOrderRow> for MaintenanceWorkOrder {
 }
 
 pub struct PLMService;
+
+impl Default for PLMService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl PLMService {
     pub fn new() -> Self { Self }

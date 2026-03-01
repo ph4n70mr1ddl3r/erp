@@ -10,6 +10,12 @@ pub struct AccountService {
     repo: SqliteAccountRepository,
 }
 
+impl Default for AccountService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AccountService {
     pub fn new() -> Self {
         Self { repo: SqliteAccountRepository }
@@ -65,6 +71,12 @@ pub struct JournalEntryService {
     repo: SqliteJournalEntryRepository,
 }
 
+impl Default for JournalEntryService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl JournalEntryService {
     pub fn new() -> Self {
         Self { repo: SqliteJournalEntryRepository }
@@ -114,7 +126,7 @@ impl JournalEntryService {
         let total_credits: i64 = entry.lines.iter().map(|l| l.credit.amount).sum();
         
         if total_debits != total_credits {
-            return Err(Error::business_rule(&format!(
+            return Err(Error::business_rule(format!(
                 "Journal entry must balance. Debits: {}, Credits: {}",
                 total_debits as f64 / 100.0,
                 total_credits as f64 / 100.0
@@ -131,6 +143,12 @@ impl JournalEntryService {
 
 pub struct FiscalYearService {
     repo: SqliteFiscalYearRepository,
+}
+
+impl Default for FiscalYearService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl FiscalYearService {
@@ -172,6 +190,12 @@ impl FiscalYearService {
 
 pub struct CurrencyService;
 
+impl Default for CurrencyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CurrencyService {
     pub fn new() -> Self { Self }
 
@@ -181,7 +205,7 @@ impl CurrencyService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -200,7 +224,7 @@ impl CurrencyService {
         .bind(to)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         row.map(|r| r.0)
             .ok_or_else(|| Error::not_found("ExchangeRate", &format!("{}->{}", from, to)))
@@ -229,7 +253,7 @@ impl CurrencyService {
         .bind(er.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(er)
     }
@@ -266,6 +290,12 @@ impl From<CurrencyRow> for CurrencyDef {
 
 pub struct BudgetService;
 
+impl Default for BudgetService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BudgetService {
     pub fn new() -> Self { Self }
 
@@ -276,7 +306,7 @@ impl BudgetService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut budgets = Vec::new();
         for row in rows {
@@ -330,7 +360,7 @@ impl BudgetService {
         .bind(&budget_id)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| {
             let variance = r.amount - r.actual;
@@ -370,7 +400,7 @@ impl BudgetService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for (account_id, period, amount) in lines {
             let line_id = Uuid::new_v4();
@@ -385,7 +415,7 @@ impl BudgetService {
             .bind(amount)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
         
         let budgets = Self::list_budgets(pool).await?;
@@ -419,6 +449,12 @@ struct BudgetLineRow {
 }
 
 pub struct FixedAssetService;
+
+impl Default for FixedAssetService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl FixedAssetService {
     pub fn new() -> Self { Self }
@@ -481,7 +517,7 @@ impl FixedAssetService {
         .bind(asset.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(asset)
     }
@@ -494,7 +530,7 @@ impl FixedAssetService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("FixedAsset", &id.to_string()))?;
         
         Ok(row.into())
@@ -507,7 +543,7 @@ impl FixedAssetService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -554,7 +590,7 @@ impl FixedAssetService {
         .bind(dep.posted_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE fixed_assets SET accumulated_depreciation = ?, net_book_value = ?, updated_at = ? WHERE id = ?"
@@ -565,7 +601,7 @@ impl FixedAssetService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(dep)
     }
@@ -580,7 +616,7 @@ impl FixedAssetService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_asset(pool, id).await
     }
@@ -652,6 +688,12 @@ pub struct FinancialReportingService {
     journal_repo: SqliteJournalEntryRepository,
 }
 
+impl Default for FinancialReportingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FinancialReportingService {
     pub fn new() -> Self {
         Self {
@@ -683,7 +725,7 @@ impl FinancialReportingService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let balances: Vec<AccountBalance> = rows.into_iter().map(|r| AccountBalance {
             account_id: Uuid::parse_str(&r.id).unwrap_or_default(),
@@ -712,7 +754,7 @@ impl FinancialReportingService {
         .bind(account_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(balance.0 - balance.1)
     }
@@ -808,6 +850,12 @@ impl FinancialReportingService {
 
 pub struct BankReconciliationService;
 
+impl Default for BankReconciliationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BankReconciliationService {
     pub fn new() -> Self { Self }
 
@@ -849,7 +897,7 @@ impl BankReconciliationService {
         .bind(account.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(account)
     }
@@ -862,7 +910,7 @@ impl BankReconciliationService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("BankAccount", &id.to_string()))?;
         
         Ok(row.into())
@@ -875,7 +923,7 @@ impl BankReconciliationService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -914,7 +962,7 @@ impl BankReconciliationService {
         .bind(statement.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for tx in transactions {
             let tx_id = Uuid::new_v4();
@@ -935,7 +983,7 @@ impl BankReconciliationService {
             .bind(now.to_rfc3339())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
         
         Ok(statement)
@@ -949,7 +997,7 @@ impl BankReconciliationService {
         .bind(transaction_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_transaction(pool, transaction_id).await
     }
@@ -962,7 +1010,7 @@ impl BankReconciliationService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("BankTransaction", &id.to_string()))?;
         
         Ok(row.into())
@@ -976,7 +1024,7 @@ impl BankReconciliationService {
         .bind(bank_account_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut matched_count = 0;
         
@@ -988,7 +1036,7 @@ impl BankReconciliationService {
             .bind(bank_account_id.to_string())
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             for tx in transactions {
                 let matches = match rule.rule_type.as_str() {
@@ -1002,7 +1050,7 @@ impl BankReconciliationService {
                         .bind(tx.id.clone())
                         .execute(pool)
                         .await
-                        .map_err(|e| Error::Database(e))?;
+                        .map_err(Error::Database)?;
                     matched_count += 1;
                 }
             }
@@ -1025,7 +1073,7 @@ impl BankReconciliationService {
         .bind(tx.credit)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(gl_entry.is_some())
     }
@@ -1141,6 +1189,12 @@ struct ReconciliationRuleRow {
 
 pub struct CashFlowService;
 
+impl Default for CashFlowService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CashFlowService {
     pub fn new() -> Self { Self }
 
@@ -1181,7 +1235,7 @@ impl CashFlowService {
         .bind(forecast.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(forecast)
     }
@@ -1194,7 +1248,7 @@ impl CashFlowService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("CashFlowForecast", &id.to_string()))?;
         
         Ok(row.into())
@@ -1242,7 +1296,7 @@ impl CashFlowService {
         .bind(item.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::recalculate_forecast_totals(pool, forecast_id).await?;
         
@@ -1263,7 +1317,7 @@ impl CashFlowService {
         .bind(item_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, CashFlowItemRow>(
             "SELECT id, forecast_id, category_id, description, expected_date, amount, probability, actual_amount, actual_date, notes, created_at
@@ -1272,7 +1326,7 @@ impl CashFlowService {
         .bind(item_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::recalculate_forecast_totals(pool, Uuid::parse_str(&row.forecast_id).unwrap_or_default()).await?;
         
@@ -1289,7 +1343,7 @@ impl CashFlowService {
         .bind(forecast_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let total_inflows: i64 = items.iter()
             .filter(|i| i.amount > 0)
@@ -1312,7 +1366,7 @@ impl CashFlowService {
         .bind(forecast_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let inflows: i64 = items.iter().filter(|i| i.amount > 0).map(|i| i.amount).sum();
         let outflows: i64 = items.iter().filter(|i| i.amount < 0).map(|i| i.amount.abs()).sum();
@@ -1323,7 +1377,7 @@ impl CashFlowService {
         .bind(forecast_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE cash_flow_forecasts SET expected_inflows = ?, expected_outflows = ?, closing_balance = ? WHERE id = ?"
@@ -1334,7 +1388,7 @@ impl CashFlowService {
         .bind(forecast_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -1418,6 +1472,12 @@ impl From<CashFlowItemRow> for CashFlowItem {
 
 pub struct CostAccountingService;
 
+impl Default for CostAccountingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CostAccountingService {
     pub fn new() -> Self { Self }
 
@@ -1459,7 +1519,7 @@ impl CostAccountingService {
         .bind(center.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(center)
     }
@@ -1496,7 +1556,7 @@ impl CostAccountingService {
         .bind(element.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(element)
     }
@@ -1542,7 +1602,7 @@ impl CostAccountingService {
         .bind(cost_pool.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(cost_pool)
     }
@@ -1566,7 +1626,7 @@ impl CostAccountingService {
         .bind(pool_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("CostPool", &pool_id.to_string()))?;
         
         let allocated_amount = (allocation_base_value * pool_row.allocation_rate) as i64;
@@ -1596,7 +1656,7 @@ impl CostAccountingService {
         .bind(allocation.allocated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(allocation)
     }
@@ -1615,7 +1675,7 @@ impl CostAccountingService {
         .bind(cost_pool_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let cost_per_activity = if total_activities > 0 {
             pool_row.0 / total_activities
@@ -1647,13 +1707,19 @@ impl CostAccountingService {
         .bind(activity_cost.period_end.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(activity_cost)
     }
 }
 
 pub struct IntercompanyService;
+
+impl Default for IntercompanyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl IntercompanyService {
     pub fn new() -> Self { Self }
@@ -1711,7 +1777,7 @@ impl IntercompanyService {
         .bind(company.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(company)
     }
@@ -1724,7 +1790,7 @@ impl IntercompanyService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Company", &id.to_string()))?;
         
         Ok(row.into())
@@ -1776,7 +1842,7 @@ impl IntercompanyService {
         .bind(transaction.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(transaction)
     }
@@ -1788,7 +1854,7 @@ impl IntercompanyService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, IntercompanyTransactionRow>(
             "SELECT id, transaction_number, from_company_id, to_company_id, transaction_date, amount, currency, description, reference, from_journal_entry_id, to_journal_entry_id, status, created_at
@@ -1797,7 +1863,7 @@ impl IntercompanyService {
         .bind(id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.into())
     }
@@ -1891,6 +1957,12 @@ impl From<IntercompanyTransactionRow> for IntercompanyTransaction {
 
 pub struct RevenueRecognitionService;
 
+impl Default for RevenueRecognitionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RevenueRecognitionService {
     pub fn new() -> Self { Self }
 
@@ -1935,7 +2007,7 @@ impl RevenueRecognitionService {
         .bind(schedule.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(schedule)
     }
@@ -1971,7 +2043,7 @@ impl RevenueRecognitionService {
         .bind(line.amount)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(line)
     }
@@ -1994,7 +2066,7 @@ impl RevenueRecognitionService {
         .bind(period_end.to_rfc3339())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut recognized_lines = Vec::new();
         let mut total_recognized = 0i64;
@@ -2007,7 +2079,7 @@ impl RevenueRecognitionService {
             .bind(&line_row.id)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             total_recognized += line_row.amount;
             recognized_lines.push(line_row.into());
@@ -2022,7 +2094,7 @@ impl RevenueRecognitionService {
             .bind(schedule_id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
         
         Ok(recognized_lines)
@@ -2061,6 +2133,12 @@ impl From<RevenueScheduleLineRow> for RevenueScheduleLine {
 
 pub struct ConsolidationService;
 
+impl Default for ConsolidationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConsolidationService {
     pub fn new() -> Self { Self }
 
@@ -2097,7 +2175,7 @@ impl ConsolidationService {
         .bind(consolidation.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(consolidation)
     }
@@ -2136,7 +2214,7 @@ impl ConsolidationService {
         .bind(format!("{:?}", company.translation_method))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(company)
     }
@@ -2150,7 +2228,7 @@ impl ConsolidationService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut entries = Vec::new();
         
@@ -2166,7 +2244,7 @@ impl ConsolidationService {
             .bind(format!("{}%", rule.from_account_pattern))
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             for (account_id, _code, balance) in matches {
                 if balance != 0 {
@@ -2197,7 +2275,7 @@ impl ConsolidationService {
                     .bind(entry.created_at.to_rfc3339())
                     .execute(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                     
                     entries.push(entry);
                 }
@@ -2211,7 +2289,7 @@ impl ConsolidationService {
         .bind(consolidation_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(entries)
     }
@@ -2224,7 +2302,7 @@ impl ConsolidationService {
         .bind(consolidation_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut total_assets = 0i64;
         let mut total_liabilities = 0i64;
@@ -2247,7 +2325,7 @@ impl ConsolidationService {
             .bind(&company.company_id)
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             for (account_type, balance) in balances {
                 let adjusted = ((balance as f64 * exchange_rate) * ownership) as i64;
@@ -2327,6 +2405,12 @@ pub struct ConsolidatedIncomeStatement {
 
 pub struct DunningService;
 
+impl Default for DunningService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DunningService {
     pub fn new() -> Self { Self }
 
@@ -2357,7 +2441,7 @@ impl DunningService {
         .bind(policy.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(policy)
     }
@@ -2400,7 +2484,7 @@ impl DunningService {
         .bind(config.send_email as i32)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(config)
     }
@@ -2436,7 +2520,7 @@ impl DunningService {
         .bind(run.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(run)
     }
@@ -2450,7 +2534,7 @@ impl DunningService {
         .bind(run_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let overdue_invoices: Vec<OverdueInvoiceRow> = sqlx::query_as(
             "SELECT i.id as invoice_id, i.customer_id, i.total, i.due_date,
@@ -2461,11 +2545,11 @@ impl DunningService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut letters = Vec::new();
         let mut total_amount = 0i64;
-        let mut total_fees = 0i64;
+        let total_fees = 0i64;
         let mut customers: std::collections::HashSet<String> = std::collections::HashSet::new();
         
         for invoice in overdue_invoices {
@@ -2504,7 +2588,7 @@ impl DunningService {
             .bind(letter.created_at.to_rfc3339())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             sqlx::query(
                 "INSERT INTO dunning_letter_invoices (letter_id, invoice_id) VALUES (?, ?)"
@@ -2529,7 +2613,7 @@ impl DunningService {
         .bind(run_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(letters)
     }
@@ -2541,7 +2625,7 @@ impl DunningService {
         .bind(days_overdue as i32)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(match level_row {
             Some((level,)) => match level.as_str() {
@@ -2597,7 +2681,7 @@ impl DunningService {
         .bind(case.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(case)
     }
@@ -2644,7 +2728,7 @@ impl DunningService {
         .bind(activity.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(activity)
     }
@@ -2663,7 +2747,7 @@ impl DunningService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(AgingReport {
             as_of_date: chrono::Utc::now(),
@@ -2718,6 +2802,12 @@ struct AgingRow {
 
 pub struct PeriodManagementService;
 
+impl Default for PeriodManagementService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PeriodManagementService {
     pub fn new() -> Self { Self }
 
@@ -2731,7 +2821,7 @@ impl PeriodManagementService {
         .bind(fiscal_year_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let start = chrono::DateTime::parse_from_rfc3339(&fy_row.0)
             .map(|d| d.with_timezone(&chrono::Utc))
@@ -2775,7 +2865,7 @@ impl PeriodManagementService {
             .bind(period.created_at.to_rfc3339())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             periods.push(period);
             period_start = period_end;
@@ -2802,7 +2892,7 @@ impl PeriodManagementService {
         .bind(period_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_period(pool, period_id).await
     }
@@ -2814,7 +2904,7 @@ impl PeriodManagementService {
         .bind(period_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_period(pool, period_id).await
     }
@@ -2827,7 +2917,7 @@ impl PeriodManagementService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("AccountingPeriod", &id.to_string()))?;
         
         Ok(row.into())
@@ -2841,7 +2931,7 @@ impl PeriodManagementService {
         .bind(fiscal_year_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -2854,7 +2944,7 @@ impl PeriodManagementService {
         .bind(date.to_rfc3339())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(match lock_type {
             Some((lt,)) => lt == "HardClose",
@@ -2899,7 +2989,7 @@ impl PeriodManagementService {
             .bind(item.created_at.to_rfc3339())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             items.push(item);
         }
@@ -2922,7 +3012,7 @@ impl PeriodManagementService {
         .bind(task_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, ChecklistRow>(
             "SELECT id, period_id, task_name, description, task_order, is_required, completed, completed_at, completed_by, created_at
@@ -2931,7 +3021,7 @@ impl PeriodManagementService {
         .bind(task_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.into())
     }
@@ -3015,6 +3105,12 @@ impl From<ChecklistRow> for PeriodCloseChecklist {
 
 pub struct RecurringJournalService;
 
+impl Default for RecurringJournalService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecurringJournalService {
     pub fn new() -> Self { Self }
 
@@ -3068,7 +3164,7 @@ impl RecurringJournalService {
         .bind(journal.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut journal_lines = Vec::new();
         for (account_id, debit, credit, line_desc) in lines {
@@ -3094,7 +3190,7 @@ impl RecurringJournalService {
             .bind(&line.description)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
             
             journal_lines.push(line);
         }
@@ -3112,7 +3208,7 @@ impl RecurringJournalService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("RecurringJournal", &id.to_string()))?;
         
         let lines = Self::get_lines(pool, id).await?;
@@ -3126,7 +3222,7 @@ impl RecurringJournalService {
         .bind(journal_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -3138,7 +3234,7 @@ impl RecurringJournalService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut journals = Vec::new();
         for row in rows {
@@ -3157,11 +3253,11 @@ impl RecurringJournalService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut processed = Vec::new();
         
-        for (journal_id_str, next_run_str) in due_journals {
+        for (journal_id_str, _next_run_str) in due_journals {
             let journal_id = Uuid::parse_str(&journal_id_str).unwrap_or_default();
             let journal = Self::get(pool, journal_id).await?;
             
@@ -3177,7 +3273,7 @@ impl RecurringJournalService {
             .bind(journal_id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
         
         Ok(processed)
@@ -3203,7 +3299,7 @@ impl RecurringJournalService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for line in &journal.lines {
             let line_id = Uuid::new_v4();
@@ -3219,7 +3315,7 @@ impl RecurringJournalService {
             .bind(&line.description)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
         
         let run_id = Uuid::new_v4();
@@ -3234,7 +3330,7 @@ impl RecurringJournalService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(je_id)
     }
@@ -3249,7 +3345,7 @@ impl RecurringJournalService {
             RecurringFrequency::Monthly => current + chrono::Months::new(journal.interval_value as u32),
             RecurringFrequency::Quarterly => current + chrono::Months::new(3 * journal.interval_value as u32),
             RecurringFrequency::Yearly => {
-                let months = journal.interval_value as i32 * 12;
+                let months = journal.interval_value * 12;
                 current + chrono::Duration::days((months * 30) as i64)
             }
         }
@@ -3264,7 +3360,7 @@ impl RecurringJournalService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -3352,6 +3448,12 @@ impl From<RecurringJournalLineRow> for RecurringJournalLine {
 }
 
 pub struct CurrencyRevaluationService;
+
+impl Default for CurrencyRevaluationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl CurrencyRevaluationService {
     pub fn new() -> Self { Self }
@@ -3483,7 +3585,7 @@ impl CurrencyRevaluationService {
         .bind(revaluation.created_by.map(|id| id.to_string()))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let preview = Self::preview_revaluation(pool, revaluation_date, base_currency).await?;
         
@@ -3514,7 +3616,7 @@ impl CurrencyRevaluationService {
             .bind(line.created_at.to_rfc3339())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
 
         sqlx::query(
@@ -3526,7 +3628,7 @@ impl CurrencyRevaluationService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(revaluation)
     }
@@ -3539,7 +3641,7 @@ impl CurrencyRevaluationService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("CurrencyRevaluation", &id.to_string()))?;
 
         Ok(row.into())
@@ -3552,7 +3654,7 @@ impl CurrencyRevaluationService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -3565,7 +3667,7 @@ impl CurrencyRevaluationService {
         .bind(revaluation_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -3594,7 +3696,7 @@ impl CurrencyRevaluationService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Self::get_revaluation(pool, id).await
     }
@@ -3624,7 +3726,7 @@ impl CurrencyRevaluationService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Self::get_revaluation(pool, id).await
     }
@@ -3651,7 +3753,7 @@ impl CurrencyRevaluationService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         for line in lines {
             if line.unrealized_gain > 0 {
@@ -3667,7 +3769,7 @@ impl CurrencyRevaluationService {
                 .bind(format!("Unrealized gain - {} / {}", line.currency, revaluation.base_currency))
                 .execute(pool)
                 .await
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
 
                 if let Some(gain_acct) = line.gain_account_id {
                     let credit_line_id = Uuid::new_v4();
@@ -3682,7 +3784,7 @@ impl CurrencyRevaluationService {
                     .bind(format!("Unrealized FX gain - {}", line.currency))
                     .execute(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                 }
             }
 
@@ -3699,7 +3801,7 @@ impl CurrencyRevaluationService {
                 .bind(format!("Unrealized loss - {} / {}", line.currency, revaluation.base_currency))
                 .execute(pool)
                 .await
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
 
                 if let Some(loss_acct) = line.loss_account_id {
                     let debit_line_id = Uuid::new_v4();
@@ -3714,7 +3816,7 @@ impl CurrencyRevaluationService {
                     .bind(format!("Unrealized FX loss - {}", line.currency))
                     .execute(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                 }
             }
         }
@@ -3738,7 +3840,7 @@ impl CurrencyRevaluationService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| ForeignCurrencyAccountInfo {
             account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),

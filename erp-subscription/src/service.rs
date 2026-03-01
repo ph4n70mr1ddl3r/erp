@@ -145,7 +145,7 @@ impl SubscriptionService {
         )
         .bind(threshold.to_rfc3339())
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| SubscriptionRepository::row_to_sub(r)).collect())
+        Ok(rows.iter().map(SubscriptionRepository::row_to_sub).collect())
     }
 
     pub async fn record_usage(pool: &SqlitePool, subscription_id: Uuid, usage_type: String, quantity: i64, unit: String) -> Result<SubscriptionUsage> {

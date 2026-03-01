@@ -1,5 +1,4 @@
 use chrono::Utc;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 
 use crate::models::*;

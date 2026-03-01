@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct ReportDefinitionService { repo: SqliteReportDefinitionRepository }
+impl Default for ReportDefinitionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReportDefinitionService {
     pub fn new() -> Self { Self { repo: SqliteReportDefinitionRepository } }
     
@@ -41,6 +47,12 @@ impl ReportDefinitionService {
 }
 
 pub struct ReportScheduleService { repo: SqliteReportScheduleRepository }
+impl Default for ReportScheduleService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReportScheduleService {
     pub fn new() -> Self { Self { repo: SqliteReportScheduleRepository } }
     
@@ -75,8 +87,8 @@ impl ReportScheduleService {
             ScheduleFrequency::Daily => from + chrono::Duration::days(1),
             ScheduleFrequency::Weekly => from + chrono::Duration::weeks(1),
             ScheduleFrequency::Monthly => {
-                let next = from + chrono::Duration::days(30);
-                next
+                
+                from + chrono::Duration::days(30)
             }
             ScheduleFrequency::Quarterly => from + chrono::Duration::days(90),
             ScheduleFrequency::Yearly => from + chrono::Duration::days(365),
@@ -86,6 +98,12 @@ impl ReportScheduleService {
 }
 
 pub struct ReportExecutionService { repo: SqliteReportExecutionRepository }
+impl Default for ReportExecutionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReportExecutionService {
     pub fn new() -> Self { Self { repo: SqliteReportExecutionRepository } }
     
@@ -126,6 +144,12 @@ impl ReportExecutionService {
 }
 
 pub struct ReportGeneratorService;
+impl Default for ReportGeneratorService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReportGeneratorService {
     pub fn new() -> Self { Self }
     
@@ -164,6 +188,12 @@ impl ReportGeneratorService {
 }
 
 pub struct DashboardService;
+impl Default for DashboardService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DashboardService {
     pub fn new() -> Self { Self }
     

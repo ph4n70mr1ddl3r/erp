@@ -100,7 +100,7 @@ impl DataQualityRuleService {
 
     fn evaluate_condition(&self, value: Option<&serde_json::Value>, condition: &str, rule_type: &RuleType) -> Result<bool> {
         match rule_type {
-            RuleType::Completeness => Ok(!value.is_none() && !value.map(|v| v.is_null()).unwrap_or(true)),
+            RuleType::Completeness => Ok(value.is_some() && !value.map(|v| v.is_null()).unwrap_or(true)),
             RuleType::Format => {
                 let val = value.and_then(|v| v.as_str()).unwrap_or("");
                 Ok(regex::Regex::new(condition).map(|re| re.is_match(val)).unwrap_or(false))
@@ -341,7 +341,7 @@ impl DataMatchingService {
         blocking_keys: Vec<String>,
         match_threshold: f64,
     ) -> Result<DataMatchingRule> {
-        if match_threshold < 0.0 || match_threshold > 1.0 {
+        if !(0.0..=1.0).contains(&match_threshold) {
             return Err(Error::validation("Threshold must be between 0 and 1".to_string()));
         }
         let rule = DataMatchingRule {
@@ -383,7 +383,9 @@ impl DataMatchingService {
         if len1 == 0 { return len2; }
         if len2 == 0 { return len1; }
         let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
+        #[allow(clippy::needless_range_loop)]
         for i in 0..=len1 { matrix[i][0] = i; }
+        #[allow(clippy::needless_range_loop)]
         for j in 0..=len2 { matrix[0][j] = j; }
         for i in 1..=len1 {
             for j in 1..=len2 {

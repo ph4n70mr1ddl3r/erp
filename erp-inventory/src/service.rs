@@ -9,6 +9,12 @@ pub struct ProductService {
     repo: SqliteProductRepository,
 }
 
+impl Default for ProductService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProductService {
     pub fn new() -> Self {
         Self { repo: SqliteProductRepository }
@@ -65,6 +71,12 @@ pub struct WarehouseService {
     repo: SqliteWarehouseRepository,
 }
 
+impl Default for WarehouseService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WarehouseService {
     pub fn new() -> Self {
         Self { repo: SqliteWarehouseRepository }
@@ -100,6 +112,12 @@ pub struct StockService {
     repo: SqliteStockMovementRepository,
 }
 
+impl Default for StockService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StockService {
     pub fn new() -> Self {
         Self { repo: SqliteStockMovementRepository }
@@ -120,7 +138,7 @@ impl StockService {
                     match self.repo.get_stock_level(pool, movement.product_id, from_location_id).await {
                         Ok(level) => {
                             if level.available_quantity < movement.quantity {
-                                return Err(Error::business_rule(&format!(
+                                return Err(Error::business_rule(format!(
                                     "Insufficient stock. Available: {}, Requested: {}",
                                     level.available_quantity, movement.quantity
                                 )));
@@ -267,6 +285,12 @@ mod tests {
 
 pub struct LotService;
 
+impl Default for LotService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LotService {
     pub fn new() -> Self { Self }
 
@@ -312,7 +336,7 @@ impl LotService {
         .bind(lot.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(lot)
     }
@@ -325,7 +349,7 @@ impl LotService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Lot", &id.to_string()))?;
         
         Ok(row.into())
@@ -339,7 +363,7 @@ impl LotService {
         .bind(product_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -376,7 +400,7 @@ impl LotService {
         .bind(tx.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let delta = match transaction_type {
             LotTransactionType::Receipt => quantity,
@@ -393,7 +417,7 @@ impl LotService {
         .bind(lot_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(tx)
     }
@@ -441,6 +465,12 @@ impl From<LotRow> for Lot {
 
 pub struct QualityInspectionService;
 
+impl Default for QualityInspectionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QualityInspectionService {
     pub fn new() -> Self { Self }
 
@@ -484,7 +514,7 @@ impl QualityInspectionService {
         .bind(inspection.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(inspection)
     }
@@ -497,7 +527,7 @@ impl QualityInspectionService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("QualityInspection", &id.to_string()))?;
         
         let items = Self::get_inspection_items(pool, id).await?;
@@ -512,7 +542,7 @@ impl QualityInspectionService {
         .bind(inspection_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -544,7 +574,7 @@ impl QualityInspectionService {
         .bind(&item.expected_value)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(item)
     }
@@ -567,7 +597,7 @@ impl QualityInspectionService {
         .bind(item_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, InspectionItemRow>(
             "SELECT id, inspection_id, criterion, expected_value, actual_value, pass_fail, notes
@@ -576,7 +606,7 @@ impl QualityInspectionService {
         .bind(item_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.into())
     }
@@ -597,7 +627,7 @@ impl QualityInspectionService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_inspection(pool, id).await
     }
@@ -622,7 +652,7 @@ impl QualityInspectionService {
                 .fetch_all(pool)
                 .await
             }
-        }.map_err(|e| Error::Database(e))?;
+        }.map_err(Error::Database)?;
         
         let mut inspections = Vec::new();
         for row in rows {
@@ -719,6 +749,12 @@ impl From<InspectionItemRow> for InspectionItem {
 
 pub struct NonConformanceService;
 
+impl Default for NonConformanceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NonConformanceService {
     pub fn new() -> Self { Self }
 
@@ -764,7 +800,7 @@ impl NonConformanceService {
         .bind(ncr.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(ncr)
     }
@@ -777,7 +813,7 @@ impl NonConformanceService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("NonConformanceReport", &id.to_string()))?;
         
         Ok(row.into())
@@ -803,7 +839,7 @@ impl NonConformanceService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_ncr(pool, id).await
     }
@@ -827,7 +863,7 @@ impl NonConformanceService {
                 .fetch_all(pool)
                 .await
             }
-        }.map_err(|e| Error::Database(e))?;
+        }.map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -888,6 +924,12 @@ impl From<NCRRow> for NonConformanceReport {
 
 pub struct DemandForecastService;
 
+impl Default for DemandForecastService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DemandForecastService {
     pub fn new() -> Self { Self }
 
@@ -933,7 +975,7 @@ impl DemandForecastService {
         .bind(forecast.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(forecast)
     }
@@ -946,7 +988,7 @@ impl DemandForecastService {
         .bind(product_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -995,6 +1037,12 @@ impl From<ForecastRow> for DemandForecast {
 
 pub struct SafetyStockService;
 
+impl Default for SafetyStockService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SafetyStockService {
     pub fn new() -> Self { Self }
 
@@ -1033,7 +1081,7 @@ impl SafetyStockService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(SafetyStock {
             id,
@@ -1056,7 +1104,7 @@ impl SafetyStockService {
         .bind(product_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -1094,6 +1142,12 @@ impl From<SafetyStockRow> for SafetyStock {
 }
 
 pub struct ReplenishmentOrderService;
+
+impl Default for ReplenishmentOrderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl ReplenishmentOrderService {
     pub fn new() -> Self { Self }
@@ -1134,7 +1188,7 @@ impl ReplenishmentOrderService {
         .bind(order.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(order)
     }
@@ -1146,7 +1200,7 @@ impl ReplenishmentOrderService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -1194,6 +1248,12 @@ impl From<ReplenishmentOrderRow> for ReplenishmentOrder {
 
 pub struct WMSService;
 
+impl Default for WMSService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WMSService {
     pub fn new() -> Self { Self }
 
@@ -1236,7 +1296,7 @@ impl WMSService {
         .bind(zone.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(zone)
     }
@@ -1280,7 +1340,7 @@ impl WMSService {
         .bind("Active")
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(bin)
     }
@@ -1319,7 +1379,7 @@ impl WMSService {
         .bind(pick_list.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(pick_list)
     }
@@ -1332,7 +1392,7 @@ impl WMSService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PickList", &id.to_string()))?;
         
         Ok(row.into())
@@ -1372,7 +1432,7 @@ impl WMSService {
         .bind(format!("{:?}", item.status))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE pick_lists SET total_items = total_items + 1, picked_items = picked_items + 1 WHERE id = ?"
@@ -1380,7 +1440,7 @@ impl WMSService {
         .bind(pick_list_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(item)
     }
@@ -1395,7 +1455,7 @@ impl WMSService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_pick_list(pool, id).await
     }
@@ -1430,7 +1490,7 @@ impl WMSService {
         .bind(pack_list.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(pack_list)
     }
@@ -1461,7 +1521,7 @@ impl WMSService {
         .bind(item.box_number)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(item)
     }
@@ -1473,7 +1533,7 @@ impl WMSService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_pack_list(pool, id).await
     }
@@ -1486,7 +1546,7 @@ impl WMSService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PackList", &id.to_string()))?;
         
         Ok(row.into())
@@ -1553,7 +1613,7 @@ impl WMSService {
         .bind(shipment.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(shipment)
     }
@@ -1569,7 +1629,7 @@ impl WMSService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_shipment(pool, id).await
     }
@@ -1582,7 +1642,7 @@ impl WMSService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ShipmentOrder", &id.to_string()))?;
         
         Ok(row.into())
@@ -1731,6 +1791,12 @@ impl From<ShipmentOrderRow> for ShipmentOrder {
 
 pub struct ShippingService;
 
+impl Default for ShippingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ShippingService {
     pub fn new() -> Self { Self }
 
@@ -1773,7 +1839,7 @@ impl ShippingService {
         .bind(carrier.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(carrier)
     }
@@ -1805,7 +1871,7 @@ impl ShippingService {
         .bind(service.delivery_days)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(service)
     }
@@ -1858,7 +1924,7 @@ impl ShippingService {
         .bind(rate_card.expiry_date.map(|d| d.to_rfc3339()))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rate_card)
     }
@@ -1886,7 +1952,7 @@ impl ShippingService {
         .bind(weight)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ShippingRateCard", "no matching rate"))?;
         
         let (base_rate, per_kg_rate) = row;
@@ -1901,7 +1967,7 @@ impl ShippingService {
         .bind(shipment_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ShipmentOrder", &shipment_id.to_string()))?;
         
         Ok(row.into())
@@ -1909,6 +1975,12 @@ impl ShippingService {
 }
 
 pub struct EDIService;
+
+impl Default for EDIService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl EDIService {
     pub fn new() -> Self { Self }
@@ -1961,7 +2033,7 @@ impl EDIService {
         .bind(partner.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(partner)
     }
@@ -1998,7 +2070,7 @@ impl EDIService {
         .bind(&mapping.transformation_rule)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(mapping)
     }
@@ -2040,7 +2112,7 @@ impl EDIService {
         .bind(document.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(document)
     }
@@ -2082,13 +2154,19 @@ impl EDIService {
         .bind(document.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(document)
     }
 }
 
 pub struct SupplierPortalService;
+
+impl Default for SupplierPortalService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SupplierPortalService {
     pub fn new() -> Self { Self }
@@ -2125,7 +2203,7 @@ impl SupplierPortalService {
         .bind(invitation.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(invitation)
     }
@@ -2164,7 +2242,7 @@ impl SupplierPortalService {
         .bind(user.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(user)
     }
@@ -2206,7 +2284,7 @@ impl SupplierPortalService {
         .bind(document.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(document)
     }
@@ -2219,7 +2297,7 @@ impl SupplierPortalService {
         .bind(vendor_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -2268,6 +2346,12 @@ impl From<SupplierDocumentRow> for SupplierDocument {
 
 pub struct RFQService;
 
+impl Default for RFQService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RFQService {
     pub fn new() -> Self { Self }
 
@@ -2313,7 +2397,7 @@ impl RFQService {
         .bind(rfq.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rfq)
     }
@@ -2343,7 +2427,7 @@ impl RFQService {
         .bind(rfq_vendor.invited_at.map(|d| d.to_rfc3339()))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rfq_vendor)
     }
@@ -2355,7 +2439,7 @@ impl RFQService {
         .bind(rfq_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_rfq(pool, rfq_id).await
     }
@@ -2402,7 +2486,7 @@ impl RFQService {
         .bind(response.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE rfq_vendors SET status = 'Responded', responded_at = ? WHERE rfq_id = ? AND vendor_id = ?"
@@ -2412,7 +2496,7 @@ impl RFQService {
         .bind(vendor_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(response)
     }
@@ -2425,7 +2509,7 @@ impl RFQService {
         .bind(rfq_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -2439,7 +2523,7 @@ impl RFQService {
         .bind(rfq_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE rfq_vendors SET status = 'Awarded' WHERE rfq_id = ? AND vendor_id = ?"
@@ -2448,7 +2532,7 @@ impl RFQService {
         .bind(vendor_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE rfq_responses SET status = 'Accepted' WHERE rfq_id = ? AND vendor_id = ?"
@@ -2457,7 +2541,7 @@ impl RFQService {
         .bind(vendor_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_rfq(pool, rfq_id).await
     }
@@ -2470,7 +2554,7 @@ impl RFQService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("RFQ", &id.to_string()))?;
         
         Ok(row.into())

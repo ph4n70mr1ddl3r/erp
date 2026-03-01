@@ -71,6 +71,12 @@ struct EntityArchiveCountRow {
 
 pub struct ArchivalService;
 
+impl Default for ArchivalService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ArchivalService {
     pub fn new() -> Self {
         Self

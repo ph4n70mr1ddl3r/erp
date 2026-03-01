@@ -41,7 +41,7 @@ impl UserRole {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s {
             "Admin" => UserRole::Admin,
             "Finance" => UserRole::Finance,
@@ -69,7 +69,7 @@ impl UserStatus {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s {
             "Active" => UserStatus::Active,
             "Locked" => UserStatus::Locked,

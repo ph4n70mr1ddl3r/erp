@@ -270,7 +270,7 @@ impl JournalEntryRepository for SqliteJournalEntryRepository {
         
         let mut entries = Vec::new();
         for row in rows {
-            let id = Uuid::parse_str(&row.id)
+            let _id = Uuid::parse_str(&row.id)
                 .map_err(|_| Error::validation("Invalid journal entry ID format"))?;
             let lines = all_lines.get(&row.id).cloned().unwrap_or_default();
             entries.push(self.row_to_entry(row, lines)?);

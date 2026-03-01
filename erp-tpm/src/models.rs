@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 use uuid::Uuid;
 
@@ -28,14 +29,14 @@ impl FromStr for PromotionStatus {
     }
 }
 
-impl ToString for PromotionStatus {
-    fn to_string(&self) -> String {
+impl Display for PromotionStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Self::Draft => "Draft".to_string(),
-            Self::Planned => "Planned".to_string(),
-            Self::Active => "Active".to_string(),
-            Self::Completed => "Completed".to_string(),
-            Self::Cancelled => "Cancelled".to_string(),
+            Self::Draft => write!(f, "Draft"),
+            Self::Planned => write!(f, "Planned"),
+            Self::Active => write!(f, "Active"),
+            Self::Completed => write!(f, "Completed"),
+            Self::Cancelled => write!(f, "Cancelled"),
         }
     }
 }
@@ -65,14 +66,14 @@ impl FromStr for RebateStatus {
     }
 }
 
-impl ToString for RebateStatus {
-    fn to_string(&self) -> String {
+impl Display for RebateStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Self::Pending => "Pending".to_string(),
-            Self::Approved => "Approved".to_string(),
-            Self::Paid => "Paid".to_string(),
-            Self::PartiallyPaid => "PartiallyPaid".to_string(),
-            Self::Cancelled => "Cancelled".to_string(),
+            Self::Pending => write!(f, "Pending"),
+            Self::Approved => write!(f, "Approved"),
+            Self::Paid => write!(f, "Paid"),
+            Self::PartiallyPaid => write!(f, "PartiallyPaid"),
+            Self::Cancelled => write!(f, "Cancelled"),
         }
     }
 }
@@ -102,14 +103,14 @@ impl FromStr for ClaimStatus {
     }
 }
 
-impl ToString for ClaimStatus {
-    fn to_string(&self) -> String {
+impl Display for ClaimStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Self::Submitted => "Submitted".to_string(),
-            Self::UnderReview => "UnderReview".to_string(),
-            Self::Approved => "Approved".to_string(),
-            Self::Rejected => "Rejected".to_string(),
-            Self::Paid => "Paid".to_string(),
+            Self::Submitted => write!(f, "Submitted"),
+            Self::UnderReview => write!(f, "UnderReview"),
+            Self::Approved => write!(f, "Approved"),
+            Self::Rejected => write!(f, "Rejected"),
+            Self::Paid => write!(f, "Paid"),
         }
     }
 }
@@ -143,16 +144,16 @@ impl FromStr for PromotionType {
     }
 }
 
-impl ToString for PromotionType {
-    fn to_string(&self) -> String {
+impl Display for PromotionType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Self::OffInvoice => "OffInvoice".to_string(),
-            Self::OnInvoice => "OnInvoice".to_string(),
-            Self::BillBack => "BillBack".to_string(),
-            Self::ScanDown => "ScanDown".to_string(),
-            Self::LumpSum => "LumpSum".to_string(),
-            Self::VolumeIncentive => "VolumeIncentive".to_string(),
-            Self::GrowthIncentive => "GrowthIncentive".to_string(),
+            Self::OffInvoice => write!(f, "OffInvoice"),
+            Self::OnInvoice => write!(f, "OnInvoice"),
+            Self::BillBack => write!(f, "BillBack"),
+            Self::ScanDown => write!(f, "ScanDown"),
+            Self::LumpSum => write!(f, "LumpSum"),
+            Self::VolumeIncentive => write!(f, "VolumeIncentive"),
+            Self::GrowthIncentive => write!(f, "GrowthIncentive"),
         }
     }
 }
@@ -184,15 +185,15 @@ impl FromStr for FundType {
     }
 }
 
-impl ToString for FundType {
-    fn to_string(&self) -> String {
+impl Display for FundType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
-            Self::MarketingDevelopment => "MarketingDevelopment".to_string(),
-            Self::CooperativeAdvertising => "CooperativeAdvertising".to_string(),
-            Self::Display => "Display".to_string(),
-            Self::Sampling => "Sampling".to_string(),
-            Self::TradeShow => "TradeShow".to_string(),
-            Self::Other => "Other".to_string(),
+            Self::MarketingDevelopment => write!(f, "MarketingDevelopment"),
+            Self::CooperativeAdvertising => write!(f, "CooperativeAdvertising"),
+            Self::Display => write!(f, "Display"),
+            Self::Sampling => write!(f, "Sampling"),
+            Self::TradeShow => write!(f, "TradeShow"),
+            Self::Other => write!(f, "Other"),
         }
     }
 }

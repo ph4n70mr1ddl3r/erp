@@ -53,6 +53,12 @@ pub struct IndexRequest {
 
 pub struct SearchService;
 
+impl Default for SearchService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SearchService {
     pub fn new() -> Self {
         Self

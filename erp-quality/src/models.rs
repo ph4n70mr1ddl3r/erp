@@ -591,7 +591,7 @@ pub struct StatisticalProcessControl {
 pub enum ControlChartType {
     XBarR,
     XBarS,
-    I_MR,
+    IMr,
     PChart,
     NPChart,
     CChart,

@@ -1,6 +1,5 @@
 use crate::models::*;
 use async_trait::async_trait;
-use sqlx::SqlitePool;
 use anyhow::Result;
 
 #[async_trait]
@@ -22,6 +21,12 @@ pub trait ApsRepository: Send + Sync {
 }
 
 pub struct SqliteApsRepository;
+
+impl Default for SqliteApsRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SqliteApsRepository {
     pub fn new() -> Self {

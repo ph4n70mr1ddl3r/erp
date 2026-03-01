@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct VendorService { repo: SqliteVendorRepository }
+impl Default for VendorService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VendorService {
     pub fn new() -> Self { Self { repo: SqliteVendorRepository } }
     pub async fn get(&self, pool: &SqlitePool, id: Uuid) -> Result<Vendor> { self.repo.find_by_id(pool, id).await }
@@ -19,6 +25,12 @@ impl VendorService {
 }
 
 pub struct PurchaseOrderService { repo: SqlitePurchaseOrderRepository }
+impl Default for PurchaseOrderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PurchaseOrderService {
     pub fn new() -> Self { Self { repo: SqlitePurchaseOrderRepository } }
     pub async fn get(&self, pool: &SqlitePool, id: Uuid) -> Result<PurchaseOrder> { self.repo.find_by_id(pool, id).await }
@@ -42,6 +54,12 @@ impl PurchaseOrderService {
 }
 
 pub struct SupplierScorecardService;
+
+impl Default for SupplierScorecardService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SupplierScorecardService {
     pub fn new() -> Self { Self }

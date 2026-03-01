@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::error::ApiResult;
 use crate::db::AppState;
 use crate::handlers::auth::AuthUser;
-use erp_kanban::{KanbanService, KanbanBoard, KanbanCard, KanbanCardComment, KanbanCardChecklist, KanbanActivityLog, BoardSummary, CreateBoardRequest, CreateCardRequest, MoveCardRequest, KanbanBoardType, KanbanCardType, KanbanCardPriority, KanbanSwimlaneType, CreateColumnRequest};
+use erp_kanban::{KanbanService, KanbanBoard, KanbanCard, KanbanCardComment, KanbanCardChecklist, KanbanActivityLog, BoardSummary, CreateBoardRequest, CreateCardRequest, MoveCardRequest, KanbanBoardType, KanbanCardType, KanbanCardPriority, CreateColumnRequest};
 
 #[derive(Serialize)]
 pub struct ApiResponse<T> {

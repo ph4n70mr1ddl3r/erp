@@ -1,11 +1,17 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
-use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Money, Currency};
+use erp_core::{Error, Result, Pagination, Paginated, BaseEntity};
 use crate::models::*;
 use crate::repository::*;
 
 pub struct EcommercePlatformService { repo: SqliteEcommercePlatformRepository }
+impl Default for EcommercePlatformService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EcommercePlatformService {
     pub fn new() -> Self { Self { repo: SqliteEcommercePlatformRepository } }
     
@@ -48,6 +54,12 @@ impl EcommercePlatformService {
 }
 
 pub struct EcommerceOrderService { repo: SqliteEcommerceOrderRepository }
+impl Default for EcommerceOrderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EcommerceOrderService {
     pub fn new() -> Self { Self { repo: SqliteEcommerceOrderRepository } }
     
@@ -64,10 +76,7 @@ impl EcommerceOrderService {
     }
     
     pub async fn import(&self, pool: &SqlitePool, mut order: EcommerceOrder) -> Result<EcommerceOrder> {
-        match self.repo.find_by_external_id(pool, order.platform_id, &order.external_order_id).await {
-            Ok(_) => return Err(Error::validation("Order already imported")),
-            Err(_) => {}
-        }
+        if self.repo.find_by_external_id(pool, order.platform_id, &order.external_order_id).await.is_ok() { return Err(Error::validation("Order already imported")) }
         
         order.base = BaseEntity::new();
         order.sync_status = SyncStatus::Synced;
@@ -96,7 +105,7 @@ impl EcommerceOrderService {
         Ok(())
     }
     
-    pub async fn update_fulfillment(&self, pool: &SqlitePool, id: Uuid, tracking_number: &str, carrier: Option<&str>) -> Result<()> {
+    pub async fn update_fulfillment(&self, pool: &SqlitePool, id: Uuid, tracking_number: &str, _carrier: Option<&str>) -> Result<()> {
         let now = Utc::now();
         sqlx::query(
             "UPDATE ecommerce_orders SET tracking_number = ?, fulfillment_status = 'Shipped', updated_at = ? WHERE id = ?"
@@ -113,6 +122,12 @@ impl EcommerceOrderService {
 }
 
 pub struct ProductListingService { repo: SqliteProductListingRepository }
+impl Default for ProductListingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProductListingService {
     pub fn new() -> Self { Self { repo: SqliteProductListingRepository } }
     
@@ -166,6 +181,12 @@ impl ProductListingService {
 }
 
 pub struct WebhookService;
+impl Default for WebhookService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebhookService {
     pub fn new() -> Self { Self }
     
@@ -224,6 +245,12 @@ impl WebhookService {
 }
 
 pub struct InventorySyncService;
+impl Default for InventorySyncService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl InventorySyncService {
     pub fn new() -> Self { Self }
     

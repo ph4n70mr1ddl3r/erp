@@ -1,6 +1,5 @@
 use crate::models::*;
 use async_trait::async_trait;
-use sqlx::SqlitePool;
 use anyhow::Result;
 
 #[async_trait]
@@ -26,6 +25,12 @@ pub struct SpendFilters {
 }
 
 pub struct SqliteSpendAnalyticsRepository;
+
+impl Default for SqliteSpendAnalyticsRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SqliteSpendAnalyticsRepository {
     pub fn new() -> Self {

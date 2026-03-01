@@ -3,7 +3,7 @@ use sqlx::SqlitePool;
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity};
 use crate::models::*;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
 
 #[async_trait]
 pub trait ReportDefinitionRepository: Send + Sync {

@@ -48,7 +48,7 @@ impl RiskRepository {
             r#"SELECT id, code, title, description, category, status, probability, impact, risk_score, inherent_risk_level, residual_risk_level, owner_id, department, identified_date, target_resolution_date, actual_resolution_date, created_at, updated_at, created_by FROM risks ORDER BY risk_score DESC"#
         )
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| Self::row_to_risk(&r)).collect())
+        Ok(rows.iter().map(Self::row_to_risk).collect())
     }
 
     fn row_to_risk(r: &sqlx::sqlite::SqliteRow) -> Risk {

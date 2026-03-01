@@ -10,6 +10,12 @@ pub struct ServiceTicketService {
     repo: SqliteServiceTicketRepository,
 }
 
+impl Default for ServiceTicketService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ServiceTicketService {
     pub fn new() -> Self {
         Self { repo: SqliteServiceTicketRepository }
@@ -17,7 +23,7 @@ impl ServiceTicketService {
 
     pub async fn create(&self, pool: &SqlitePool, subject: String, description: String, customer_id: Option<Uuid>, priority: TicketPriority, ticket_type: TicketType, source: TicketSource) -> Result<ServiceTicket> {
         let ticket_number = format!("TKT-{}", Utc::now().format("%Y%m%d%H%M%S"));
-        let now = Utc::now();
+        let _now = Utc::now();
         let ticket = ServiceTicket {
             base: BaseEntity::new(),
             ticket_number,
@@ -121,6 +127,12 @@ pub struct KnowledgeArticleService {
     repo: SqliteKnowledgeArticleRepository,
 }
 
+impl Default for KnowledgeArticleService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KnowledgeArticleService {
     pub fn new() -> Self {
         Self { repo: SqliteKnowledgeArticleRepository }
@@ -204,6 +216,12 @@ impl KnowledgeArticleService {
 
 pub struct SLAService {
     repo: SqliteSLARepository,
+}
+
+impl Default for SLAService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SLAService {

@@ -8,8 +8,8 @@ use uuid::Uuid;
 use erp_core::Pagination;
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_portals::{PortalUserService, PortalOrderService, PortalPaymentService, SupplierPortalService};
-use erp_portals::{PortalUser, PortalType, PortalAccessLevel, PortalOrder, PortalOrderLine, PortalPayment, PaymentMethodType};
+use erp_portals::{PortalUserService, PortalOrderService, PortalPaymentService};
+use erp_portals::{PortalUser, PortalType, PaymentMethodType, PortalOrderLine};
 
 #[derive(Deserialize)]
 pub struct RegisterRequest {

@@ -7,6 +7,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct TaxJurisdictionService { repo: SqliteTaxJurisdictionRepository }
+impl Default for TaxJurisdictionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaxJurisdictionService {
     pub fn new() -> Self { Self { repo: SqliteTaxJurisdictionRepository } }
     
@@ -29,6 +35,12 @@ impl TaxJurisdictionService {
 }
 
 pub struct TaxRateService { repo: SqliteTaxRateRepository }
+impl Default for TaxRateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaxRateService {
     pub fn new() -> Self { Self { repo: SqliteTaxRateRepository } }
     
@@ -63,6 +75,12 @@ impl TaxRateService {
 }
 
 pub struct TaxCalculationService;
+impl Default for TaxCalculationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaxCalculationService {
     pub fn new() -> Self { Self }
     
@@ -71,7 +89,7 @@ impl TaxCalculationService {
         jurisdiction_id: Uuid,
         amount: i64,
         customer_id: Option<Uuid>,
-        product_tax_class_id: Option<Uuid>,
+        _product_tax_class_id: Option<Uuid>,
     ) -> Result<TaxCalculationResult> {
         let rates_repo = SqliteTaxRateRepository;
         let rates = rates_repo.find_by_jurisdiction(pool, jurisdiction_id).await?;
@@ -151,6 +169,12 @@ pub struct TaxBreakdown {
 }
 
 pub struct TaxTransactionService { repo: SqliteTaxTransactionRepository }
+impl Default for TaxTransactionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaxTransactionService {
     pub fn new() -> Self { Self { repo: SqliteTaxTransactionRepository } }
     
@@ -197,6 +221,12 @@ impl TaxTransactionService {
 }
 
 pub struct TaxExemptionService { repo: SqliteTaxExemptionRepository }
+impl Default for TaxExemptionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaxExemptionService {
     pub fn new() -> Self { Self { repo: SqliteTaxExemptionRepository } }
     
@@ -219,6 +249,12 @@ impl TaxExemptionService {
 }
 
 pub struct TaxReportService;
+impl Default for TaxReportService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TaxReportService {
     pub fn new() -> Self { Self }
     

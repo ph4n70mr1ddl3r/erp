@@ -11,7 +11,7 @@ const MIN_PASSWORD_LENGTH: usize = 8;
 
 fn validate_password_strength(password: &str) -> Result<()> {
     if password.len() < MIN_PASSWORD_LENGTH {
-        return Err(Error::validation(&format!(
+        return Err(Error::validation(format!(
             "Password must be at least {} characters",
             MIN_PASSWORD_LENGTH
         )));
@@ -29,6 +29,12 @@ fn validate_password_strength(password: &str) -> Result<()> {
 
 pub struct AuthService {
     repo: SqliteUserRepository,
+}
+
+impl Default for AuthService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AuthService {

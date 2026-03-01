@@ -25,7 +25,7 @@ impl AIModelRepository for SqliteAIModelRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("AIModel", &id.to_string()))?;
         
         Ok(row.into())
@@ -35,7 +35,7 @@ impl AIModelRepository for SqliteAIModelRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM ai_models WHERE status = 'Active'")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let rows = sqlx::query_as::<_, AIModelRow>(
             "SELECT * FROM ai_models WHERE status = 'Active' ORDER BY created_at DESC LIMIT ? OFFSET ?"
@@ -44,7 +44,7 @@ impl AIModelRepository for SqliteAIModelRepository {
         .bind(pagination.offset())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -56,7 +56,7 @@ impl AIModelRepository for SqliteAIModelRepository {
         .bind(format!("{:?}", model_type))
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -93,7 +93,7 @@ impl AIModelRepository for SqliteAIModelRepository {
         .bind(model.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(model)
     }
@@ -112,7 +112,7 @@ impl AIModelRepository for SqliteAIModelRepository {
         .bind(model.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -122,7 +122,7 @@ impl AIModelRepository for SqliteAIModelRepository {
             .bind(id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -289,7 +289,7 @@ impl PredictionRequestRepository for SqlitePredictionRequestRepository {
         .bind(request.base.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(request)
     }
@@ -301,7 +301,7 @@ impl PredictionRequestRepository for SqlitePredictionRequestRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PredictionRequest", &id.to_string()))?;
         
         Ok(row.into())
@@ -317,7 +317,7 @@ impl PredictionRequestRepository for SqlitePredictionRequestRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -412,7 +412,7 @@ impl AnomalyDetectionRepository for SqliteAnomalyDetectionRepository {
         .bind(anomaly.base.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(anomaly)
     }
@@ -424,7 +424,7 @@ impl AnomalyDetectionRepository for SqliteAnomalyDetectionRepository {
         .bind(limit)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -438,7 +438,7 @@ impl AnomalyDetectionRepository for SqliteAnomalyDetectionRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
     
@@ -451,7 +451,7 @@ impl AnomalyDetectionRepository for SqliteAnomalyDetectionRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }

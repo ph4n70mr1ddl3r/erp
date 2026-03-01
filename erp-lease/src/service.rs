@@ -15,7 +15,7 @@ impl LeaseService {
         Self { repo: SqliteLeaseRepository::new(pool) }
     }
 
-    pub async fn create_lease(&self, pool: &SqlitePool, req: CreateLeaseRequest) -> Result<Lease> {
+    pub async fn create_lease(&self, _pool: &SqlitePool, req: CreateLeaseRequest) -> Result<Lease> {
         let now = Utc::now();
         let lease = Lease {
             base: BaseEntity::new(),
@@ -53,15 +53,15 @@ impl LeaseService {
         self.repo.create_lease(&lease).await
     }
 
-    pub async fn get_lease(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<Lease>> {
+    pub async fn get_lease(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<Lease>> {
         self.repo.get_lease(id).await
     }
 
-    pub async fn list_leases(&self, pool: &SqlitePool, status: Option<LeaseStatus>) -> Result<Vec<Lease>> {
+    pub async fn list_leases(&self, _pool: &SqlitePool, status: Option<LeaseStatus>) -> Result<Vec<Lease>> {
         self.repo.list_leases(status).await
     }
 
-    pub async fn calculate_amortization(&self, pool: &SqlitePool, lease_id: Uuid) -> Result<Vec<LeaseAmortizationSchedule>> {
+    pub async fn calculate_amortization(&self, _pool: &SqlitePool, lease_id: Uuid) -> Result<Vec<LeaseAmortizationSchedule>> {
         let lease = self.repo.get_lease(lease_id).await?.ok_or_else(|| anyhow::anyhow!("Lease not found"))?;
         let schedule = self.repo.create_payment_schedule(&LeasePaymentSchedule {
             base: BaseEntity::new(),
@@ -125,7 +125,7 @@ impl LeaseService {
         Ok(amort_schedule)
     }
 
-    pub async fn create_rou_asset(&self, pool: &SqlitePool, lease_id: Uuid) -> Result<RightOfUseAsset> {
+    pub async fn create_rou_asset(&self, _pool: &SqlitePool, lease_id: Uuid) -> Result<RightOfUseAsset> {
         let lease = self.repo.get_lease(lease_id).await?.ok_or_else(|| anyhow::anyhow!("Lease not found"))?;
         let rou = RightOfUseAsset {
             base: BaseEntity::new(),
@@ -149,7 +149,7 @@ impl LeaseService {
         self.repo.create_rou_asset(&rou).await
     }
 
-    pub async fn create_liability(&self, pool: &SqlitePool, lease_id: Uuid) -> Result<LeaseLiability> {
+    pub async fn create_liability(&self, _pool: &SqlitePool, lease_id: Uuid) -> Result<LeaseLiability> {
         let lease = self.repo.get_lease(lease_id).await?.ok_or_else(|| anyhow::anyhow!("Lease not found"))?;
         let liability = LeaseLiability {
             base: BaseEntity::new(),
@@ -169,7 +169,7 @@ impl LeaseService {
         self.repo.create_liability(&liability).await
     }
 
-    pub async fn record_payment(&self, pool: &SqlitePool, lease_id: Uuid, req: RecordPaymentRequest) -> Result<LeasePayment> {
+    pub async fn record_payment(&self, _pool: &SqlitePool, lease_id: Uuid, req: RecordPaymentRequest) -> Result<LeasePayment> {
         let payment = LeasePayment {
             base: BaseEntity::new(),
             lease_id,
@@ -193,7 +193,7 @@ impl LeaseService {
         self.repo.create_payment(&payment).await
     }
 
-    pub async fn modify_lease(&self, pool: &SqlitePool, lease_id: Uuid, req: ModifyLeaseRequest) -> Result<LeaseModification> {
+    pub async fn modify_lease(&self, _pool: &SqlitePool, lease_id: Uuid, req: ModifyLeaseRequest) -> Result<LeaseModification> {
         let lease = self.repo.get_lease(lease_id).await?.ok_or_else(|| anyhow::anyhow!("Lease not found"))?;
         let modification = LeaseModification {
             base: BaseEntity::new(),
@@ -221,7 +221,7 @@ impl LeaseService {
         self.repo.create_modification(&modification).await
     }
 
-    pub async fn generate_disclosure(&self, pool: &SqlitePool, period_start: NaiveDate, period_end: NaiveDate) -> Result<LeaseDisclosure> {
+    pub async fn generate_disclosure(&self, _pool: &SqlitePool, period_start: NaiveDate, period_end: NaiveDate) -> Result<LeaseDisclosure> {
         let leases = self.repo.list_leases(Some(LeaseStatus::Active)).await?;
         let mut total_rou = 0i64;
         let mut total_liability = 0i64;

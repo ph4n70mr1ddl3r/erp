@@ -6,6 +6,12 @@ use erp_core::{BaseEntity, Result};
 
 pub struct BIService;
 
+impl Default for BIService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BIService {
     pub fn new() -> Self { Self }
 

@@ -10,6 +10,12 @@ pub struct BackupService {
     repo: SqliteBackupRepository,
 }
 
+impl Default for BackupService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BackupService {
     pub fn new() -> Self {
         Self { repo: SqliteBackupRepository }

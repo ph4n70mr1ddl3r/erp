@@ -12,6 +12,12 @@ pub struct ProjectService {
     expense_repo: SqliteProjectExpenseRepository,
 }
 
+impl Default for ProjectService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProjectService {
     pub fn new() -> Self {
         Self {
@@ -109,28 +115,34 @@ pub struct ProjectTaskService {
     repo: SqliteProjectTaskRepository,
 }
 
+impl Default for ProjectTaskService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProjectTaskService {
     pub fn new() -> Self {
         Self { repo: SqliteProjectTaskRepository }
     }
 
-    pub async fn get_task(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectTask> {
+    pub async fn get_task(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectTask> {
         Err(Error::not_found("ProjectTask", &id.to_string()))
     }
 
-    pub async fn list_tasks_by_project(&self, pool: &SqlitePool, project_id: Uuid) -> Result<Vec<ProjectTask>> {
+    pub async fn list_tasks_by_project(&self, _pool: &SqlitePool, _project_id: Uuid) -> Result<Vec<ProjectTask>> {
         Ok(vec![])
     }
 
-    pub async fn create_task(&self, pool: &SqlitePool, task: ProjectTask) -> Result<ProjectTask> {
+    pub async fn create_task(&self, _pool: &SqlitePool, _task: ProjectTask) -> Result<ProjectTask> {
         Err(Error::validation("Not implemented"))
     }
 
-    pub async fn update_task(&self, pool: &SqlitePool, task: ProjectTask) -> Result<ProjectTask> {
+    pub async fn update_task(&self, _pool: &SqlitePool, task: ProjectTask) -> Result<ProjectTask> {
         Err(Error::not_found("ProjectTask", &task.id.to_string()))
     }
 
-    pub async fn delete_task(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    pub async fn delete_task(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectTask", &id.to_string()))
     }
 }
@@ -139,28 +151,34 @@ pub struct ProjectMilestoneService {
     repo: SqliteProjectMilestoneRepository,
 }
 
+impl Default for ProjectMilestoneService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProjectMilestoneService {
     pub fn new() -> Self {
         Self { repo: SqliteProjectMilestoneRepository }
     }
 
-    pub async fn get_milestone(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectMilestone> {
+    pub async fn get_milestone(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectMilestone> {
         Err(Error::not_found("ProjectMilestone", &id.to_string()))
     }
 
-    pub async fn list_milestones_by_project(&self, pool: &SqlitePool, project_id: Uuid) -> Result<Vec<ProjectMilestone>> {
+    pub async fn list_milestones_by_project(&self, _pool: &SqlitePool, _project_id: Uuid) -> Result<Vec<ProjectMilestone>> {
         Ok(vec![])
     }
 
-    pub async fn create_milestone(&self, pool: &SqlitePool, milestone: ProjectMilestone) -> Result<ProjectMilestone> {
+    pub async fn create_milestone(&self, _pool: &SqlitePool, _milestone: ProjectMilestone) -> Result<ProjectMilestone> {
         Err(Error::validation("Not implemented"))
     }
 
-    pub async fn update_milestone(&self, pool: &SqlitePool, milestone: ProjectMilestone) -> Result<ProjectMilestone> {
+    pub async fn update_milestone(&self, _pool: &SqlitePool, milestone: ProjectMilestone) -> Result<ProjectMilestone> {
         Err(Error::not_found("ProjectMilestone", &milestone.id.to_string()))
     }
 
-    pub async fn delete_milestone(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    pub async fn delete_milestone(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectMilestone", &id.to_string()))
     }
 }
@@ -169,28 +187,34 @@ pub struct ProjectExpenseService {
     repo: SqliteProjectExpenseRepository,
 }
 
+impl Default for ProjectExpenseService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ProjectExpenseService {
     pub fn new() -> Self {
         Self { repo: SqliteProjectExpenseRepository }
     }
 
-    pub async fn get_expense(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectExpense> {
+    pub async fn get_expense(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectExpense> {
         Err(Error::not_found("ProjectExpense", &id.to_string()))
     }
 
-    pub async fn list_expenses_by_project(&self, pool: &SqlitePool, project_id: Uuid) -> Result<Vec<ProjectExpense>> {
+    pub async fn list_expenses_by_project(&self, _pool: &SqlitePool, _project_id: Uuid) -> Result<Vec<ProjectExpense>> {
         Ok(vec![])
     }
 
-    pub async fn create_expense(&self, pool: &SqlitePool, expense: ProjectExpense) -> Result<ProjectExpense> {
+    pub async fn create_expense(&self, _pool: &SqlitePool, _expense: ProjectExpense) -> Result<ProjectExpense> {
         Err(Error::validation("Not implemented"))
     }
 
-    pub async fn update_expense(&self, pool: &SqlitePool, expense: ProjectExpense) -> Result<ProjectExpense> {
+    pub async fn update_expense(&self, _pool: &SqlitePool, expense: ProjectExpense) -> Result<ProjectExpense> {
         Err(Error::not_found("ProjectExpense", &expense.id.to_string()))
     }
 
-    pub async fn delete_expense(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    pub async fn delete_expense(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("ProjectExpense", &id.to_string()))
     }
 }
@@ -198,6 +222,12 @@ impl ProjectExpenseService {
 pub struct TimesheetService {
     repo: SqliteTimesheetRepository,
     entry_repo: SqliteTimesheetEntryRepository,
+}
+
+impl Default for TimesheetService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TimesheetService {
@@ -239,7 +269,7 @@ impl TimesheetService {
         }
         entry.id = Uuid::new_v4();
         let entry = self.entry_repo.create(pool, entry).await?;
-        let _ = self.recalculate_hours(pool, entry.timesheet_id).await?;
+        self.recalculate_hours(pool, entry.timesheet_id).await?;
         Ok(entry)
     }
 
@@ -251,7 +281,7 @@ impl TimesheetService {
         }
         let timesheet_id = entry.timesheet_id;
         self.entry_repo.delete(pool, entry_id).await?;
-        let _ = self.recalculate_hours(pool, timesheet_id).await?;
+        self.recalculate_hours(pool, timesheet_id).await?;
         Ok(())
     }
 
@@ -302,28 +332,34 @@ pub struct TimesheetEntryService {
     repo: SqliteTimesheetEntryRepository,
 }
 
+impl Default for TimesheetEntryService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TimesheetEntryService {
     pub fn new() -> Self {
         Self { repo: SqliteTimesheetEntryRepository }
     }
 
-    pub async fn get_entry(&self, pool: &SqlitePool, id: Uuid) -> Result<TimesheetEntry> {
+    pub async fn get_entry(&self, _pool: &SqlitePool, id: Uuid) -> Result<TimesheetEntry> {
         Err(Error::not_found("TimesheetEntry", &id.to_string()))
     }
 
-    pub async fn list_entries_by_timesheet(&self, pool: &SqlitePool, timesheet_id: Uuid) -> Result<Vec<TimesheetEntry>> {
+    pub async fn list_entries_by_timesheet(&self, _pool: &SqlitePool, _timesheet_id: Uuid) -> Result<Vec<TimesheetEntry>> {
         Ok(vec![])
     }
 
-    pub async fn create_entry(&self, pool: &SqlitePool, entry: TimesheetEntry) -> Result<TimesheetEntry> {
+    pub async fn create_entry(&self, _pool: &SqlitePool, _entry: TimesheetEntry) -> Result<TimesheetEntry> {
         Err(Error::validation("Not implemented"))
     }
 
-    pub async fn update_entry(&self, pool: &SqlitePool, entry: TimesheetEntry) -> Result<TimesheetEntry> {
+    pub async fn update_entry(&self, _pool: &SqlitePool, entry: TimesheetEntry) -> Result<TimesheetEntry> {
         Err(Error::not_found("TimesheetEntry", &entry.id.to_string()))
     }
 
-    pub async fn delete_entry(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    pub async fn delete_entry(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         Err(Error::not_found("TimesheetEntry", &id.to_string()))
     }
 }
@@ -333,6 +369,12 @@ pub struct ProjectBillingService {
     milestone_repo: SqliteProjectMilestoneRepository,
     timesheet_repo: SqliteTimesheetRepository,
     entry_repo: SqliteTimesheetEntryRepository,
+}
+
+impl Default for ProjectBillingService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ProjectBillingService {

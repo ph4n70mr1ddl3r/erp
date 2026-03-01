@@ -9,7 +9,7 @@ use erp_ecommerce::{
     EcommercePlatform, PlatformType, SyncDirection, SyncStatus,
     EcommerceOrder, EcommerceOrderStatus, FulfillmentStatus, PaymentStatus, EcommerceOrderLine,
     ProductListing, ProductListingStatus, ProductVisibility,
-    EcommercePlatformService, EcommerceOrderService, ProductListingService, WebhookService,
+    EcommercePlatformService, EcommerceOrderService, ProductListingService,
 };
 
 #[derive(Serialize)]

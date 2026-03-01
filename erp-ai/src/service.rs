@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct AIModelService { repo: SqliteAIModelRepository }
+impl Default for AIModelService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AIModelService {
     pub fn new() -> Self { Self { repo: SqliteAIModelRepository } }
     
@@ -73,6 +79,12 @@ pub struct PredictionService {
     repo: SqlitePredictionRequestRepository,
     model_repo: SqliteAIModelRepository,
 }
+impl Default for PredictionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PredictionService {
     pub fn new() -> Self { Self { 
         repo: SqlitePredictionRequestRepository,
@@ -145,6 +157,12 @@ impl PredictionService {
 }
 
 pub struct AnomalyService { repo: SqliteAnomalyDetectionRepository }
+impl Default for AnomalyService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AnomalyService {
     pub fn new() -> Self { Self { repo: SqliteAnomalyDetectionRepository } }
     
@@ -201,6 +219,12 @@ impl AnomalyService {
 }
 
 pub struct ForecastService;
+impl Default for ForecastService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ForecastService {
     pub fn new() -> Self { Self }
     
@@ -253,6 +277,12 @@ impl ForecastService {
 }
 
 pub struct RecommendationService;
+impl Default for RecommendationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RecommendationService {
     pub fn new() -> Self { Self }
     
@@ -296,6 +326,12 @@ impl RecommendationService {
 }
 
 pub struct CustomerInsightService;
+impl Default for CustomerInsightService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CustomerInsightService {
     pub fn new() -> Self { Self }
     

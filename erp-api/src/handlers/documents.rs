@@ -6,11 +6,10 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{BaseEntity, Status, Pagination};
+use erp_core::BaseEntity;
 use erp_documents::{
-    DocumentService, Document, DocumentFolder, DocumentVersion, DocumentCheckout,
-    DocumentReview, DocumentPermission, DocumentRelation, RetentionPolicy,
-    DocumentType, DocumentStatus, AccessLevel, ReviewStatus, DispositionType,
+    DocumentService, Document,
+    DocumentType, DocumentStatus, AccessLevel, DispositionType,
 };
 
 #[derive(Deserialize)]

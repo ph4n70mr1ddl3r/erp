@@ -9,6 +9,12 @@ pub struct CommissionService {
     repo: SqliteCommissionRepository,
 }
 
+impl Default for CommissionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CommissionService {
     pub fn new() -> Self {
         Self {
@@ -16,7 +22,7 @@ impl CommissionService {
         }
     }
     
-    pub async fn create_plan(&self, pool: &SqlitePool, mut plan: CommissionPlan) -> Result<CommissionPlan> {
+    pub async fn create_plan(&self, _pool: &SqlitePool, mut plan: CommissionPlan) -> Result<CommissionPlan> {
         plan.id = Uuid::new_v4();
         plan.created_at = Utc::now();
         plan.updated_at = Utc::now();
@@ -25,15 +31,15 @@ impl CommissionService {
         Ok(plan)
     }
     
-    pub async fn get_plan(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<CommissionPlan>> {
+    pub async fn get_plan(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<CommissionPlan>> {
         self.repo.get_plan(id).await
     }
     
-    pub async fn list_plans(&self, pool: &SqlitePool) -> Result<Vec<CommissionPlan>> {
+    pub async fn list_plans(&self, _pool: &SqlitePool) -> Result<Vec<CommissionPlan>> {
         self.repo.list_plans().await
     }
     
-    pub async fn calculate_commission(&self, pool: &SqlitePool, sales_rep_id: Uuid, plan_id: Uuid, period_start: chrono::DateTime<Utc>, period_end: chrono::DateTime<Utc>) -> Result<CommissionCalculation> {
+    pub async fn calculate_commission(&self, _pool: &SqlitePool, sales_rep_id: Uuid, plan_id: Uuid, period_start: chrono::DateTime<Utc>, period_end: chrono::DateTime<Utc>) -> Result<CommissionCalculation> {
         let mut calc = CommissionCalculation {
             id: Uuid::new_v4(),
             calculation_number: format!("CALC-{}", Utc::now().format("%Y%m%d%H%M%S")),
@@ -75,19 +81,19 @@ impl CommissionService {
         Ok(calc)
     }
     
-    pub async fn get_calculation(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<CommissionCalculation>> {
+    pub async fn get_calculation(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<CommissionCalculation>> {
         self.repo.get_calculation(id).await
     }
     
-    pub async fn list_calculations(&self, pool: &SqlitePool, sales_rep_id: Option<Uuid>) -> Result<Vec<CommissionCalculation>> {
+    pub async fn list_calculations(&self, _pool: &SqlitePool, sales_rep_id: Option<Uuid>) -> Result<Vec<CommissionCalculation>> {
         self.repo.list_calculations(sales_rep_id).await
     }
     
-    pub async fn approve_calculation(&self, pool: &SqlitePool, id: Uuid, approver_id: Uuid) -> Result<()> {
+    pub async fn approve_calculation(&self, _pool: &SqlitePool, id: Uuid, _approver_id: Uuid) -> Result<()> {
         self.repo.update_calculation_status(id, CalculationStatus::Approved).await
     }
     
-    pub async fn create_quota(&self, pool: &SqlitePool, mut quota: SalesQuota) -> Result<SalesQuota> {
+    pub async fn create_quota(&self, _pool: &SqlitePool, mut quota: SalesQuota) -> Result<SalesQuota> {
         quota.id = Uuid::new_v4();
         quota.created_at = Utc::now();
         
@@ -95,7 +101,7 @@ impl CommissionService {
         Ok(quota)
     }
     
-    pub async fn get_quota_progress(&self, pool: &SqlitePool, quota_id: Uuid) -> Result<QuotaProgress> {
+    pub async fn get_quota_progress(&self, _pool: &SqlitePool, quota_id: Uuid) -> Result<QuotaProgress> {
         let progress = QuotaProgress {
             id: Uuid::new_v4(),
             quota_id,
@@ -110,7 +116,7 @@ impl CommissionService {
         Ok(progress)
     }
     
-    pub async fn create_adjustment(&self, pool: &SqlitePool, mut adjustment: CommissionAdjustment) -> Result<CommissionAdjustment> {
+    pub async fn create_adjustment(&self, _pool: &SqlitePool, mut adjustment: CommissionAdjustment) -> Result<CommissionAdjustment> {
         adjustment.id = Uuid::new_v4();
         adjustment.created_at = Utc::now();
         

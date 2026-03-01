@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct IoTDeviceService { repo: SqliteIoTDeviceRepository }
+impl Default for IoTDeviceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IoTDeviceService {
     pub fn new() -> Self { Self { repo: SqliteIoTDeviceRepository } }
     
@@ -82,6 +88,12 @@ impl IoTDeviceService {
 }
 
 pub struct TelemetryService { repo: SqliteTelemetryRepository }
+impl Default for TelemetryService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TelemetryService {
     pub fn new() -> Self { Self { repo: SqliteTelemetryRepository } }
     
@@ -126,6 +138,12 @@ impl TelemetryService {
 }
 
 pub struct IoTAlertService { repo: SqliteIoTAlertRepository }
+impl Default for IoTAlertService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IoTAlertService {
     pub fn new() -> Self { Self { repo: SqliteIoTAlertRepository } }
     
@@ -178,6 +196,12 @@ impl IoTAlertService {
 }
 
 pub struct DeviceCommandService;
+impl Default for DeviceCommandService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DeviceCommandService {
     pub fn new() -> Self { Self }
     
@@ -210,6 +234,12 @@ impl DeviceCommandService {
 }
 
 pub struct FirmwareService;
+impl Default for FirmwareService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FirmwareService {
     pub fn new() -> Self { Self }
     
@@ -242,6 +272,12 @@ impl FirmwareService {
 }
 
 pub struct DigitalTwinService;
+impl Default for DigitalTwinService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DigitalTwinService {
     pub fn new() -> Self { Self }
     
@@ -271,6 +307,12 @@ impl DigitalTwinService {
 }
 
 pub struct IoTDataExportService;
+impl Default for IoTDataExportService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IoTDataExportService {
     pub fn new() -> Self { Self }
     

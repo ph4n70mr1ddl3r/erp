@@ -1,4 +1,4 @@
-use axum::{extract::State, routing::{get, post, put}, Json, Router};
+use axum::{extract::State, routing::{get, post}, Json, Router};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::AppState;

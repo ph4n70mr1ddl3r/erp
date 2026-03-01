@@ -4,10 +4,15 @@ use erp_core::models::BaseEntity;
 use crate::models::*;
 use crate::repository::{AssistantRepository, SqliteAssistantRepository};
 use regex::Regex;
-use std::collections::HashMap;
 
 pub struct AssistantService {
     repo: SqliteAssistantRepository,
+}
+
+impl Default for AssistantService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AssistantService {
@@ -41,7 +46,7 @@ impl AssistantService {
         self.repo.archive_conversation(id).await
     }
     
-    pub async fn send_message(&self, user_id: Uuid, request: SendMessageRequest) -> Result<AssistantResponse> {
+    pub async fn send_message(&self, _user_id: Uuid, request: SendMessageRequest) -> Result<AssistantResponse> {
         let user_message = ConversationMessage {
             base: BaseEntity::new(),
             conversation_id: request.conversation_id,
@@ -126,7 +131,7 @@ impl AssistantService {
         Ok(("unknown".to_string(), 0.3))
     }
     
-    fn extract_entities(&self, query: &str, intent: &str) -> Result<Vec<ExtractedEntity>> {
+    fn extract_entities(&self, query: &str, _intent: &str) -> Result<Vec<ExtractedEntity>> {
         let mut entities = Vec::new();
         
         let date_patterns = vec![

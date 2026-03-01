@@ -4,11 +4,17 @@ use anyhow::Result;
 use chrono::Utc;
 use erp_core::BaseEntity;
 use sqlx::SqlitePool;
-use tracing::{info, warn};
+use tracing::info;
 use uuid::Uuid;
 
 pub struct CreditService {
     repo: SqliteCreditRepository,
+}
+
+impl Default for CreditService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CreditService {
@@ -365,7 +371,7 @@ impl CreditService {
         let profile = self.repo.get_profile(pool, customer_id).await?
             .ok_or_else(|| anyhow::anyhow!("Credit profile not found"))?;
         
-        if let Some(existing) = self.repo.get_active_hold(pool, customer_id).await? {
+        if let Some(_existing) = self.repo.get_active_hold(pool, customer_id).await? {
             return Err(anyhow::anyhow!("Customer already has an active credit hold"));
         }
         

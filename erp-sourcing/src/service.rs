@@ -8,6 +8,12 @@ pub struct SourcingService {
     repo: SqliteSourcingRepository,
 }
 
+impl Default for SourcingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SourcingService {
     pub fn new() -> Self {
         Self { repo: SqliteSourcingRepository }

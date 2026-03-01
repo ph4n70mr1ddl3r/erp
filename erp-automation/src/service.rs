@@ -6,6 +6,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct WorkflowService { repo: SqliteWorkflowRepository }
+impl Default for WorkflowService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkflowService {
     pub fn new() -> Self { Self { repo: SqliteWorkflowRepository } }
     
@@ -92,6 +98,12 @@ pub struct WorkflowExecutionService {
     repo: SqliteWorkflowExecutionRepository,
     workflow_repo: SqliteWorkflowRepository,
 }
+impl Default for WorkflowExecutionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WorkflowExecutionService {
     pub fn new() -> Self { Self { 
         repo: SqliteWorkflowExecutionRepository,
@@ -161,6 +173,12 @@ impl WorkflowExecutionService {
 }
 
 pub struct ScheduledJobService { repo: SqliteScheduledJobRepository }
+impl Default for ScheduledJobService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ScheduledJobService {
     pub fn new() -> Self { Self { repo: SqliteScheduledJobRepository } }
     
@@ -215,6 +233,12 @@ impl ScheduledJobService {
 }
 
 pub struct WebhookService;
+impl Default for WebhookService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl WebhookService {
     pub fn new() -> Self { Self }
     
@@ -273,6 +297,12 @@ impl WebhookService {
 }
 
 pub struct ActionTemplateService;
+impl Default for ActionTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ActionTemplateService {
     pub fn new() -> Self { Self }
     
@@ -338,6 +368,12 @@ impl ActionTemplateService {
 }
 
 pub struct AutomationVariableService;
+impl Default for AutomationVariableService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AutomationVariableService {
     pub fn new() -> Self { Self }
     
@@ -368,6 +404,12 @@ impl AutomationVariableService {
 }
 
 pub struct QueueService;
+impl Default for QueueService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QueueService {
     pub fn new() -> Self { Self }
     
@@ -383,6 +425,12 @@ impl QueueService {
 }
 
 pub struct RPAService;
+impl Default for RPAService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RPAService {
     pub fn new() -> Self { Self }
     

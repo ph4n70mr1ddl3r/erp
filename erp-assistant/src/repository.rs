@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use sqlx::SqlitePool;
 use uuid::Uuid;
 use anyhow::Result;
 use crate::models::*;
@@ -35,6 +34,12 @@ pub trait AssistantRepository: Send + Sync {
 }
 
 pub struct SqliteAssistantRepository;
+
+impl Default for SqliteAssistantRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SqliteAssistantRepository {
     pub fn new() -> Self {

@@ -63,10 +63,10 @@ pub enum EdiTransactionType {
     X12_945,
     X12_997,
     X12_820,
-    EDIFACT_ORDERS,
-    EDIFACT_INVOIC,
-    EDIFACT_DESADV,
-    PEPPOL_INVOICE,
+    EdifactOrders,
+    EdifactInvoic,
+    EdifactDesadv,
+    PeppolInvoice,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

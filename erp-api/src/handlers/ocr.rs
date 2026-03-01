@@ -3,11 +3,11 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_ocr::{OcrService, UploadDocumentRequest, OcrDocument, DocumentType, OcrTemplate, OcrSettings};
+use erp_ocr::{OcrService, UploadDocumentRequest, DocumentType, OcrSettings};
 
 #[derive(Deserialize)]
 pub struct ListDocumentsQuery {

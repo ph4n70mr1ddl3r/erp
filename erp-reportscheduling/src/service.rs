@@ -1,8 +1,6 @@
 use chrono::{DateTime, Utc};
-use cron::Schedule;
 use erp_core::BaseEntity;
 use sqlx::SqlitePool;
-use std::str::FromStr;
 use uuid::Uuid;
 
 use crate::models::*;
@@ -11,6 +9,12 @@ use crate::repository::*;
 pub struct ReportScheduleService {
     schedule_repo: SqliteReportScheduleRepository,
     execution_repo: SqliteScheduleExecutionRepository,
+}
+
+impl Default for ReportScheduleService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ReportScheduleService {
@@ -213,6 +217,12 @@ impl ReportScheduleService {
 
 pub struct ScheduleExecutionService {
     execution_repo: SqliteScheduleExecutionRepository,
+}
+
+impl Default for ScheduleExecutionService {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ScheduleExecutionService {

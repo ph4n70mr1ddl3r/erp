@@ -7,6 +7,12 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct CustomerService { repo: SqliteCustomerRepository }
+impl Default for CustomerService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CustomerService {
     pub fn new() -> Self { Self { repo: SqliteCustomerRepository } }
     
@@ -28,6 +34,12 @@ impl CustomerService {
 }
 
 pub struct SalesOrderService { repo: SqliteSalesOrderRepository }
+impl Default for SalesOrderService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SalesOrderService {
     pub fn new() -> Self { Self { repo: SqliteSalesOrderRepository } }
     
@@ -61,6 +73,12 @@ impl SalesOrderService {
 }
 
 pub struct QuotationService { repo: SqliteQuotationRepository }
+impl Default for QuotationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl QuotationService {
     pub fn new() -> Self { Self { repo: SqliteQuotationRepository } }
     
@@ -108,6 +126,12 @@ impl QuotationService {
 }
 
 pub struct LeadService;
+
+impl Default for LeadService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl LeadService {
     pub fn new() -> Self { Self }
@@ -293,6 +317,12 @@ impl From<LeadRow> for Lead {
 }
 
 pub struct OpportunityService;
+
+impl Default for OpportunityService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl OpportunityService {
     pub fn new() -> Self { Self }
@@ -635,6 +665,12 @@ impl From<ActivityRow> for OpportunityActivity {
 
 pub struct TerritoryService;
 
+impl Default for TerritoryService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TerritoryService {
     pub fn new() -> Self { Self }
 
@@ -695,7 +731,7 @@ impl TerritoryService {
         end_date: Option<DateTime<Utc>>,
         is_primary: bool,
     ) -> Result<TerritoryAssignment> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         let assignment = TerritoryAssignment {
             id: Uuid::new_v4(),
             territory_id,
@@ -775,6 +811,12 @@ pub struct TerritoryPerformance {
 }
 
 pub struct CommissionService;
+
+impl Default for CommissionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl CommissionService {
     pub fn new() -> Self { Self }
@@ -1018,6 +1060,12 @@ impl From<CommissionRow> for SalesRepCommission {
 
 pub struct ContractService;
 
+impl Default for ContractService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ContractService {
     pub fn new() -> Self { Self }
 
@@ -1169,7 +1217,7 @@ impl ContractService {
     }
 
     pub async fn terminate_contract(pool: &SqlitePool, contract_id: Uuid, reason: Option<&str>) -> Result<Contract> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         
         sqlx::query(
             "UPDATE contracts SET status = 'Terminated', terms = COALESCE(terms || ?) WHERE id = ?"
@@ -1262,11 +1310,11 @@ impl From<ContractRow> for Contract {
                 .unwrap_or_else(|_| chrono::Utc::now()),
             value: r.value,
             currency: r.currency,
-            billing_cycle: r.billing_cycle.and_then(|bc| match bc.as_str() {
-                "Quarterly" => Some(BillingCycle::Quarterly),
-                "Annually" => Some(BillingCycle::Annually),
-                "OneTime" => Some(BillingCycle::OneTime),
-                _ => Some(BillingCycle::Monthly),
+            billing_cycle: r.billing_cycle.map(|bc| match bc.as_str() {
+                "Quarterly" => BillingCycle::Quarterly,
+                "Annually" => BillingCycle::Annually,
+                "OneTime" => BillingCycle::OneTime,
+                _ => BillingCycle::Monthly,
             }),
             auto_renew: r.auto_renew != 0,
             renewal_notice_days: r.renewal_notice_days,
@@ -1288,6 +1336,12 @@ impl From<ContractRow> for Contract {
 }
 
 pub struct SubscriptionService;
+
+impl Default for SubscriptionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl SubscriptionService {
     pub fn new() -> Self { Self }
@@ -1552,7 +1606,7 @@ impl SubscriptionService {
     }
 
     pub async fn reactivate_subscription(pool: &SqlitePool, subscription_id: Uuid) -> Result<Subscription> {
-        let now = chrono::Utc::now();
+        let _now = chrono::Utc::now();
         
         sqlx::query(
             "UPDATE subscriptions SET status = 'Active', cancelled_at = NULL, cancellation_reason = NULL WHERE id = ?"
@@ -1659,6 +1713,12 @@ impl From<SubscriptionRow> for Subscription {
 }
 
 pub struct CampaignService;
+
+impl Default for CampaignService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl CampaignService {
     pub fn new() -> Self { Self }
@@ -1834,13 +1894,13 @@ impl From<CampaignLeadRow> for CampaignLead {
             lead_id: Uuid::parse_str(&r.lead_id).unwrap_or_default(),
             responded_at: r.responded_at.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
                 .map(|d| d.with_timezone(&chrono::Utc)),
-            response_type: r.response_type.and_then(|rt| match rt.as_str() {
-                "Clicked" => Some(ResponseType::Clicked),
-                "Replied" => Some(ResponseType::Replied),
-                "Bounced" => Some(ResponseType::Bounced),
-                "Unsubscribed" => Some(ResponseType::Unsubscribed),
-                "Converted" => Some(ResponseType::Converted),
-                _ => Some(ResponseType::Opened),
+            response_type: r.response_type.map(|rt| match rt.as_str() {
+                "Clicked" => ResponseType::Clicked,
+                "Replied" => ResponseType::Replied,
+                "Bounced" => ResponseType::Bounced,
+                "Unsubscribed" => ResponseType::Unsubscribed,
+                "Converted" => ResponseType::Converted,
+                _ => ResponseType::Opened,
             }),
             converted: r.converted != 0,
             conversion_value: r.conversion_value,

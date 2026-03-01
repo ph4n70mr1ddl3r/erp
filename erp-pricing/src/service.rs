@@ -8,6 +8,12 @@ pub struct PricingService {
     repo: SqlitePricingRepository,
 }
 
+impl Default for PricingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PricingService {
     pub fn new() -> Self {
         Self { repo: SqlitePricingRepository }
@@ -82,9 +88,9 @@ impl PricingService {
     pub async fn validate_discount(&self, pool: &SqlitePool, code: &str) -> Result<Option<Discount>> {
         if let Some(discount) = self.repo.get_discount_by_code(pool, code).await? {
             let now = chrono::Utc::now();
-            let valid_from_ok = discount.valid_from.map_or(true, |v| v <= now);
-            let valid_to_ok = discount.valid_to.map_or(true, |v| v >= now);
-            let usage_ok = discount.usage_limit.map_or(true, |l| discount.current_usage < l);
+            let valid_from_ok = discount.valid_from.is_none_or(|v| v <= now);
+            let valid_to_ok = discount.valid_to.is_none_or(|v| v >= now);
+            let usage_ok = discount.usage_limit.is_none_or(|l| discount.current_usage < l);
             
             if valid_from_ok && valid_to_ok && usage_ok && discount.is_active {
                 return Ok(Some(discount));

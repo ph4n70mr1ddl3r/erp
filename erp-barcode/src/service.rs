@@ -1,7 +1,7 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
-use erp_core::{Error, Result, Pagination, Paginated, BaseEntity};
+use erp_core::{Error, Result, BaseEntity};
 use crate::models::*;
 use crate::repository::*;
 
@@ -26,7 +26,7 @@ impl BarcodeService {
             return Err(Error::validation("Barcode value is required"));
         }
         
-        if let Ok(_) = self.repo.find_by_barcode(pool, &barcode.barcode).await {
+        if self.repo.find_by_barcode(pool, &barcode.barcode).await.is_ok() {
             return Err(Error::validation("Barcode already exists"));
         }
         
@@ -91,7 +91,7 @@ impl BarcodeService {
         
         match barcode_type {
             BarcodeType::EAN13 => format!("{}{:05}", timestamp, random % 100000),
-            BarcodeType::UPC_A => format!("{}{:04}", &timestamp[4..], random % 10000),
+            BarcodeType::UpcA => format!("{}{:04}", &timestamp[4..], random % 10000),
             BarcodeType::Code128 => format!("BC{}", timestamp),
             BarcodeType::Code39 => format!("BC{}", timestamp),
             BarcodeType::QRCode => format!("QR-{}-{}", timestamp, random),
@@ -229,7 +229,7 @@ impl BarcodeValidationService {
     pub fn validate(barcode: &str, barcode_type: &BarcodeType) -> BarcodeValidation {
         let (is_valid, check_digit, calculated_check_digit, errors) = match barcode_type {
             BarcodeType::EAN13 => Self::validate_ean13(barcode),
-            BarcodeType::UPC_A => Self::validate_upc_a(barcode),
+            BarcodeType::UpcA => Self::validate_upc_a(barcode),
             BarcodeType::EAN8 => Self::validate_ean8(barcode),
             _ => (true, None::<String>, None::<String>, None::<String>),
         };

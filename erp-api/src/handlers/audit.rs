@@ -6,7 +6,7 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{AuditLog, AuditAction, get_audit_logs, Pagination};
+use erp_core::{AuditLog, get_audit_logs, Pagination};
 
 #[derive(Debug, Deserialize)]
 pub struct AuditQuery {

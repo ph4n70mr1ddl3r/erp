@@ -15,7 +15,7 @@ impl DemandService<SqliteDemandRepository> {
 }
 
 impl<R: DemandRepository> DemandService<R> {
-    pub async fn run_forecast(&self, req: RunForecastRequest) -> anyhow::Result<ForecastResult> {
+    pub async fn run_forecast(&self, _req: RunForecastRequest) -> anyhow::Result<ForecastResult> {
         Ok(ForecastResult {
             model_id: Uuid::new_v4(),
             forecasts: vec![],

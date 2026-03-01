@@ -1,7 +1,6 @@
 use axum::{
     extract::{Path, Query, State},
     Json,
-    http::StatusCode,
 };
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
@@ -11,7 +10,7 @@ use crate::handlers::auth::AuthUser;
 use erp_core::Pagination;
 use erp_approval_workflow::{
     ApprovalWorkflow, ApprovalWorkflowService, ApprovalWorkflowStatus, ApprovalType,
-    ApprovalRequest, ApprovalRequestService, ApprovalRequestStatus,
+    ApprovalRequest, ApprovalRequestService,
     CreateWorkflowRequest, CreateLevelRequest, UpdateWorkflowRequest,
     SubmitApprovalRequest, ApproveRequest, RejectRequest,
     PendingApprovalSummary,

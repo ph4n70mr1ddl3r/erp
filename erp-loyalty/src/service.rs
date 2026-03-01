@@ -10,7 +10,7 @@ pub struct LoyaltyService { repo: SqliteLoyaltyRepository }
 impl LoyaltyService {
     pub fn new(pool: SqlitePool) -> Self { Self { repo: SqliteLoyaltyRepository::new(pool) } }
 
-    pub async fn create_program(&self, pool: &SqlitePool, req: CreateProgramRequest) -> Result<LoyaltyProgram> {
+    pub async fn create_program(&self, _pool: &SqlitePool, req: CreateProgramRequest) -> Result<LoyaltyProgram> {
         let program = LoyaltyProgram {
             base: BaseEntity::new(),
             program_number: format!("LP-{}", Uuid::new_v4()),
@@ -34,7 +34,7 @@ impl LoyaltyService {
         self.repo.create_program(&program).await
     }
 
-    pub async fn enroll_member(&self, pool: &SqlitePool, req: EnrollMemberRequest) -> Result<LoyaltyMember> {
+    pub async fn enroll_member(&self, _pool: &SqlitePool, req: EnrollMemberRequest) -> Result<LoyaltyMember> {
         let member = LoyaltyMember {
             base: BaseEntity::new(),
             member_number: format!("MEM-{}", Uuid::new_v4()),
@@ -63,7 +63,7 @@ impl LoyaltyService {
         self.repo.create_member(&member).await
     }
 
-    pub async fn earn_points(&self, pool: &SqlitePool, member_id: Uuid, points: i64, source_type: String, source_id: Option<Uuid>, amount: Option<i64>) -> Result<LoyaltyTransaction> {
+    pub async fn earn_points(&self, _pool: &SqlitePool, member_id: Uuid, points: i64, source_type: String, source_id: Option<Uuid>, amount: Option<i64>) -> Result<LoyaltyTransaction> {
         let tx = LoyaltyTransaction {
             base: BaseEntity::new(),
             transaction_number: format!("TXN-{}", Uuid::new_v4()),
@@ -84,7 +84,7 @@ impl LoyaltyService {
         self.repo.create_transaction(&tx).await
     }
 
-    pub async fn redeem_points(&self, pool: &SqlitePool, member_id: Uuid, reward_id: Uuid, points: i64) -> Result<LoyaltyRedemption> {
+    pub async fn redeem_points(&self, _pool: &SqlitePool, member_id: Uuid, reward_id: Uuid, points: i64) -> Result<LoyaltyRedemption> {
         let redemption = LoyaltyRedemption {
             base: BaseEntity::new(),
             redemption_number: format!("RED-{}", Uuid::new_v4()),
@@ -104,7 +104,7 @@ impl LoyaltyService {
         self.repo.create_redemption(&redemption).await
     }
 
-    pub async fn create_reward(&self, pool: &SqlitePool, req: CreateRewardRequest) -> Result<LoyaltyReward> {
+    pub async fn create_reward(&self, _pool: &SqlitePool, req: CreateRewardRequest) -> Result<LoyaltyReward> {
         let reward = LoyaltyReward {
             base: BaseEntity::new(),
             reward_number: format!("RWD-{}", Uuid::new_v4()),

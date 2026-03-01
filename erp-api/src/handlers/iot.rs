@@ -8,7 +8,7 @@ use uuid::Uuid;
 use erp_core::Pagination;
 use crate::db::AppState;
 use erp_iot::{IoTDeviceService, TelemetryService, IoTAlertService, DeviceCommandService};
-use erp_iot::{IoTDevice, DeviceType, DeviceStatus, ConnectivityType, TelemetryData, MetricType, IoTAlert};
+use erp_iot::{IoTDevice, DeviceType, DeviceStatus, ConnectivityType, MetricType};
 
 #[derive(Deserialize)]
 pub struct RegisterDeviceRequest {

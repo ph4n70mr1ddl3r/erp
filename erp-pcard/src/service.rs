@@ -9,7 +9,7 @@ pub struct PCardService { repo: SqlitePCardRepository }
 impl PCardService {
     pub fn new(pool: SqlitePool) -> Self { Self { repo: SqlitePCardRepository::new(pool) } }
 
-    pub async fn issue_card(&self, pool: &SqlitePool, req: IssueCardRequest) -> Result<CorporateCard> {
+    pub async fn issue_card(&self, _pool: &SqlitePool, req: IssueCardRequest) -> Result<CorporateCard> {
         let card_number = generate_card_number();
         let last_four = card_number[card_number.len()-4..].to_string();
         let masked = format!("****{}", last_four);
@@ -48,7 +48,7 @@ impl PCardService {
         self.repo.create_card(&card).await
     }
 
-    pub async fn record_transaction(&self, pool: &SqlitePool, req: RecordTransactionRequest) -> Result<CardTransaction> {
+    pub async fn record_transaction(&self, _pool: &SqlitePool, req: RecordTransactionRequest) -> Result<CardTransaction> {
         let tx = CardTransaction {
             base: BaseEntity::new(),
             transaction_number: format!("CTX-{}", Uuid::new_v4()),
@@ -83,7 +83,7 @@ impl PCardService {
         self.repo.create_transaction(&tx).await
     }
 
-    pub async fn create_virtual_card(&self, pool: &SqlitePool, req: CreateVirtualCardRequest) -> Result<VirtualCard> {
+    pub async fn create_virtual_card(&self, _pool: &SqlitePool, req: CreateVirtualCardRequest) -> Result<VirtualCard> {
         let masked = format!("****{}", &Uuid::new_v4().to_string()[..4]);
         let card = VirtualCard {
             base: BaseEntity::new(),
@@ -105,7 +105,7 @@ impl PCardService {
         self.repo.create_virtual_card(&card).await
     }
 
-    pub async fn file_dispute(&self, pool: &SqlitePool, req: FileDisputeRequest) -> Result<CardDispute> {
+    pub async fn file_dispute(&self, _pool: &SqlitePool, req: FileDisputeRequest) -> Result<CardDispute> {
         let dispute = CardDispute {
             base: BaseEntity::new(),
             dispute_number: format!("DSP-{}", Uuid::new_v4()),
