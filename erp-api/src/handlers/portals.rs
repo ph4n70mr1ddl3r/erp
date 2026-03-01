@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use erp_core::Pagination;
 use crate::db::AppState;
+use crate::error::ApiResult;
 use erp_portals::{PortalUserService, PortalOrderService, PortalPaymentService, SupplierPortalService};
 use erp_portals::{PortalUser, PortalType, PortalAccessLevel, PortalOrder, PortalOrderLine, PortalPayment, PaymentMethodType};
 
@@ -215,7 +216,7 @@ pub async fn process_payment(
 pub async fn submit_supplier_quote(
     State(state): State<AppState>,
     Json(req): Json<serde_json::Value>,
-) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+) -> ApiResult<Json<serde_json::Value>> {
     let _ = state;
     Ok(Json(serde_json::json!({
         "success": true,

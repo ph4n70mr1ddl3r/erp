@@ -66,7 +66,7 @@ pub async fn get_item(
     let item = erp_plm::PLMService::new(erp_plm::SqlitePLMRepository::new(state.pool.clone()))
         .get_item(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Item not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Item not found".into()))?;
     Ok(Json(item))
 }
 

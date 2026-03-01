@@ -139,7 +139,7 @@ pub async fn add_node(
     let task_type = req.task_type;
 
     let service = erp_bpm::BPMService::new();
-    let node = service.add_node(&state.pool, process_id, req.node_id, req.name, task_type, req.position_x, req.position_y).await?
+    let node = service.add_node(&state.pool, process_id, req.node_id, req.name, task_type, req.position_x, req.position_y).await?;
 
     Ok(Json(serde_json::json!({
         "id": node.id.to_string(),

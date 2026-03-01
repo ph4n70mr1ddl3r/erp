@@ -57,7 +57,7 @@ pub async fn get_vehicle(
     let vehicle = erp_tms::TMSService::new(erp_tms::SqliteTMSRepository::new(state.pool.clone()))
         .get_vehicle(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Vehicle not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Vehicle not found".into()))?;
     Ok(Json(vehicle))
 }
 
@@ -95,7 +95,7 @@ pub async fn get_driver(
     let driver = erp_tms::TMSService::new(erp_tms::SqliteTMSRepository::new(state.pool.clone()))
         .get_driver(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Driver not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Driver not found".into()))?;
     Ok(Json(driver))
 }
 
@@ -133,7 +133,7 @@ pub async fn get_load(
     let load = erp_tms::TMSService::new(erp_tms::SqliteTMSRepository::new(state.pool.clone()))
         .get_load(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Load not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Load not found".into()))?;
     Ok(Json(load))
 }
 

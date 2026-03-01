@@ -98,7 +98,7 @@ pub struct AuthClaims {
 static USERNAME_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-zA-Z0-9_]+$").unwrap());
 
 static PASSWORD_REGEX: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^(?=.*[a-zA-Z])(?=.*[0-9]).+$").unwrap());
+    Lazy::new(|| Regex::new(r".*[a-zA-Z].*[0-9].*|.*[0-9].*[a-zA-Z].*").unwrap());
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
 pub struct LoginRequest {

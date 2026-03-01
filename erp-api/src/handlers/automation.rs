@@ -5,10 +5,75 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use chrono::Utc;
 use erp_core::Pagination;
 use crate::db::AppState;
 use erp_automation::{WorkflowService, WorkflowExecutionService, ScheduledJobService, WebhookService, ActionTemplateService};
 use erp_automation::{AutomationWorkflow, AutomationType, AutomationStatus, WorkflowExecution, TriggerType, ExecutionStatus};
+
+fn new_automation_workflow() -> AutomationWorkflow {
+    AutomationWorkflow {
+        base: erp_core::BaseEntity::new(),
+        name: String::new(),
+        code: String::new(),
+        description: None,
+        category: String::new(),
+        automation_type: AutomationType::Scheduled,
+        trigger_config: String::new(),
+        conditions: None,
+        actions: String::new(),
+        error_handling: None,
+        retry_policy: None,
+        timeout_seconds: 3600,
+        max_concurrent_runs: 1,
+        priority: 5,
+        status: AutomationStatus::Draft,
+        version: 1,
+        last_modified_by: None,
+        last_modified_at: Utc::now(),
+        published_at: None,
+        published_by: None,
+        schedule_cron: None,
+        schedule_timezone: None,
+        next_run_at: None,
+        last_run_at: None,
+        last_run_status: None,
+        total_runs: 0,
+        successful_runs: 0,
+        failed_runs: 0,
+        avg_duration_ms: None,
+        tags: None,
+        owner_id: None,
+        created_at: Utc::now(),
+    }
+}
+
+fn new_scheduled_job() -> erp_automation::ScheduledJob {
+    erp_automation::ScheduledJob {
+        base: erp_core::BaseEntity::new(),
+        name: String::new(),
+        job_type: String::new(),
+        description: None,
+        schedule_cron: String::new(),
+        timezone: "UTC".to_string(),
+        workflow_id: None,
+        job_config: None,
+        parameters: None,
+        is_active: true,
+        misfire_policy: erp_automation::MisfirePolicy::RunImmediately,
+        last_run_at: None,
+        last_run_status: None,
+        last_duration_ms: None,
+        next_run_at: None,
+        run_count: 0,
+        failure_count: 0,
+        consecutive_failures: 0,
+        max_consecutive_failures: 3,
+        created_by: None,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    }
+}
 
 #[derive(Deserialize)]
 pub struct CreateWorkflowRequest {
@@ -143,7 +208,7 @@ pub async fn create_workflow(
         actions: req.actions,
         schedule_cron: req.schedule_cron,
         status: AutomationStatus::Draft,
-        ..Default::default()
+        ..new_automation_workflow()
     };
     
     let workflow = service.create(&state.pool, workflow).await
@@ -244,7 +309,7 @@ pub async fn create_scheduled_job(
         schedule_cron: req.schedule_cron,
         workflow_id: req.workflow_id,
         parameters: req.parameters,
-        ..Default::default()
+        ..new_scheduled_job()
     };
     
     let job = service.create(&state.pool, job).await

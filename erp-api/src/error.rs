@@ -53,7 +53,7 @@ impl From<sqlx::Error> for ApiError {
 
 impl From<anyhow::Error> for ApiError {
     fn from(err: anyhow::Error) -> Self {
-        ApiError(Error::Internal(err.to_string()))
+        ApiError(Error::Internal(err))
     }
 }
 
@@ -65,7 +65,7 @@ impl From<serde_json::Error> for ApiError {
 
 impl From<std::io::Error> for ApiError {
     fn from(err: std::io::Error) -> Self {
-        ApiError(Error::Internal(err.to_string()))
+        ApiError(Error::Internal(anyhow::anyhow!(err.to_string())))
     }
 }
 
@@ -78,5 +78,11 @@ impl From<uuid::Error> for ApiError {
 impl From<validator::ValidationErrors> for ApiError {
     fn from(err: validator::ValidationErrors) -> Self {
         ApiError(Error::Validation(err.to_string()))
+    }
+}
+
+impl From<String> for ApiError {
+    fn from(err: String) -> Self {
+        ApiError(Error::Validation(err))
     }
 }

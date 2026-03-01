@@ -23,7 +23,7 @@ impl AppState {
         Ok(Self {
             pool,
             config: Arc::new(config),
-            ws_manager: WebSocketManager::new(),
+            ws_manager: Arc::new(crate::handlers::websocket::WebSocketManagerInner::new()),
         })
     }
 }

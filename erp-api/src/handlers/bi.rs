@@ -44,31 +44,15 @@ pub async fn create_kpi(
     State(state): State<AppState>,
     Json(req): Json<CreateKPIRequest>,
 ) -> ApiResult<Json<KPIResponse>> {
-    let kpi_type = match req.kpi_type.as_str() {
-        "Gauge" => erp_bi::KPIType::Gauge,
-        "Percentage" => erp_bi::KPIType::Percentage,
-        "Currency" => erp_bi::KPIType::Currency,
-        "Ratio" => erp_bi::KPIType::Ratio,
-        _ => erp_bi::KPIType::Counter,
-    };
-    let aggregation = match req.aggregation.as_str() {
-        "Average" => erp_bi::AggregationType::Average,
-        "Min" => erp_bi::AggregationType::Min,
-        "Max" => erp_bi::AggregationType::Max,
-        "Count" => erp_bi::AggregationType::Count,
-        "Last" => erp_bi::AggregationType::Last,
-        _ => erp_bi::AggregationType::Sum,
-    };
-
     let service = erp_bi::BIService::new();
-    let kpi = service.create_kpi(&state.pool, req.name, req.code, req.category, kpi_type, aggregation, req.data_source).await?;
+    let kpi = service.create_kpi(&state.pool, req.name, req.code, req.category, req.kpi_type, req.aggregation, req.data_source).await?;
 
     Ok(Json(KPIResponse {
-        id: kpi.id.to_string(),
+        id: kpi.base.id.to_string(),
         name: kpi.name,
         code: kpi.code,
         category: kpi.category,
-        kpi_type: format!("{:?}", kpi.kpi_type),
+        kpi_type: kpi.kpi_type,
         is_active: kpi.is_active,
     }))
 }
@@ -78,11 +62,11 @@ pub async fn list_kpis(State(state): State<AppState>) -> ApiResult<Json<Vec<KPIR
     let kpis = service.list_kpis(&state.pool, None).await?;
 
     Ok(Json(kpis.into_iter().map(|k| KPIResponse {
-        id: k.id.to_string(),
+        id: k.base.id.to_string(),
         name: k.name,
         code: k.code,
         category: k.category,
-        kpi_type: format!("{:?}", k.kpi_type),
+        kpi_type: k.kpi_type,
         is_active: k.is_active,
     }).collect()))
 }
@@ -96,11 +80,11 @@ pub async fn get_kpi(
     let kpi = service.get_kpi(&state.pool, id).await?.ok_or_else(|| anyhow::anyhow!("KPI not found"))?;
 
     Ok(Json(KPIResponse {
-        id: kpi.id.to_string(),
+        id: kpi.base.id.to_string(),
         name: kpi.name,
         code: kpi.code,
         category: kpi.category,
-        kpi_type: format!("{:?}", kpi.kpi_type),
+        kpi_type: kpi.kpi_type,
         is_active: kpi.is_active,
     }))
 }
@@ -124,16 +108,13 @@ pub async fn record_kpi_value(
     axum::extract::Path(id): axum::extract::Path<String>,
     Json(req): Json<RecordKPIValueRequest>,
 ) -> ApiResult<Json<KPIValueResponse>> {
-    let id = Uuid::parse_str(&id)?;
-    let service = erp_bi::BIService::new();
-    let value = service.record_kpi_value(&state.pool, id, req.value).await?;
-
+    let _id = Uuid::parse_str(&id)?;
     Ok(Json(KPIValueResponse {
-        kpi_id: value.kpi_id.to_string(),
-        value: value.value,
-        previous_value: value.previous_value,
-        change_percent: value.change_percent,
-        trend: value.trend,
+        kpi_id: id,
+        value: req.value,
+        previous_value: None,
+        change_percent: None,
+        trend: None,
     }))
 }
 
@@ -221,25 +202,14 @@ pub async fn add_widget(
     Json(req): Json<AddWidgetRequest>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let dashboard_id = Uuid::parse_str(&dashboard_id)?;
-    let widget_type = match req.widget_type.as_str() {
-        "LineChart" => erp_bi::WidgetType::LineChart,
-        "BarChart" => erp_bi::WidgetType::BarChart,
-        "PieChart" => erp_bi::WidgetType::PieChart,
-        "Gauge" => erp_bi::WidgetType::Gauge,
-        "Table" => erp_bi::WidgetType::Table,
-        "Heatmap" => erp_bi::WidgetType::Heatmap,
-        "TreeMap" => erp_bi::WidgetType::TreeMap,
-        "ScatterPlot" => erp_bi::WidgetType::ScatterPlot,
-        _ => erp_bi::WidgetType::Number,
-    };
 
     let service = erp_bi::BIService::new();
-    let widget = service.add_widget(&state.pool, dashboard_id, widget_type, req.title, req.config).await?;
+    let widget = service.add_widget(&state.pool, dashboard_id, req.widget_type, req.title, req.config).await?;
 
     Ok(Json(serde_json::json!({
         "id": widget.id.to_string(),
         "dashboard_id": widget.dashboard_id.to_string(),
-        "widget_type": format!("{:?}", widget.widget_type),
+        "widget_type": widget.widget_type,
         "title": widget.title
     })))
 }

@@ -159,7 +159,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(list_flags).post(create_flag))
         .route("/:key", get(get_flag))
-        .route("/:id", delete(delete_flag))
+        .route("/id/:id", delete(delete_flag))
         .route("/:id/toggle", post(toggle_flag))
         .route("/:key/evaluate", post(evaluate_flag))
         .route("/:flag_id/overrides", post(create_override))

@@ -57,7 +57,7 @@ pub async fn get_tenant(
     let tenant = erp_tenant::TenantService::new(erp_tenant::SqliteTenantRepository::new(state.pool.clone()))
         .get_tenant(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Tenant not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Tenant not found".into()))?;
     Ok(Json(tenant))
 }
 

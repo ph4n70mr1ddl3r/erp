@@ -1,10 +1,12 @@
 use axum::{
     extract::{Path, Query, State},
+    response::IntoResponse,
     Json,
 };
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::AppState;
+use crate::error::ApiResult;
 use erp_promotions::{
     PromotionService, CouponService, PromotionReportingService,
     CreatePromotionRequest, UpdatePromotionRequest, CreateCouponRequest, GenerateCouponBatchRequest,
@@ -416,10 +418,10 @@ pub async fn apply_coupon(
     }
 }
 
-pub async fn generate_coupon_batch(
-    State(state): State<AppState>,
-    Json(req): Json<serde_json::Value>,
-) -> Json<serde_json::Value> {
+pub async fn generate_coupon_batch_handler(
+    state: State<AppState>,
+    req: Json<serde_json::Value>,
+) -> impl IntoResponse {
     let disc_type = req.get("discount_type").and_then(|v| v.as_str()).unwrap_or("Percentage");
     
     let request = GenerateCouponBatchRequest {
@@ -458,7 +460,7 @@ pub async fn generate_coupon_batch(
         Ok(coupons) => Json(serde_json::json!({
             "generated_count": coupons.len(),
             "coupons": coupons.into_iter().map(CouponResponse::from).collect::<Vec<_>>()
-        })),
-        Err(e) => Json(serde_json::json!({ "error": e.to_string() })),
+        })).into_response(),
+        Err(e) => Json(serde_json::json!({ "error": e.to_string() })).into_response(),
     }
 }

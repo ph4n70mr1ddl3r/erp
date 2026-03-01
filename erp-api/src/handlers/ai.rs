@@ -55,58 +55,56 @@ pub struct PredictRequest {
     pub batch_mode: Option<bool>,
 }
 
-impl Default for AIModel {
-    fn default() -> Self {
-        Self {
-            base: erp_core::BaseEntity::new(),
-            name: String::new(),
-            code: String::new(),
-            model_type: ModelType::DemandForecast,
-            algorithm: erp_ai::AlgorithmType::LinearRegression,
-            description: None,
-            version: "1.0.0".to_string(),
-            parameters: None,
-            features: None,
-            target_variable: None,
-            training_data_source: None,
-            training_config: None,
-            validation_split: 0.2,
-            cross_validation_folds: 5,
-            hyperparameters: None,
-            training_status: ModelStatus::Draft,
-            training_started_at: None,
-            training_completed_at: None,
-            training_duration_seconds: None,
-            training_samples: None,
-            validation_metrics: None,
-            test_metrics: None,
-            accuracy_score: None,
-            precision_score: None,
-            recall_score: None,
-            f1_score: None,
-            rmse: None,
-            mae: None,
-            mape: None,
-            r2_score: None,
-            auc_roc: None,
-            feature_importance: None,
-            model_artifact_path: None,
-            deployment_endpoint: None,
-            deployment_status: ModelStatus::Draft,
-            deployed_at: None,
-            inference_count: 0,
-            last_inference_at: None,
-            drift_detected: false,
-            drift_score: None,
-            retraining_required: false,
-            auto_retrain: false,
-            retrain_threshold: None,
-            retrain_schedule_cron: None,
-            last_retrain_at: None,
-            owner_id: None,
-            tags: None,
-            status: erp_core::Status::Active,
-        }
+fn new_ai_model() -> AIModel {
+    AIModel {
+        base: erp_core::BaseEntity::new(),
+        name: String::new(),
+        code: String::new(),
+        model_type: ModelType::DemandForecast,
+        algorithm: erp_ai::AlgorithmType::LinearRegression,
+        description: None,
+        version: "1.0.0".to_string(),
+        parameters: None,
+        features: None,
+        target_variable: None,
+        training_data_source: None,
+        training_config: None,
+        validation_split: 0.2,
+        cross_validation_folds: 5,
+        hyperparameters: None,
+        training_status: ModelStatus::Draft,
+        training_started_at: None,
+        training_completed_at: None,
+        training_duration_seconds: None,
+        training_samples: None,
+        validation_metrics: None,
+        test_metrics: None,
+        accuracy_score: None,
+        precision_score: None,
+        recall_score: None,
+        f1_score: None,
+        rmse: None,
+        mae: None,
+        mape: None,
+        r2_score: None,
+        auc_roc: None,
+        feature_importance: None,
+        model_artifact_path: None,
+        deployment_endpoint: None,
+        deployment_status: ModelStatus::Draft,
+        deployed_at: None,
+        inference_count: 0,
+        last_inference_at: None,
+        drift_detected: false,
+        drift_score: None,
+        retraining_required: false,
+        auto_retrain: false,
+        retrain_threshold: None,
+        retrain_schedule_cron: None,
+        last_retrain_at: None,
+        owner_id: None,
+        tags: None,
+        status: erp_core::Status::Active,
     }
 }
 
@@ -135,8 +133,8 @@ pub async fn list_models(
     Ok(Json(serde_json::json!({
         "items": result.items.into_iter().map(ModelResponse::from).collect::<Vec<_>>(),
         "total": result.total,
-        "page": result.pagination.page,
-        "per_page": result.pagination.per_page
+        "page": result.page,
+        "per_page": result.per_page
     })))
 }
 
@@ -182,7 +180,7 @@ pub async fn create_model(
         status: erp_core::Status::Active,
         training_status: ModelStatus::Draft,
         deployment_status: ModelStatus::Draft,
-        ..Default::default()
+        ..new_ai_model()
     };
     
     let model = service.create(&state.pool, model).await

@@ -300,7 +300,7 @@ pub async fn check_credit(
     Json(req): Json<CheckCreditRequest>,
 ) -> ApiResult<Json<CreditCheckResponse>> {
     if req.order_amount < 0 {
-        return Err(erp_core::Error::validation("Order amount cannot be negative"));
+        return Err(crate::error::ApiError::from(erp_core::Error::validation("Order amount cannot be negative")));
     }
     let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
         .map_err(|_| erp_core::Error::Unauthorized)?;
@@ -362,7 +362,7 @@ pub async fn update_credit_limit(
     Json(req): Json<UpdateCreditLimitRequest>,
 ) -> ApiResult<Json<CreditProfileResponse>> {
     if req.credit_limit < 0 {
-        return Err(erp_core::Error::validation("Credit limit cannot be negative"));
+        return Err(crate::error::ApiError::from(erp_core::Error::validation("Credit limit cannot be negative")));
     }
     let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
         .map_err(|_| erp_core::Error::Unauthorized)?;
@@ -435,7 +435,7 @@ pub async fn record_invoice(
     Json(req): Json<RecordInvoiceRequest>,
 ) -> ApiResult<Json<CreditProfileResponse>> {
     if req.amount < 0 {
-        return Err(erp_core::Error::validation("Invoice amount cannot be negative"));
+        return Err(crate::error::ApiError::from(erp_core::Error::validation("Invoice amount cannot be negative")));
     }
     let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
         .map_err(|_| erp_core::Error::Unauthorized)?;
@@ -450,7 +450,7 @@ pub async fn record_payment(
     Json(req): Json<RecordPaymentRequest>,
 ) -> ApiResult<Json<CreditProfileResponse>> {
     if req.amount < 0 {
-        return Err(erp_core::Error::validation("Payment amount cannot be negative"));
+        return Err(crate::error::ApiError::from(erp_core::Error::validation("Payment amount cannot be negative")));
     }
     let user_id = uuid::Uuid::parse_str(&auth_user.0.user_id)
         .map_err(|_| erp_core::Error::Unauthorized)?;

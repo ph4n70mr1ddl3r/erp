@@ -127,7 +127,7 @@ pub async fn get_job(
 ) -> ApiResult<Json<JobResponse>> {
     let service = erp_jobs::JobService::new();
     let job = service.get(&state.pool, id).await?
-        .ok_or_else(|| erp_core::Error::NotFound("Job not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Job not found".into()))?;
     
     Ok(Json(JobResponse {
         id: job.base.id,

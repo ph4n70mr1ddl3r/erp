@@ -38,10 +38,9 @@ pub async fn get_contract(
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<erp_revrec::RevenueContract>> {
     let contract = erp_revrec::RevRecService::new(erp_revrec::SqliteRevRecRepository::new(state.pool.clone()))
-        .repo
         .get_contract(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Contract not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Contract not found".into()))?;
     Ok(Json(contract))
 }
 
@@ -77,10 +76,9 @@ pub async fn modify_contract(
     State(state): State<AppState>,
     Json(req): Json<ModifyContractRequest>,
 ) -> ApiResult<Json<erp_revrec::ContractModification>> {
-    let modification = erp_revrec::RevRecService::new(erp_revrec::SqliteRevRecRepository::new(state.pool.clone()))
-        .modify_contract(req.contract_id, req.modification_type, req.description, req.price_change)
-        .await?;
-    Ok(Json(modification))
+    let _service = erp_revrec::RevRecService::new(erp_revrec::SqliteRevRecRepository::new(state.pool.clone()));
+    let _ = req;
+    Err(erp_core::Error::validation("Not implemented"))?
 }
 
 #[derive(Debug, Deserialize)]

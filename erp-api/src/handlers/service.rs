@@ -50,7 +50,7 @@ impl From<ServiceTicket> for TicketResponse {
 
 pub async fn list_tickets(State(state): State<AppState>, Query(pagination): Query<Pagination>) -> ApiResult<Json<erp_core::Paginated<TicketResponse>>> {
     let svc = ServiceTicketService::new();
-    let tickets = svc.list(&state.pool, pagination.page, pagination.per_page).await?;
+    let tickets = svc.list(&state.pool, pagination.page as i64, pagination.per_page as i64).await?;
     Ok(Json(erp_core::Paginated::new(
         tickets.into_iter().map(TicketResponse::from).collect(),
         0,
@@ -175,7 +175,7 @@ impl From<KnowledgeArticle> for ArticleResponse {
 
 pub async fn list_articles(State(state): State<AppState>, Query(pagination): Query<Pagination>) -> ApiResult<Json<erp_core::Paginated<ArticleResponse>>> {
     let svc = KnowledgeArticleService::new();
-    let articles = svc.list(&state.pool, pagination.page, pagination.per_page).await?;
+    let articles = svc.list(&state.pool, pagination.page as i64, pagination.per_page as i64).await?;
     Ok(Json(erp_core::Paginated::new(
         articles.into_iter().map(ArticleResponse::from).collect(),
         0,

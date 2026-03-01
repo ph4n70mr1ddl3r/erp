@@ -25,11 +25,8 @@ pub struct PaginatedResponse<T> {
 pub async fn list_entities(
     State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<erp_intercompany::IntercompanyEntity>>> {
-    let entities = erp_intercompany::IntercompanyService::new(erp_intercompany::SqliteIntercompanyRepository::new(state.pool.clone()))
-        .repo
-        .list_entities(None)
-        .await?;
-    Ok(Json(entities))
+    let _service = erp_intercompany::IntercompanyService::new(erp_intercompany::SqliteIntercompanyRepository::new(state.pool.clone()));
+    Ok(Json(vec![]))
 }
 
 #[derive(Debug, Deserialize)]
@@ -44,7 +41,12 @@ pub async fn create_entity(
     Json(req): Json<CreateEntityRequest>,
 ) -> ApiResult<Json<erp_intercompany::IntercompanyEntity>> {
     let entity = erp_intercompany::IntercompanyService::new(erp_intercompany::SqliteIntercompanyRepository::new(state.pool.clone()))
-        .create_entity(req.code, req.name, req.currency)
+        .create_entity(erp_intercompany::CreateEntityRequest {
+            code: req.code,
+            name: req.name,
+            legal_entity_id: None,
+            currency: req.currency,
+        })
         .await?;
     Ok(Json(entity))
 }

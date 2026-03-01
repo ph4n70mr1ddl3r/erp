@@ -40,7 +40,7 @@ pub async fn get_golden_record(
     let record = erp_mdm::MDMService::new(erp_mdm::SqliteMDMRepository::new(state.pool.clone()))
         .get_golden_record(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Golden record not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Golden record not found".into()))?;
     Ok(Json(record))
 }
 

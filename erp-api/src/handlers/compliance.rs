@@ -44,7 +44,7 @@ pub struct CreateBreachRequest {
     pub severity: String,
 }
 
-pub async fn stats(State(state): State<AppState>) -> ApiResult<Json<crate::compliance_service::ComplianceStats>> {
+pub async fn stats(State(state): State<AppState>) -> ApiResult<Json<erp_core::compliance_service::ComplianceStats>> {
     let stats = ComplianceService::compliance_stats(&state.pool).await?;
     Ok(Json(stats))
 }

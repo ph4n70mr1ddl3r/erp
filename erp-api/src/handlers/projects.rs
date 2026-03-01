@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{Pagination, Money, Currency};
-use erp_projects::{ProjectService, TimesheetService, Project, ProjectTask, ProjectMilestone, ProjectStatus, TaskStatus, MilestoneStatus, Timesheet, TimesheetEntry, BillingStatus};
+use erp_projects::{ProjectService, ProjectTaskService, ProjectMilestoneService, TimesheetService, Project, ProjectTask, ProjectMilestone, ProjectStatus, TaskStatus, MilestoneStatus, Timesheet, TimesheetEntry, BillingStatus, ProjectType, BillingMethod, TaskPriority};
 
 #[derive(Deserialize)]
 pub struct CreateProjectRequest {
@@ -78,7 +78,7 @@ pub struct ProjectResponse {
     pub status: String,
     pub start_date: String,
     pub end_date: Option<String>,
-    pub budget: Option<i64>,
+    pub budget: i64,
     pub percent_complete: i32,
     pub created_at: String,
 }
@@ -119,17 +119,24 @@ pub async fn create_project(
         name: req.name,
         description: req.description,
         customer_id: req.customer_id.and_then(|id| Uuid::parse_str(&id).ok()),
-        project_manager: req.project_manager_id.and_then(|id| Uuid::parse_str(&id).ok()),
-        status: ProjectStatus::Active,
+        project_type: ProjectType::Internal,
         start_date: chrono::DateTime::parse_from_rfc3339(&req.start_date)
             .map(|d| d.with_timezone(&Utc))
             .unwrap_or_else(|_| Utc::now()),
         end_date: req.end_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
             .map(|d| d.with_timezone(&Utc)),
-        budget: req.budget,
-        actual_cost: 0,
+        budget: req.budget.unwrap_or(0),
+        billable: true,
+        billing_method: match req.billing_type.as_deref() {
+            Some("TimeAndMaterials") => BillingMethod::TimeAndMaterials,
+            Some("Milestone") => BillingMethod::Milestone,
+            Some("Retainer") => BillingMethod::Retainer,
+            Some("Hourly") => BillingMethod::Hourly,
+            _ => BillingMethod::FixedPrice,
+        },
+        project_manager: req.project_manager_id.and_then(|id| Uuid::parse_str(&id).ok()),
+        status: ProjectStatus::Active,
         percent_complete: 0,
-        billing_type: req.billing_type.unwrap_or_else(|| "FixedPrice".to_string()),
         created_at: Utc::now(),
     };
     let project = service.create_project(&state.pool, project).await?;
@@ -187,7 +194,7 @@ impl From<ProjectTask> for TaskResponse {
             description: t.description,
             assigned_to: t.assigned_to.map(|id| id.to_string()),
             status: format!("{:?}", t.status),
-            start_date: t.start_date.map(|d| d.to_rfc3339()),
+            start_date: Some(t.start_date.to_rfc3339()),
             due_date: t.end_date.map(|d| d.to_rfc3339()),
             estimated_hours: t.estimated_hours,
             actual_hours: t.actual_hours,
@@ -200,7 +207,7 @@ pub async fn list_tasks(
     State(state): State<AppState>,
     Path(project_id): Path<String>,
 ) -> ApiResult<Json<Vec<TaskResponse>>> {
-    let service = ProjectService::new();
+    let service = ProjectTaskService::new();
     let project_id = Uuid::parse_str(&project_id).map_err(|_| erp_core::Error::validation("Invalid project id"))?;
     let tasks = service.list_tasks_by_project(&state.pool, project_id).await?;
     Ok(Json(tasks.into_iter().map(|t| t.into()).collect()))
@@ -210,24 +217,28 @@ pub async fn create_task(
     State(state): State<AppState>,
     Json(req): Json<CreateTaskRequest>,
 ) -> ApiResult<Json<TaskResponse>> {
-    let service = ProjectService::new();
+    let service = ProjectTaskService::new();
     let project_id = Uuid::parse_str(&req.project_id).map_err(|_| erp_core::Error::validation("Invalid project id"))?;
     let task = ProjectTask {
         id: Uuid::new_v4(),
         project_id,
+        task_number: 0,
         name: req.name,
         description: req.description,
+        parent_task_id: None,
         assigned_to: req.assigned_to.and_then(|id| Uuid::parse_str(&id).ok()),
-        status: TaskStatus::NotStarted,
         start_date: chrono::DateTime::parse_from_rfc3339(&req.start_date)
-            .map(|d| d.with_timezone(&Utc)).ok(),
+            .map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
         end_date: req.due_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
             .map(|d| d.with_timezone(&Utc)),
         estimated_hours: req.estimated_hours,
         actual_hours: 0.0,
         percent_complete: 0,
+        priority: TaskPriority::Medium,
+        status: TaskStatus::NotStarted,
+        billable: true,
     };
-    let task = service.add_task(&state.pool, task).await?;
+    let task = service.create_task(&state.pool, task).await?;
     Ok(Json(task.into()))
 }
 
@@ -247,10 +258,10 @@ pub struct MilestoneResponse {
     pub project_id: String,
     pub name: String,
     pub description: Option<String>,
-    pub planned_date: Option<String>,
+    pub planned_date: String,
     pub actual_date: Option<String>,
     pub status: String,
-    pub billing_amount: Option<i64>,
+    pub billing_amount: i64,
 }
 
 impl From<ProjectMilestone> for MilestoneResponse {
@@ -260,7 +271,7 @@ impl From<ProjectMilestone> for MilestoneResponse {
             project_id: m.project_id.to_string(),
             name: m.name,
             description: m.description,
-            planned_date: m.planned_date.map(|d| d.to_rfc3339()),
+            planned_date: m.planned_date.to_rfc3339(),
             actual_date: m.actual_date.map(|d| d.to_rfc3339()),
             status: format!("{:?}", m.status),
             billing_amount: m.billing_amount,
@@ -272,7 +283,7 @@ pub async fn list_milestones(
     State(state): State<AppState>,
     Path(project_id): Path<String>,
 ) -> ApiResult<Json<Vec<MilestoneResponse>>> {
-    let service = ProjectService::new();
+    let service = ProjectMilestoneService::new();
     let project_id = Uuid::parse_str(&project_id).map_err(|_| erp_core::Error::validation("Invalid project id"))?;
     let milestones = service.list_milestones_by_project(&state.pool, project_id).await?;
     Ok(Json(milestones.into_iter().map(|m| m.into()).collect()))
@@ -282,7 +293,7 @@ pub async fn create_milestone(
     State(state): State<AppState>,
     Json(req): Json<CreateMilestoneRequest>,
 ) -> ApiResult<Json<MilestoneResponse>> {
-    let service = ProjectService::new();
+    let service = ProjectMilestoneService::new();
     let project_id = Uuid::parse_str(&req.project_id).map_err(|_| erp_core::Error::validation("Invalid project id"))?;
     let milestone = ProjectMilestone {
         id: Uuid::new_v4(),
@@ -290,13 +301,13 @@ pub async fn create_milestone(
         name: req.name,
         description: req.description,
         planned_date: chrono::DateTime::parse_from_rfc3339(&req.planned_date)
-            .map(|d| d.with_timezone(&Utc)).ok(),
+            .map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
         actual_date: None,
         status: MilestoneStatus::Planned,
         billing_amount: req.billing_amount.unwrap_or(0),
         billing_status: BillingStatus::NotBilled,
     };
-    let milestone = service.add_milestone(&state.pool, milestone).await?;
+    let milestone = service.create_milestone(&state.pool, milestone).await?;
     Ok(Json(milestone.into()))
 }
 

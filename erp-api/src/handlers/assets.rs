@@ -52,7 +52,7 @@ impl From<ITAsset> for AssetResponse {
 
 pub async fn list_assets(State(state): State<AppState>, Query(pagination): Query<Pagination>) -> ApiResult<Json<erp_core::Paginated<AssetResponse>>> {
     let svc = ITAssetService::new();
-    let assets = svc.list(&state.pool, pagination.page, pagination.per_page).await?;
+    let assets = svc.list(&state.pool, pagination.page as i64, pagination.per_page as i64).await?;
     Ok(Json(erp_core::Paginated::new(
         assets.into_iter().map(AssetResponse::from).collect(),
         0,
@@ -180,7 +180,7 @@ impl From<SoftwareLicense> for LicenseResponse {
 
 pub async fn list_licenses(State(state): State<AppState>, Query(pagination): Query<Pagination>) -> ApiResult<Json<erp_core::Paginated<LicenseResponse>>> {
     let svc = SoftwareLicenseService::new();
-    let licenses = svc.list(&state.pool, pagination.page, pagination.per_page).await?;
+    let licenses = svc.list(&state.pool, pagination.page as i64, pagination.per_page as i64).await?;
     Ok(Json(erp_core::Paginated::new(
         licenses.into_iter().map(LicenseResponse::from).collect(),
         0,

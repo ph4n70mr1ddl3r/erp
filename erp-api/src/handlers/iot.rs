@@ -95,6 +95,7 @@ pub async fn register_device(
 ) -> Result<Json<DeviceResponse>, (StatusCode, String)> {
     let service = IoTDeviceService::new();
     
+    let now = chrono::Utc::now();
     let device = IoTDevice {
         base: erp_core::BaseEntity::new(),
         device_id: req.device_id,
@@ -109,6 +110,9 @@ pub async fn register_device(
         },
         manufacturer: req.manufacturer,
         model: req.model,
+        serial_number: None,
+        firmware_version: None,
+        hardware_version: None,
         status: DeviceStatus::Provisioning,
         connectivity_type: match req.connectivity_type.as_str() {
             "Ethernet" => ConnectivityType::Ethernet,
@@ -117,10 +121,36 @@ pub async fn register_device(
             "MQTT" => ConnectivityType::MQTT,
             _ => ConnectivityType::WiFi,
         },
+        ip_address: None,
+        mac_address: None,
+        port: None,
+        protocol_config: None,
+        gateway_id: None,
+        location_id: None,
         warehouse_id: req.warehouse_id,
-        created_at: chrono::Utc::now(),
-        updated_at: chrono::Utc::now(),
-        ..Default::default()
+        zone: None,
+        latitude: None,
+        longitude: None,
+        geofence_enabled: false,
+        geofence_radius_meters: None,
+        last_seen_at: None,
+        last_heartbeat_at: None,
+        heartbeat_interval_seconds: 60,
+        battery_level: None,
+        signal_strength: None,
+        temperature_celsius: None,
+        humidity_percent: None,
+        data_format: None,
+        data_schema: None,
+        transforms: None,
+        alert_rules: None,
+        metadata: None,
+        tags: None,
+        owner_id: None,
+        installed_at: None,
+        maintenance_due_at: None,
+        created_at: now,
+        updated_at: now,
     };
     
     let device = service.register(&state.pool, device).await

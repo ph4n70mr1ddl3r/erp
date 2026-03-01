@@ -106,22 +106,6 @@ fn api_routes(state: AppState) -> Router<AppState> {
             post(handlers::workflow::reject_request),
         )
         .route(
-            "/notifications",
-            get(handlers::workflow::list_notifications),
-        )
-        .route(
-            "/notifications/read",
-            post(handlers::workflow::mark_all_notifications_read),
-        )
-        .route(
-            "/notifications/:id/read",
-            post(handlers::workflow::mark_notification_read),
-        )
-        .route(
-            "/notifications/unread-count",
-            get(handlers::workflow::unread_notification_count),
-        )
-        .route(
             "/attachments",
             get(handlers::attachment::list_attachments)
                 .post(handlers::attachment::upload_attachment),
@@ -974,7 +958,7 @@ fn promotions_routes() -> Router<AppState> {
         .route("/coupons/apply", post(handlers::promotions::apply_coupon))
         .route(
             "/coupons/generate-batch",
-            post(handlers::promotions::generate_coupon_batch),
+            post(handlers::promotions::generate_coupon_batch_handler),
         )
 }
 

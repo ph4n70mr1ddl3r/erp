@@ -480,18 +480,18 @@ impl CouponService {
         req: GenerateCouponBatchRequest,
     ) -> Result<Vec<Coupon>> {
         let mut coupons = Vec::new();
-        let mut rng = rand::thread_rng();
-
         for _ in 0..req.quantity {
-            let suffix: String = (0..req.length)
-                .map(|_| {
-                    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                    let idx = rng.gen_range(0..CHARSET.len());
-                    CHARSET[idx] as char
-                })
-                .collect();
-
-            let code = format!("{}{}", req.prefix, suffix);
+            let code = {
+                let mut rng = rand::thread_rng();
+                let suffix: String = (0..req.length)
+                    .map(|_| {
+                        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                        let idx = rng.gen_range(0..CHARSET.len());
+                        CHARSET[idx] as char
+                    })
+                    .collect();
+                format!("{}{}", req.prefix, suffix)
+            };
 
             let coupon = Coupon {
                 base: BaseEntity::new(),

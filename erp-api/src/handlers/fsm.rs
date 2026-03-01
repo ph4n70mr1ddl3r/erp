@@ -66,7 +66,7 @@ pub async fn get_service_order(
     let order = erp_fsm::FSMService::new(erp_fsm::SqliteFSMRepository::new(state.pool.clone()))
         .get_service_order(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Service order not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Service order not found".into()))?;
     Ok(Json(order))
 }
 

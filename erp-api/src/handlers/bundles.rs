@@ -13,7 +13,7 @@ use erp_bundles::{
     BundleAnalytics, CreateBundleRequest, UpdateBundleRequest, CreateBundleComponentRequest,
     BundleListResponse, ProductBundleSummary, BundleType, BundlePricingMethod,
 };
-use erp_core::Status;
+use erp_core::{Status, Currency};
 
 #[derive(Serialize)]
 pub struct ApiResponse<T> {
@@ -226,8 +226,8 @@ impl From<ProductBundle> for BundleResponse {
             description: b.description,
             bundle_type: format!("{:?}", b.bundle_type),
             pricing_method: format!("{:?}", b.pricing_method),
-            list_price: PriceResponse { cents: b.list_price.amount, currency: b.list_price.currency },
-            calculated_price: PriceResponse { cents: b.calculated_price.amount, currency: b.calculated_price.currency },
+            list_price: PriceResponse { cents: b.list_price.amount, currency: format!("{:?}", b.list_price.currency) },
+            calculated_price: PriceResponse { cents: b.calculated_price.amount, currency: format!("{:?}", b.calculated_price.currency) },
             discount_percent: b.discount_percent,
             components: b.components.into_iter().map(|c| ComponentResponse {
                 id: c.id.to_string(),
@@ -258,7 +258,7 @@ impl From<ProductBundleSummary> for BundleSummaryResponse {
             bundle_code: s.bundle_code,
             name: s.name,
             bundle_type: format!("{:?}", s.bundle_type),
-            list_price: PriceResponse { cents: s.list_price.amount, currency: s.list_price.currency },
+            list_price: PriceResponse { cents: s.list_price.amount, currency: format!("{:?}", s.list_price.currency) },
             component_count: s.component_count,
             status: format!("{:?}", s.status),
             created_at: s.created_at.to_rfc3339(),
@@ -277,8 +277,8 @@ pub async fn create_bundle(
         description: body.description,
         bundle_type: parse_bundle_type(&body.bundle_type),
         pricing_method: parse_pricing_method(&body.pricing_method),
-        list_price_cents: body.list_price_cents,
-        currency: body.currency,
+        list_price_amount: body.list_price_cents,
+        currency: body.currency.parse::<erp_core::Currency>().unwrap_or(erp_core::Currency::USD),
         discount_percent: body.discount_percent,
         components: body.components.into_iter().map(|c| CreateBundleComponentRequest {
             product_id: c.product_id,
@@ -339,9 +339,9 @@ pub async fn update_bundle(
     let req = UpdateBundleRequest {
         name: body.name,
         description: body.description,
-        bundle_type: body.bundle_type.and_then(|t| Some(parse_bundle_type(&t))),
-        pricing_method: body.pricing_method.and_then(|m| Some(parse_pricing_method(&m))),
-        list_price_cents: body.list_price_cents,
+        bundle_type: body.bundle_type.as_ref().map(|t| parse_bundle_type(t)),
+        pricing_method: body.pricing_method.as_ref().map(|m| parse_pricing_method(m)),
+        list_price_amount: body.list_price_cents,
         discount_percent: body.discount_percent,
         auto_explode: body.auto_explode,
         track_inventory: body.track_inventory,

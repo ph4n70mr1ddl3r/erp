@@ -29,7 +29,7 @@ pub async fn list_locations(
 ) -> ApiResult<Json<PaginatedResponse<erp_wms::StorageLocation>>> {
     let page = query.page.unwrap_or(1);
     let page_size = query.page_size.unwrap_or(20);
-    let warehouse_id = query.warehouse_id.ok_or_else(|| erp_core::Error::validation("warehouse_id required".into()))?;
+    let warehouse_id = query.warehouse_id.ok_or_else(|| erp_core::Error::validation("warehouse_id required".to_string()))?;
     let items = erp_wms::WMSService::new(erp_wms::SqliteWMSRepository::new(state.pool.clone()))
         .list_locations(warehouse_id, page, page_size)
         .await?;
@@ -58,7 +58,7 @@ pub async fn get_location(
     let location = erp_wms::WMSService::new(erp_wms::SqliteWMSRepository::new(state.pool.clone()))
         .get_location(id)
         .await?
-        .ok_or_else(|| erp_core::Error::NotFound("Location not found".into(.into())))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Location not found".into()))?;
     Ok(Json(location))
 }
 

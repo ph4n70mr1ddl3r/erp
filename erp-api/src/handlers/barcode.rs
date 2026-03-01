@@ -117,7 +117,22 @@ pub async fn create_print_job(
     Json(req): Json<CreatePrintJobRequest>,
 ) -> ApiResult<Json<PrintJobResponse>> {
     let svc = BarcodePrintService::new();
-    let job = svc.create_job(&state.pool, req.printer_id, req.template_id, req.items).await?;
+    let items: Vec<(Uuid, String, erp_barcode::BarcodeEntityType, Uuid)> = req.items.into_iter().map(|(id, barcode, entity_type, entity_id)| {
+        let et = match entity_type.as_str() {
+            "Lot" => erp_barcode::BarcodeEntityType::Lot,
+            "SerialNumber" => erp_barcode::BarcodeEntityType::SerialNumber,
+            "Asset" => erp_barcode::BarcodeEntityType::Asset,
+            "Location" => erp_barcode::BarcodeEntityType::Location,
+            "Pallet" => erp_barcode::BarcodeEntityType::Pallet,
+            "Container" => erp_barcode::BarcodeEntityType::Container,
+            "Document" => erp_barcode::BarcodeEntityType::Document,
+            "Employee" => erp_barcode::BarcodeEntityType::Employee,
+            "Customer" => erp_barcode::BarcodeEntityType::Customer,
+            _ => erp_barcode::BarcodeEntityType::Product,
+        };
+        (id, barcode, et, entity_id)
+    }).collect();
+    let job = svc.create_job(&state.pool, req.printer_id, req.template_id, items).await?;
     
     Ok(Json(PrintJobResponse {
         id: job.base.id,
