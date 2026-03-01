@@ -1,68 +1,93 @@
 # AGENTS.md
 
-Instructions for AI assistants working on this codebase.
+Instructions for AI coding assistants working on this codebase.
 
 ## Project Overview
 
-This is a full-stack ERP system:
-- **Backend**: Rust with Axum web framework, SQLite database
-- **Frontend**: React + TypeScript with Vite
+Full-stack ERP system:
+- **Backend**: Rust (Axum framework, SQLite via sqlx)
+- **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
 - **Auth**: JWT-based authentication
+- **Architecture**: Modular workspace with 100+ Rust crates
 
-## Code Conventions
+## Build, Lint, and Test Commands
 
-### Rust Backend
-
-#### Module Pattern
-Each business module (erp-finance, erp-inventory, etc.) follows this structure:
-
-```rust
-// src/lib.rs
-pub mod models;
-pub mod repository;
-pub mod service;
-pub use models::*;
-pub use service::*;
-
-// src/models.rs - Domain types
-pub struct Account { pub base: BaseEntity, pub code: String, ... }
-
-// src/repository.rs - Database operations
-pub struct SqliteAccountRepository;
-impl AccountRepository for SqliteAccountRepository { ... }
-
-// src/service.rs - Business logic
-pub struct AccountService { repo: SqliteAccountRepository }
+### Backend (Rust)
+```bash
+cargo build --release          # Build everything
+cargo check                    # Check compilation (fast)
+cargo test                     # Run all tests
+cargo test -p erp-auth         # Run tests for a specific crate
+cargo test test_hash_password  # Run a single test by name
+cargo test -p erp-api test_create_product_with_auth  # Single test in crate
+cargo test --test integration_test  # Run integration tests only
+cargo clippy -- -D warnings    # Lint
+cargo fmt                      # Format
 ```
 
-#### Key Patterns
+### Frontend (TypeScript/React)
+```bash
+cd frontend
+npm run dev           # Development server
+npm run build         # Build for production (includes type check)
+npm run lint          # Lint
+npx eslint src/pages/Sales.tsx  # Lint specific file
+```
 
-1. **BaseEntity**: All entities have a `base: BaseEntity` field with id, timestamps
-2. **Money type**: Stored as cents (i64), use `Money::new(cents, Currency::USD)`
-3. **Status enum**: Active, Inactive, Draft, Pending, Approved, etc.
-4. **Repository trait + impl**: Separate trait definition from SQLite implementation
-5. **Service layer**: All validation happens here, not in handlers
+### Full Stack
+```bash
+cargo run --release   # Run backend (port 3000)
+cd frontend && npm run dev  # Run frontend (port 5173)
+```
 
-#### Database
+## Rust Backend Conventions
 
-- SQLite with sqlx
-- Migrations in `migrations/` directory
-- Auto-run on startup (see `erp-api/src/db.rs`)
-- All IDs are UUIDs stored as TEXT
+### Module Structure
+```
+erp-<name>/
+├── src/lib.rs        # Exports
+├── src/models.rs     # Domain types
+├── src/repository.rs # Database operations
+└── src/service.rs    # Business logic
+```
 
-#### Adding a New Module
+### Import Order
+```rust
+// 1. Standard library
+use std::collections::HashMap;
+// 2. External crates (alphabetical)
+use anyhow::Result;
+use axum::{extract::State, Json};
+use chrono::Utc;
+use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
+use uuid::Uuid;
+// 3. Internal crates
+use erp_core::{BaseEntity, Error, Money, Pagination, Status};
+// 4. Current crate modules
+use crate::models::*;
+```
 
-1. Create crate: `erp-<name>/`
-2. Add to workspace in root `Cargo.toml`
-3. Create models, repository, service following pattern
-4. Add migration file: `migrations/YYYYMMDDHHMMSS_<name>.sql`
-5. Add handlers in `erp-api/src/handlers/<name>.rs`
-6. Add routes in `erp-api/src/routes.rs`
-7. Add to `erp-api/src/db.rs` migrations list
+### Naming Conventions
+- **Types**: PascalCase (`Account`, `JournalEntry`)
+- **Functions/Variables**: snake_case (`get_account`, `account_list`)
+- **Constants**: SCREAMING_SNAKE_CASE (`MAX_FILE_SIZE`)
 
-#### Adding an Endpoint
+### Error Handling
+```rust
+pub async fn get_account(pool: &SqlitePool, id: Uuid) -> Result<Account> {
+    let row = sqlx::query_as::<_, AccountRow>(sql)
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| Error::not_found("Account", &id.to_string()))?;
+    Ok(row.into())
+}
+// Validation: Error::validation("Code is required")
+// Business rules: Error::business_rule("Balance cannot be negative")
+```
 
-1. Define handler in `erp-api/src/handlers/<module>.rs`:
+### Handler Pattern
 ```rust
 pub async fn get_thing(
     State(state): State<AppState>,
@@ -74,86 +99,102 @@ pub async fn get_thing(
 }
 ```
 
-2. Add route in `erp-api/src/routes.rs`:
-```rust
-.route("/things/:id", get(handlers::module::get_thing))
-```
+### Key Patterns
+- **BaseEntity**: All entities include `base: BaseEntity` for id/timestamps
+- **Money**: Stored as cents (i64): `Money::new(10000, Currency::USD)` = $100.00
+- **Status enum**: Active, Inactive, Draft, Pending, Approved, etc.
+- **Service layer**: All validation in services, handlers stay thin
+- **UUIDs**: Stored as TEXT in SQLite, parsed to Uuid type in Rust
 
-### React Frontend
+## Frontend (TypeScript/React) Conventions
 
-#### Structure
-```
-frontend/src/
-├── api/client.ts      # Axios API client with auth
-├── hooks/useAuth.tsx  # Auth context and hook
-├── components/        # Shared components
-├── pages/             # Route pages
-└── types/index.ts     # TypeScript types
-```
-
-#### API Client Usage
+### Import Order
 ```typescript
-import { inventory } from '../api/client';
-
-// GET with pagination
-const res = await inventory.getProducts(1, 20);
-// res.data.items, res.data.total, etc.
-
-// POST
-await inventory.createProduct({ sku: 'ABC', name: 'Product', unit_of_measure: 'PCS' });
+// 1. React/external
+import { useEffect, useState } from 'react';
+import { useToast } from '../components/Toast';
+// 2. API client
+import { sales } from '../api/client';
+// 3. Types
+import type { Customer } from '../types';
+// 4. Utilities
+import { getErrorMessage } from '../utils/errors';
 ```
 
-#### Adding a Page
-
-1. Create `src/pages/NewPage.tsx`
-2. Add route in `src/App.tsx`:
-```tsx
-<Route path="/new-page" element={<PrivateRoute><NewPage /></PrivateRoute>} />
-```
-3. Add nav link in `src/components/Layout.tsx`
-
-## Common Tasks
-
-### Run the Backend
-```bash
-cargo run --release
+### Error Handling (CRITICAL)
+```typescript
+// ALWAYS use unknown in catch blocks - NEVER use any
+try {
+  await sales.createCustomer(data);
+} catch (err: unknown) {
+  toast.error(getErrorMessage(err, 'Failed to create customer'));
+}
 ```
 
-### Run the Frontend
-```bash
-cd frontend && npm run dev
+### Naming Conventions
+- **Components/Types**: PascalCase (`SalesPage`, `CustomerResponse`)
+- **Functions/Variables**: camelCase (`handleCreate`, `customers`)
+- **Files**: PascalCase for components (`Sales.tsx`), camelCase for utils (`errors.ts`)
+
+### Component Pattern
+```typescript
+export default function Page() {
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<Thing[]>([]);
+
+  useEffect(() => { loadData(); }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await api.getThings(1, 50);
+      setData(res.data.items);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <LoadingPage />;
+  return <div>...</div>;
+}
 ```
 
-### Build Everything
-```bash
-cargo build --release
-cd frontend && npm run build
+## Adding New Features
+
+### New Backend Module
+1. Create `erp-<name>/` with lib.rs, models.rs, repository.rs, service.rs
+2. Add to workspace in root `Cargo.toml`
+3. Create migration: `migrations/YYYYMMDDHHMMSS_<name>.sql`
+4. Add handlers in `erp-api/src/handlers/<name>.rs`
+5. Add routes in `erp-api/src/routes.rs`
+
+### New Frontend Page
+1. Create `frontend/src/pages/PageName.tsx`
+2. Add route in `frontend/src/App.tsx`
+3. Add nav link in `frontend/src/components/Layout.tsx`
+4. Add API methods in `frontend/src/api/client.ts`
+
+## Testing
+
+### Backend Unit Tests
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_function_name() {
+        let result = function_under_test();
+        assert!(result.is_ok());
+    }
+}
 ```
 
-### Check for Compilation Errors
-```bash
-cargo check
-cd frontend && npm run build
-```
-
-### Add a New Dependency
-1. Add to `[workspace.dependencies]` in root `Cargo.toml`
-2. Add `dep.workspace = true` in module's `Cargo.toml`
-
-## Testing Authentication
-
-1. Register a user:
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","email":"test@example.com","password":"password","full_name":"Test User"}'
-```
-
-2. Use the returned token in subsequent requests:
-```bash
-curl http://localhost:3000/api/v1/inventory/products \
-  -H "Authorization: Bearer <token>"
-```
+### Integration Tests
+Located in `erp-api/tests/integration_test.rs`. Uses in-memory SQLite.
 
 ## Important Notes
 
@@ -161,5 +202,6 @@ curl http://localhost:3000/api/v1/inventory/products \
 - All prices stored as cents (multiply by 100 when creating, divide by 100 when displaying)
 - Use `?` operator extensively for error propagation
 - Handlers should be thin - business logic goes in services
-- Use `BaseEntity::new()` for new entities
-- UUIDs are stored as strings in SQLite but parsed to Uuid type in Rust
+- Always validate input in service layer, not handlers
+- Use `tracing` for logging: `tracing::info!`, `tracing::error!`
+- Frontend: Never use `any` type - always use `unknown` in catch blocks
