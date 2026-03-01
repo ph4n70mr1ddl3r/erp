@@ -18,6 +18,7 @@ impl BudgetService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_budget(
         &self,
         _pool: &SqlitePool,
@@ -104,6 +105,7 @@ impl BudgetService {
         self.budget_repo.update(&budget).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_budget_line(
         &self,
         _pool: &SqlitePool,
@@ -146,6 +148,7 @@ impl BudgetService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ForecastService {
     pool: SqlitePool,
 }
@@ -155,6 +158,7 @@ impl ForecastService {
         Self { pool }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_forecast(
         &self,
         name: String,
@@ -253,6 +257,7 @@ impl ForecastService {
     }
 }
 
+#[allow(dead_code)]
 pub struct BudgetAlertService {
     pool: SqlitePool,
 }
@@ -288,6 +293,7 @@ impl BudgetAlertService {
     }
 }
 
+#[allow(dead_code)]
 pub struct BudgetTransferService {
     pool: SqlitePool,
 }
@@ -334,6 +340,7 @@ impl BudgetTransferService {
     }
 }
 
+#[allow(dead_code)]
 pub struct BudgetScenarioService {
     pool: SqlitePool,
 }

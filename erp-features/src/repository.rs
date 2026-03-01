@@ -4,6 +4,7 @@ use uuid::Uuid;
 use erp_core::{Result, Error};
 use crate::models::*;
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 struct FeatureFlagRow {
     id: String,
@@ -60,6 +61,7 @@ impl FeatureFlagRow {
     }
 }
 
+#[allow(dead_code)]
 #[derive(sqlx::FromRow)]
 struct FeatureFlagOverrideRow {
     id: String,

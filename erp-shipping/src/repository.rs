@@ -1,5 +1,5 @@
 use crate::models::*;
-use anyhow::Result;
+use anyhow::{Result, Context};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 
@@ -31,28 +31,35 @@ impl CarrierRepository {
             r#"SELECT id, code, name, carrier_type, api_key, api_secret, account_number, tracking_url_template, is_active, created_at, updated_at FROM carriers WHERE is_active = 1 ORDER BY name"#
         )
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| Carrier {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
-            code: r.get("code"),
-            name: r.get("name"),
-            carrier_type: match r.get::<String, _>("carrier_type").as_str() {
-                "FedEx" => CarrierType::FedEx,
-                "UPS" => CarrierType::UPS,
-                "DHL" => CarrierType::DHL,
-                "USPS" => CarrierType::USPS,
-                "CanadaPost" => CarrierType::CanadaPost,
-                "RoyalMail" => CarrierType::RoyalMail,
-                "DPD" => CarrierType::DPD,
-                _ => CarrierType::Other,
-            },
-            api_key: r.get("api_key"),
-            api_secret: r.get("api_secret"),
-            account_number: r.get("account_number"),
-            tracking_url_template: r.get("tracking_url_template"),
-            is_active: r.get("is_active"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
-        }).collect())
+        rows.iter().map(|r| {
+            Ok(Carrier {
+                id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                    .context("Failed to parse carrier id")?,
+                code: r.get("code"),
+                name: r.get("name"),
+                carrier_type: match r.get::<String, _>("carrier_type").as_str() {
+                    "FedEx" => CarrierType::FedEx,
+                    "UPS" => CarrierType::UPS,
+                    "DHL" => CarrierType::DHL,
+                    "USPS" => CarrierType::USPS,
+                    "CanadaPost" => CarrierType::CanadaPost,
+                    "RoyalMail" => CarrierType::RoyalMail,
+                    "DPD" => CarrierType::DPD,
+                    _ => CarrierType::Other,
+                },
+                api_key: r.get("api_key"),
+                api_secret: r.get("api_secret"),
+                account_number: r.get("account_number"),
+                tracking_url_template: r.get("tracking_url_template"),
+                is_active: r.get("is_active"),
+                created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                    .context("Failed to parse created_at")?
+                    .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                    .context("Failed to parse updated_at")?
+                    .with_timezone(&chrono::Utc),
+            })
+        }).collect()
     }
 }
 
@@ -112,7 +119,10 @@ impl ShipmentRepository {
         .bind(id.to_string())
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|r| Self::row_to_shipment(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_shipment(&r)?)),
+            None => Ok(None),
+        }
     }
 
     pub async fn list_by_status(pool: &SqlitePool, status: &str) -> Result<Vec<Shipment>> {
@@ -121,16 +131,19 @@ impl ShipmentRepository {
         )
         .bind(status)
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(Self::row_to_shipment).collect())
+        rows.iter().map(Self::row_to_shipment).collect()
     }
 
-    fn row_to_shipment(r: &sqlx::sqlite::SqliteRow) -> Shipment {
-        Shipment {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+    fn row_to_shipment(r: &sqlx::sqlite::SqliteRow) -> Result<Shipment> {
+        Ok(Shipment {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse shipment id")?,
             shipment_number: r.get("shipment_number"),
             order_id: r.get::<Option<String>, _>("order_id").and_then(|s| Uuid::parse_str(&s).ok()),
-            carrier_id: Uuid::parse_str(r.get::<String, _>("carrier_id").as_str()).unwrap(),
-            carrier_service_id: Uuid::parse_str(r.get::<String, _>("carrier_service_id").as_str()).unwrap(),
+            carrier_id: Uuid::parse_str(r.get::<String, _>("carrier_id").as_str())
+                .context("Failed to parse carrier_id")?,
+            carrier_service_id: Uuid::parse_str(r.get::<String, _>("carrier_service_id").as_str())
+                .context("Failed to parse carrier_service_id")?,
             status: match r.get::<String, _>("status").as_str() {
                 "Picked" => ShipmentStatus::Picked,
                 "Packed" => ShipmentStatus::Packed,
@@ -171,8 +184,12 @@ impl ShipmentRepository {
             estimated_delivery: r.get::<Option<String>, _>("estimated_delivery").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             delivered_at: r.get::<Option<String>, _>("delivered_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             notes: r.get("notes"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
-        }
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                .context("Failed to parse updated_at")?
+                .with_timezone(&chrono::Utc),
+        })
     }
 }

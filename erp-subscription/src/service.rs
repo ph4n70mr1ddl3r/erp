@@ -107,14 +107,14 @@ impl SubscriptionService {
         let rows = sqlx::query("SELECT id, customer_id, plan_id, status, quantity, price_override, current_period_start, current_period_end, trial_start, trial_end, cancelled_at, cancel_at_period_end, metadata, created_at, updated_at FROM subscriptions WHERE id = ?")
             .bind(id.to_string())
             .fetch_all(pool).await?;
-        Ok(SubscriptionRepository::row_to_sub(&rows[0]))
+        SubscriptionRepository::row_to_sub(&rows[0])
     }
 
     pub async fn renew(pool: &SqlitePool, id: Uuid) -> Result<Subscription> {
         let rows = sqlx::query("SELECT id, customer_id, plan_id, status, quantity, price_override, current_period_start, current_period_end, trial_start, trial_end, cancelled_at, cancel_at_period_end, metadata, created_at, updated_at FROM subscriptions WHERE id = ?")
             .bind(id.to_string())
             .fetch_all(pool).await?;
-        let sub = SubscriptionRepository::row_to_sub(&rows[0]);
+        let sub = SubscriptionRepository::row_to_sub(&rows[0])?;
         
         let plans = SubscriptionPlanRepository::list_active(pool).await?;
         let plan = plans.iter().find(|p| p.id == sub.plan_id).unwrap();
@@ -135,7 +135,7 @@ impl SubscriptionService {
         let rows = sqlx::query("SELECT id, customer_id, plan_id, status, quantity, price_override, current_period_start, current_period_end, trial_start, trial_end, cancelled_at, cancel_at_period_end, metadata, created_at, updated_at FROM subscriptions WHERE id = ?")
             .bind(id.to_string())
             .fetch_all(pool).await?;
-        Ok(SubscriptionRepository::row_to_sub(&rows[0]))
+        SubscriptionRepository::row_to_sub(&rows[0])
     }
 
     pub async fn get_expiring(pool: &SqlitePool, days: i32) -> Result<Vec<Subscription>> {
@@ -145,7 +145,7 @@ impl SubscriptionService {
         )
         .bind(threshold.to_rfc3339())
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(SubscriptionRepository::row_to_sub).collect())
+        rows.iter().map(SubscriptionRepository::row_to_sub).collect()
     }
 
     pub async fn record_usage(pool: &SqlitePool, subscription_id: Uuid, usage_type: String, quantity: i64, unit: String) -> Result<SubscriptionUsage> {

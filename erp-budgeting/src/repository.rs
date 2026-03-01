@@ -94,6 +94,7 @@ pub struct BudgetActualSummary {
     pub utilization_percent: f64,
 }
 
+#[allow(dead_code)]
 pub struct SqliteBudgetRepository {
     pool: SqlitePool,
 }

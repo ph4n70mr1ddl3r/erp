@@ -106,6 +106,7 @@ impl MrpService {
         Ok(forecast)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_planned_order(
         pool: &SqlitePool,
         run_id: Uuid,

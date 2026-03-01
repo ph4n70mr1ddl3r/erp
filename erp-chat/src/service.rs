@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::models::*;
 use crate::repository::*;
 
+#[allow(dead_code)]
 pub struct ChatChannelService {
     channel_repo: SqliteChatChannelRepository,
     membership_repo: SqliteChatMembershipRepository,

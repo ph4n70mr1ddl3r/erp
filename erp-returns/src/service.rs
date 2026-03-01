@@ -78,6 +78,7 @@ impl ReturnService {
         self.repo.update_status(pool, id, ReturnStatus::Cancelled).await
     }
     
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_line_inspection(
         &self,
         pool: &SqlitePool,
@@ -386,6 +387,7 @@ impl Default for ReturnPolicyService {
 impl ReturnPolicyService {
     pub fn new() -> Self { Self }
     
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         pool: &SqlitePool,
         name: &str,

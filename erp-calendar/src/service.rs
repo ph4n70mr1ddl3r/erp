@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::models::*;
 use crate::repository::*;
 
+#[allow(dead_code)]
 pub struct CalendarEventService {
     event_repo: SqliteCalendarEventRepository,
     attendee_repo: SqliteEventAttendeeRepository,

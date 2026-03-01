@@ -177,38 +177,41 @@ pub struct CreatePlannedOrderRequest {
 }
 
 pub async fn create_planned_order(State(_state): State<AppState>, Json(_req): Json<CreatePlannedOrderRequest>) -> Json<PlannedOrderResponse> {
+    let due_date = chrono::Utc::now() + chrono::Duration::days(14);
     Json(PlannedOrderResponse {
         id: Uuid::new_v4(),
-        order_number: "PLN-20240101000000".to_string(),
+        order_number: format!("PLN-{}", chrono::Utc::now().format("%Y%m%d%H%M%S")),
         product_id: Uuid::new_v4(),
         order_type: "Purchase".to_string(),
         quantity: 500,
-        due_date: "2024-01-15".to_string(),
+        due_date: due_date.format("%Y-%m-%d").to_string(),
         status: "Open".to_string(),
     })
 }
 
 pub async fn list_planned_orders(State(_state): State<AppState>) -> Json<Vec<PlannedOrderResponse>> { Json(vec![]) }
 pub async fn get_planned_order(State(_state): State<AppState>) -> Json<PlannedOrderResponse> {
+    let due_date = chrono::Utc::now() + chrono::Duration::days(21);
     Json(PlannedOrderResponse {
         id: Uuid::new_v4(),
         order_number: "PLN-20240101000000".to_string(),
         product_id: Uuid::new_v4(),
         order_type: "Manufacture".to_string(),
         quantity: 200,
-        due_date: "2024-01-20".to_string(),
+        due_date: due_date.format("%Y-%m-%d").to_string(),
         status: "Firmed".to_string(),
     })
 }
 
 pub async fn firm_planned_order(State(_state): State<AppState>) -> Json<PlannedOrderResponse> {
+    let due_date = chrono::Utc::now() + chrono::Duration::days(14);
     Json(PlannedOrderResponse {
         id: Uuid::new_v4(),
         order_number: "PLN-20240101000000".to_string(),
         product_id: Uuid::new_v4(),
         order_type: "Purchase".to_string(),
         quantity: 500,
-        due_date: "2024-01-15".to_string(),
+        due_date: due_date.format("%Y-%m-%d").to_string(),
         status: "Firmed".to_string(),
     })
 }

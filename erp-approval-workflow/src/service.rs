@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::models::*;
 use crate::repository::*;
 
+#[allow(dead_code)]
 pub struct ApprovalWorkflowService {
     workflow_repo: SqliteApprovalWorkflowRepository,
     request_repo: SqliteApprovalRequestRepository,

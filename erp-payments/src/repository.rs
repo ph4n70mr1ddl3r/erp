@@ -1,5 +1,5 @@
 use crate::models::*;
-use anyhow::Result;
+use anyhow::{Result, Context};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 
@@ -34,7 +34,10 @@ impl StripeRepository {
         .bind(id.to_string())
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|r| Self::row_to_payment_intent(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_payment_intent(&r)?)),
+            None => Ok(None),
+        }
     }
     
     pub async fn get_payment_intent_by_stripe_id(pool: &SqlitePool, stripe_id: &str) -> Result<Option<StripePaymentIntent>> {
@@ -44,7 +47,10 @@ impl StripeRepository {
         .bind(stripe_id)
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|r| Self::row_to_payment_intent(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_payment_intent(&r)?)),
+            None => Ok(None),
+        }
     }
     
     pub async fn update_payment_intent_status(pool: &SqlitePool, intent: &StripePaymentIntent) -> Result<()> {
@@ -65,24 +71,31 @@ impl StripeRepository {
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(Self::row_to_payment_intent).collect())
+        rows.iter().map(|r| Self::row_to_payment_intent(r)).collect()
     }
     
-    fn row_to_payment_intent(r: &sqlx::sqlite::SqliteRow) -> StripePaymentIntent {
-        StripePaymentIntent {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+    fn row_to_payment_intent(r: &sqlx::sqlite::SqliteRow) -> Result<StripePaymentIntent> {
+        Ok(StripePaymentIntent {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse payment intent id")?,
             stripe_intent_id: r.get("stripe_intent_id"),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str()).unwrap(),
-            invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
+                .context("Failed to parse customer_id")?,
+            invoice_id: r.get::<Option<String>, _>("invoice_id")
+                .and_then(|s| Uuid::parse_str(&s).ok()),
             amount: r.get("amount"),
             currency: r.get("currency"),
             status: r.get("status"),
             client_secret: r.get("client_secret"),
             description: r.get("description"),
             metadata: r.get("metadata"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
-        }
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                .context("Failed to parse updated_at")?
+                .with_timezone(&chrono::Utc),
+        })
     }
     
     pub async fn create_checkout_session(pool: &SqlitePool, session: &StripeCheckoutSession) -> Result<()> {
@@ -115,7 +128,10 @@ impl StripeRepository {
         .bind(id.to_string())
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|r| Self::row_to_checkout_session(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_checkout_session(&r)?)),
+            None => Ok(None),
+        }
     }
     
     pub async fn get_checkout_session_by_stripe_id(pool: &SqlitePool, stripe_id: &str) -> Result<Option<StripeCheckoutSession>> {
@@ -125,7 +141,10 @@ impl StripeRepository {
         .bind(stripe_id)
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|r| Self::row_to_checkout_session(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_checkout_session(&r)?)),
+            None => Ok(None),
+        }
     }
     
     pub async fn update_checkout_session_status(pool: &SqlitePool, session: &StripeCheckoutSession) -> Result<()> {
@@ -139,11 +158,13 @@ impl StripeRepository {
         Ok(())
     }
     
-    fn row_to_checkout_session(r: &sqlx::sqlite::SqliteRow) -> StripeCheckoutSession {
-        StripeCheckoutSession {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+    fn row_to_checkout_session(r: &sqlx::sqlite::SqliteRow) -> Result<StripeCheckoutSession> {
+        Ok(StripeCheckoutSession {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse checkout session id")?,
             stripe_session_id: r.get("stripe_session_id"),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str()).unwrap(),
+            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
+                .context("Failed to parse customer_id")?,
             invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
             amount: r.get("amount"),
             currency: r.get("currency"),
@@ -154,8 +175,10 @@ impl StripeRepository {
             payment_intent_id: r.get("payment_intent_id"),
             expires_at: r.get::<Option<String>, _>("expires_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-        }
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
+        })
     }
     
     pub async fn create_webhook_event(pool: &SqlitePool, event: &StripeWebhookEvent) -> Result<()> {
@@ -217,7 +240,10 @@ impl PaymentRepository {
         )
         .bind(id.to_string())
         .fetch_optional(pool).await?;
-        Ok(row.map(|r| Self::row_to_payment(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_payment(&r)?)),
+            None => Ok(None),
+        }
     }
 
     pub async fn list_by_customer(pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<Payment>> {
@@ -226,16 +252,18 @@ impl PaymentRepository {
         )
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(Self::row_to_payment).collect())
+        rows.iter().map(|r| Self::row_to_payment(r)).collect()
     }
 
-    fn row_to_payment(r: &sqlx::sqlite::SqliteRow) -> Payment {
-        Payment {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+    fn row_to_payment(r: &sqlx::sqlite::SqliteRow) -> Result<Payment> {
+        Ok(Payment {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse payment id")?,
             payment_number: r.get("payment_number"),
             gateway_id: r.get::<Option<String>, _>("gateway_id").and_then(|s| Uuid::parse_str(&s).ok()),
             invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str()).unwrap(),
+            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
+                .context("Failed to parse customer_id")?,
             amount: r.get("amount"),
             currency: r.get("currency"),
             payment_method: match r.get::<String, _>("payment_method").as_str() {
@@ -271,9 +299,11 @@ impl PaymentRepository {
             processing_fee: r.get("processing_fee"),
             notes: r.get("notes"),
             paid_at: r.get::<Option<String>, _>("paid_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
             created_by: r.get::<Option<String>, _>("created_by").and_then(|s| Uuid::parse_str(&s).ok()),
-        }
+        })
     }
 }
 
@@ -331,20 +361,27 @@ impl GatewayRepository {
             r#"SELECT id, code, name, gateway_type, api_key, api_secret, merchant_id, webhook_secret, is_live, is_active, supported_methods, created_at, updated_at FROM payment_gateways WHERE is_active = 1"#
         )
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(|r| PaymentGateway {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
-            code: r.get("code"),
-            name: r.get("name"),
-            gateway_type: r.get("gateway_type"),
-            api_key: r.get("api_key"),
-            api_secret: r.get("api_secret"),
-            merchant_id: r.get("merchant_id"),
-            webhook_secret: r.get("webhook_secret"),
-            is_live: r.get("is_live"),
-            is_active: r.get("is_active"),
-            supported_methods: r.get("supported_methods"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
-        }).collect())
+        rows.iter().map(|r| {
+            Ok(PaymentGateway {
+                id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                    .context("Failed to parse gateway id")?,
+                code: r.get("code"),
+                name: r.get("name"),
+                gateway_type: r.get("gateway_type"),
+                api_key: r.get("api_key"),
+                api_secret: r.get("api_secret"),
+                merchant_id: r.get("merchant_id"),
+                webhook_secret: r.get("webhook_secret"),
+                is_live: r.get("is_live"),
+                is_active: r.get("is_active"),
+                supported_methods: r.get("supported_methods"),
+                created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                    .context("Failed to parse created_at")?
+                    .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                    .context("Failed to parse updated_at")?
+                    .with_timezone(&chrono::Utc),
+            })
+        }).collect()
     }
 }

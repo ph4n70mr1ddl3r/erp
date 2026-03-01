@@ -8,6 +8,12 @@ pub struct ConfigService {
     repo: SqliteConfigRepository,
 }
 
+impl Default for ConfigService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ConfigService {
     pub fn new() -> Self {
         Self { repo: SqliteConfigRepository }

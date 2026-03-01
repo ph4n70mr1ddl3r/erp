@@ -111,6 +111,7 @@ impl ProjectService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ProjectTaskService {
     repo: SqliteProjectTaskRepository,
 }
@@ -147,6 +148,7 @@ impl ProjectTaskService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ProjectMilestoneService {
     repo: SqliteProjectMilestoneRepository,
 }
@@ -183,6 +185,7 @@ impl ProjectMilestoneService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ProjectExpenseService {
     repo: SqliteProjectExpenseRepository,
 }
@@ -328,6 +331,7 @@ impl TimesheetService {
     }
 }
 
+#[allow(dead_code)]
 pub struct TimesheetEntryService {
     repo: SqliteTimesheetEntryRepository,
 }

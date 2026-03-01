@@ -84,8 +84,12 @@ export default function ApprovalWorkflowPage() {
   };
 
   const handleApproveRequest = async (request: ApprovalRequest) => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      toast.error('User not authenticated. Please log in again.');
+      return;
+    }
     try {
-      const userId = localStorage.getItem('userId') || '00000000-0000-0000-0000-000000000001';
       await approvalWorkflow.approveRequest(request.id, { approver_id: userId });
       toast.success('Request approved successfully');
       setSelectedRequest(null);
@@ -96,8 +100,12 @@ export default function ApprovalWorkflowPage() {
   };
 
   const handleRejectRequest = async (request: ApprovalRequest, reason: string) => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      toast.error('User not authenticated. Please log in again.');
+      return;
+    }
     try {
-      const userId = localStorage.getItem('userId') || '00000000-0000-0000-0000-000000000001';
       await approvalWorkflow.rejectRequest(request.id, { approver_id: userId, reason });
       toast.success('Request rejected');
       setSelectedRequest(null);

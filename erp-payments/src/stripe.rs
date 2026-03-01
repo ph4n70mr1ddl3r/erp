@@ -38,15 +38,15 @@ pub struct StripeService {
 }
 
 impl StripeService {
-    pub fn new(config: StripeConfig) -> Self {
+    pub fn new(config: StripeConfig) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_secs(STRIPE_API_TIMEOUT_SECS))
             .build()
-            .expect("Failed to create HTTP client");
-        Self { client, config }
+            .context("Failed to create HTTP client")?;
+        Ok(Self { client, config })
     }
     
-    pub fn from_env() -> Self {
+    pub fn from_env() -> Result<Self> {
         Self::new(StripeConfig::from_env())
     }
     

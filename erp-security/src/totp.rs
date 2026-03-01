@@ -37,7 +37,7 @@ impl TOTP {
     pub fn generate_code(&self) -> String {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
         let counter = timestamp / self.time_step;
         self.generate_code_at_counter(counter)
@@ -46,7 +46,10 @@ impl TOTP {
     fn generate_code_at_counter(&self, counter: u64) -> String {
         let counter_bytes = counter.to_be_bytes();
 
-        let mut mac = HmacSha1::new_from_slice(&self.secret).expect("HMAC initialization failed");
+        let mut mac = match HmacSha1::new_from_slice(&self.secret) {
+            Ok(m) => m,
+            Err(_) => return "000000".to_string(),
+        };
         mac.update(&counter_bytes);
         let result = mac.finalize().into_bytes();
 
@@ -63,7 +66,7 @@ impl TOTP {
     pub fn verify(&self, code: &str, allowed_drift: i32) -> bool {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs();
         let counter = timestamp / self.time_step;
 

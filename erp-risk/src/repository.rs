@@ -1,5 +1,5 @@
 use crate::models::*;
-use anyhow::Result;
+use anyhow::{Result, Context};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 
@@ -40,7 +40,10 @@ impl RiskRepository {
         )
         .bind(id.to_string())
         .fetch_optional(pool).await?;
-        Ok(row.map(|r| Self::row_to_risk(&r)))
+        match row {
+            Some(r) => Ok(Some(Self::row_to_risk(&r)?)),
+            None => Ok(None),
+        }
     }
 
     pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Risk>> {
@@ -48,12 +51,13 @@ impl RiskRepository {
             r#"SELECT id, code, title, description, category, status, probability, impact, risk_score, inherent_risk_level, residual_risk_level, owner_id, department, identified_date, target_resolution_date, actual_resolution_date, created_at, updated_at, created_by FROM risks ORDER BY risk_score DESC"#
         )
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(Self::row_to_risk).collect())
+        rows.iter().map(Self::row_to_risk).collect()
     }
 
-    fn row_to_risk(r: &sqlx::sqlite::SqliteRow) -> Risk {
-        Risk {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+    fn row_to_risk(r: &sqlx::sqlite::SqliteRow) -> Result<Risk> {
+        Ok(Risk {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse risk id")?,
             code: r.get("code"),
             title: r.get("title"),
             description: r.get("description"),
@@ -103,13 +107,19 @@ impl RiskRepository {
             },
             owner_id: r.get::<Option<String>, _>("owner_id").and_then(|s| Uuid::parse_str(&s).ok()),
             department: r.get("department"),
-            identified_date: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("identified_date")).unwrap().with_timezone(&chrono::Utc),
+            identified_date: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("identified_date"))
+                .context("Failed to parse identified_date")?
+                .with_timezone(&chrono::Utc),
             target_resolution_date: r.get::<Option<String>, _>("target_resolution_date").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             actual_resolution_date: r.get::<Option<String>, _>("actual_resolution_date").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                .context("Failed to parse updated_at")?
+                .with_timezone(&chrono::Utc),
             created_by: r.get::<Option<String>, _>("created_by").and_then(|s| Uuid::parse_str(&s).ok()),
-        }
+        })
     }
 }
 

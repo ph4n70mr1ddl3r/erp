@@ -15,6 +15,7 @@ impl Default for BIService {
 impl BIService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_kpi(&self, pool: &SqlitePool, name: String, code: String, category: String, 
         kpi_type: String, aggregation: String, data_source: String) -> Result<KPI> {
         let id = Uuid::new_v4();
@@ -220,6 +221,7 @@ impl BIService {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_report(&self, pool: &SqlitePool, name: String, code: String, 
         category: String, query: String, columns: serde_json::Value, created_by: Uuid) -> Result<Report> {
         let id = Uuid::new_v4();

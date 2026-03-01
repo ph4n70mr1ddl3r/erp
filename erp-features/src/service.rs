@@ -9,6 +9,12 @@ pub struct FeatureFlagService {
     repo: SqliteFeatureFlagRepository,
 }
 
+impl Default for FeatureFlagService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FeatureFlagService {
     pub fn new() -> Self {
         Self { repo: SqliteFeatureFlagRepository }

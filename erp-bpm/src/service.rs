@@ -365,6 +365,7 @@ impl BPMService {
         }).collect())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_node(&self, pool: &SqlitePool, process_definition_id: Uuid, node_id: String, 
         name: String, task_type: String, position_x: i32, position_y: i32) -> Result<ProcessNode> {
         let now = Utc::now();

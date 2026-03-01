@@ -1,5 +1,5 @@
 use crate::models::*;
-use anyhow::Result;
+use anyhow::{Result, Context};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 
@@ -35,12 +35,13 @@ impl SubscriptionPlanRepository {
             r#"SELECT id, code, name, description, price, currency, billing_interval, interval_count, trial_days, features, max_users, max_transactions, is_active, created_at, updated_at FROM subscription_plans WHERE is_active = 1 ORDER BY price"#
         )
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(Self::row_to_plan).collect())
+        rows.iter().map(Self::row_to_plan).collect()
     }
 
-    fn row_to_plan(r: &sqlx::sqlite::SqliteRow) -> SubscriptionPlan {
-        SubscriptionPlan {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
+    fn row_to_plan(r: &sqlx::sqlite::SqliteRow) -> Result<SubscriptionPlan> {
+        Ok(SubscriptionPlan {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse plan id")?,
             code: r.get("code"),
             name: r.get("name"),
             description: r.get("description"),
@@ -61,9 +62,13 @@ impl SubscriptionPlanRepository {
             max_users: r.get("max_users"),
             max_transactions: r.get("max_transactions"),
             is_active: r.get("is_active"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
-        }
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                .context("Failed to parse updated_at")?
+                .with_timezone(&chrono::Utc),
+        })
     }
 }
 
@@ -100,14 +105,17 @@ impl SubscriptionRepository {
         )
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
-        Ok(rows.iter().map(Self::row_to_sub).collect())
+        rows.iter().map(Self::row_to_sub).collect()
     }
 
-    pub fn row_to_sub(r: &sqlx::sqlite::SqliteRow) -> Subscription {
-        Subscription {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str()).unwrap(),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str()).unwrap(),
-            plan_id: Uuid::parse_str(r.get::<String, _>("plan_id").as_str()).unwrap(),
+    pub fn row_to_sub(r: &sqlx::sqlite::SqliteRow) -> Result<Subscription> {
+        Ok(Subscription {
+            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
+                .context("Failed to parse subscription id")?,
+            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
+                .context("Failed to parse customer_id")?,
+            plan_id: Uuid::parse_str(r.get::<String, _>("plan_id").as_str())
+                .context("Failed to parse plan_id")?,
             status: match r.get::<String, _>("status").as_str() {
                 "Active" => SubscriptionStatus::Active,
                 "Paused" => SubscriptionStatus::Paused,
@@ -118,15 +126,23 @@ impl SubscriptionRepository {
             },
             quantity: r.get("quantity"),
             price_override: r.get("price_override"),
-            current_period_start: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("current_period_start")).unwrap().with_timezone(&chrono::Utc),
-            current_period_end: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("current_period_end")).unwrap().with_timezone(&chrono::Utc),
+            current_period_start: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("current_period_start"))
+                .context("Failed to parse current_period_start")?
+                .with_timezone(&chrono::Utc),
+            current_period_end: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("current_period_end"))
+                .context("Failed to parse current_period_end")?
+                .with_timezone(&chrono::Utc),
             trial_start: r.get::<Option<String>, _>("trial_start").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             trial_end: r.get::<Option<String>, _>("trial_end").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             cancelled_at: r.get::<Option<String>, _>("cancelled_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             cancel_at_period_end: r.get("cancel_at_period_end"),
             metadata: r.get("metadata"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
-        }
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
+                .context("Failed to parse created_at")?
+                .with_timezone(&chrono::Utc),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
+                .context("Failed to parse updated_at")?
+                .with_timezone(&chrono::Utc),
+        })
     }
 }

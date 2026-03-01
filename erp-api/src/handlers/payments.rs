@@ -265,7 +265,10 @@ async fn create_stripe_intent(
         return Json(json!({ "error": "Amount must be greater than zero" }));
     }
     
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     let req = CreatePaymentIntentRequest {
         customer_id: body.customer_id,
         invoice_id: body.invoice_id,
@@ -292,7 +295,10 @@ async fn get_stripe_intent(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Json<serde_json::Value> {
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     match stripe.get_payment_intent(&state.pool, id).await {
         Ok(Some(intent)) => Json(json!({
             "id": intent.id,
@@ -316,7 +322,10 @@ async fn cancel_stripe_intent(
     State(_state): State<AppState>,
     Json(body): Json<CancelStripeIntentBody>,
 ) -> Json<serde_json::Value> {
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     match stripe.cancel_payment_intent(&body.stripe_intent_id).await {
         Ok(intent) => Json(json!({
             "id": intent.id,
@@ -348,7 +357,10 @@ async fn create_stripe_checkout(
         return Json(json!({ "error": "Amount must be greater than zero" }));
     }
     
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     let req = CreateCheckoutSessionRequest {
         customer_id: body.customer_id,
         invoice_id: body.invoice_id,
@@ -378,7 +390,10 @@ async fn get_stripe_checkout(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Json<serde_json::Value> {
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     match stripe.get_checkout_session(&state.pool, id).await {
         Ok(Some(session)) => Json(json!({
             "id": session.id,
@@ -405,7 +420,10 @@ async fn create_stripe_refund(
     State(state): State<AppState>,
     Json(body): Json<CreateStripeRefundBody>,
 ) -> Json<serde_json::Value> {
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     match stripe.create_refund(&state.pool, &body.stripe_intent_id, body.amount, body.reason).await {
         Ok(refund) => Json(json!({
             "id": refund.id,
@@ -417,7 +435,10 @@ async fn create_stripe_refund(
 }
 
 async fn get_stripe_config() -> Json<serde_json::Value> {
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     Json(json!({
         "publishable_key": stripe.get_publishable_key()
     }))
@@ -428,7 +449,10 @@ async fn stripe_webhook(
     headers: HeaderMap,
     body: Bytes,
 ) -> Json<serde_json::Value> {
-    let stripe = StripeService::from_env();
+    let stripe = match StripeService::from_env() {
+        Ok(s) => s,
+        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    };
     
     let signature = match headers.get("stripe-signature").and_then(|v| v.to_str().ok()) {
         Some(s) => s,

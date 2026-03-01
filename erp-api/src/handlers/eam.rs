@@ -272,13 +272,14 @@ pub struct CreatePMScheduleRequest {
 }
 
 pub async fn create_pm_schedule(State(_state): State<AppState>, Json(_req): Json<CreatePMScheduleRequest>) -> Json<PMScheduleResponse> {
+    let next_due = chrono::Utc::now() + chrono::Duration::days(30);
     Json(PMScheduleResponse {
         id: Uuid::new_v4(),
         pm_number: format!("PM-{}", chrono::Utc::now().format("%Y%m%d%H%M%S")),
         name: "Monthly Inspection".to_string(),
         asset_name: "Production Line 1".to_string(),
         frequency: "Monthly".to_string(),
-        next_due_date: "2024-02-01".to_string(),
+        next_due_date: next_due.format("%Y-%m-%d").to_string(),
         status: "Active".to_string(),
     })
 }
@@ -286,13 +287,14 @@ pub async fn create_pm_schedule(State(_state): State<AppState>, Json(_req): Json
 pub async fn list_pm_schedules(State(_state): State<AppState>) -> Json<Vec<PMScheduleResponse>> { Json(vec![]) }
 
 pub async fn get_pm_schedule(State(_state): State<AppState>) -> Json<PMScheduleResponse> {
+    let next_due = chrono::Utc::now() + chrono::Duration::days(90);
     Json(PMScheduleResponse {
         id: Uuid::new_v4(),
         pm_number: "PM-001".to_string(),
         name: "Quarterly Service".to_string(),
         asset_name: "HVAC System".to_string(),
         frequency: "Quarterly".to_string(),
-        next_due_date: "2024-04-01".to_string(),
+        next_due_date: next_due.format("%Y-%m-%d").to_string(),
         status: "Active".to_string(),
     })
 }
@@ -376,10 +378,11 @@ pub async fn list_budgets(State(_state): State<AppState>) -> Json<Vec<BudgetResp
 #[derive(Serialize)]
 pub struct KPIResponse { pub kpi_type: String, pub value: f64, pub target: f64, pub period: String }
 pub async fn list_kpis(State(_state): State<AppState>) -> Json<Vec<KPIResponse>> {
+    let current_period = chrono::Utc::now().format("%Y-%m").to_string();
     Json(vec![
-        KPIResponse { kpi_type: "MTBF".to_string(), value: 720.0, target: 800.0, period: "2024-01".to_string() },
-        KPIResponse { kpi_type: "MTTR".to_string(), value: 4.5, target: 4.0, period: "2024-01".to_string() },
-        KPIResponse { kpi_type: "Availability".to_string(), value: 95.5, target: 98.0, period: "2024-01".to_string() },
+        KPIResponse { kpi_type: "MTBF".to_string(), value: 720.0, target: 800.0, period: current_period.clone() },
+        KPIResponse { kpi_type: "MTTR".to_string(), value: 4.5, target: 4.0, period: current_period.clone() },
+        KPIResponse { kpi_type: "Availability".to_string(), value: 95.5, target: 98.0, period: current_period },
     ])
 }
 
@@ -390,7 +393,8 @@ pub struct ContractResponse { pub id: Uuid, pub contract_number: String, pub ven
 pub struct CreateContractRequest { pub vendor_id: Uuid, pub contract_type: String, pub start_date: String, pub end_date: String, pub annual_cost: i64 }
 
 pub async fn create_contract(State(_state): State<AppState>, Json(_req): Json<CreateContractRequest>) -> Json<ContractResponse> {
-    Json(ContractResponse { id: Uuid::new_v4(), contract_number: "SC-001".to_string(), vendor_name: "Service Co".to_string(), end_date: "2024-12-31".to_string(), status: "Active".to_string() })
+    let end_of_year = chrono::Utc::now().with_month(12).unwrap_or(chrono::Utc::now()).with_day(31).unwrap_or(chrono::Utc::now());
+    Json(ContractResponse { id: Uuid::new_v4(), contract_number: "SC-001".to_string(), vendor_name: "Service Co".to_string(), end_date: end_of_year.format("%Y-%m-%d").to_string(), status: "Active".to_string() })
 }
 
 pub async fn list_contracts(State(_state): State<AppState>) -> Json<Vec<ContractResponse>> { Json(vec![]) }

@@ -97,12 +97,13 @@ impl OcrService {
     }
     
     async fn perform_ocr(&self, doc: &OcrDocument) -> Result<(serde_json::Value, String, f64)> {
+        let today = chrono::Utc::now().format("%Y-%m-%d").to_string();
         let simulated_text = match doc.document_type {
             DocumentType::Invoice => {
-                "Invoice Number: INV-2024-001\nDate: 2024-01-15\nVendor: ABC Corp\nTotal: $1,250.00"
+                &format!("Invoice Number: INV-{}-001\nDate: {}\nVendor: ABC Corp\nTotal: $1,250.00", chrono::Utc::now().format("%Y"), today)
             }
             DocumentType::Receipt => {
-                "Store: Main Street Shop\nDate: 2024-01-15\nTotal: $45.99"
+                &format!("Store: Main Street Shop\nDate: {}\nTotal: $45.99", today)
             }
             _ => "Document content extracted"
         };
