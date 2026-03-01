@@ -1116,4 +1116,4 @@ pub async fn reverse_currency_revaluation(
 ) -> ApiResult<Json<CurrencyRevaluationResponse>> {
     let revaluation = CurrencyRevaluationService::reverse_revaluation(&state.pool, id).await?;
     Ok(Json(CurrencyRevaluationResponse::from(revaluation)))
-})
+}

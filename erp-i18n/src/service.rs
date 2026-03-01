@@ -1,4 +1,4 @@
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 use chrono::Utc;
 use crate::models::*;
@@ -63,7 +63,7 @@ impl I18nService {
     }
 
     pub async fn get_locale(&self, pool: &SqlitePool, code: &str) -> Result<Option<Locale>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, bool, String, String, String, String, String, String, String, String, bool, String, String)>(
+        let row = sqlx::query(
             "SELECT id, code, name, native_name, language_code, country_code, is_rtl, date_format, time_format, number_format, currency_symbol, currency_position, decimal_separator, thousand_separator, status, is_default, created_at, updated_at FROM i18n_locales WHERE code = ?"
         )
         .bind(code)
@@ -71,24 +71,24 @@ impl I18nService {
         .await?;
 
         Ok(row.map(|r| Locale {
-            id: r.0.parse().unwrap_or_default(),
-            code: r.1,
-            name: r.2,
-            native_name: r.3,
-            language_code: r.4,
-            country_code: r.5,
-            is_rtl: r.6,
-            date_format: r.7,
-            time_format: r.8,
-            number_format: r.9,
-            currency_symbol: r.10,
-            currency_position: r.11,
-            decimal_separator: r.12,
-            thousand_separator: r.13,
-            status: r.14,
-            is_default: r.15,
-            created_at: r.16.parse().unwrap_or_default(),
-            updated_at: r.17.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            code: r.get("code"),
+            name: r.get("name"),
+            native_name: r.get("native_name"),
+            language_code: r.get("language_code"),
+            country_code: r.get("country_code"),
+            is_rtl: r.get::<i32, _>("is_rtl") != 0,
+            date_format: r.get("date_format"),
+            time_format: r.get("time_format"),
+            number_format: r.get("number_format"),
+            currency_symbol: r.get("currency_symbol"),
+            currency_position: r.get("currency_position"),
+            decimal_separator: r.get("decimal_separator"),
+            thousand_separator: r.get("thousand_separator"),
+            status: r.get("status"),
+            is_default: r.get::<i32, _>("is_default") != 0,
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }))
     }
 
@@ -99,29 +99,29 @@ impl I18nService {
             "SELECT id, code, name, native_name, language_code, country_code, is_rtl, date_format, time_format, number_format, currency_symbol, currency_position, decimal_separator, thousand_separator, status, is_default, created_at, updated_at FROM i18n_locales"
         };
         
-        let rows = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, bool, String, String, String, String, String, String, String, String, bool, String, String)>(query)
+        let rows = sqlx::query(query)
             .fetch_all(pool)
             .await?;
 
         Ok(rows.into_iter().map(|r| Locale {
-            id: r.0.parse().unwrap_or_default(),
-            code: r.1,
-            name: r.2,
-            native_name: r.3,
-            language_code: r.4,
-            country_code: r.5,
-            is_rtl: r.6,
-            date_format: r.7,
-            time_format: r.8,
-            number_format: r.9,
-            currency_symbol: r.10,
-            currency_position: r.11,
-            decimal_separator: r.12,
-            thousand_separator: r.13,
-            status: r.14,
-            is_default: r.15,
-            created_at: r.16.parse().unwrap_or_default(),
-            updated_at: r.17.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            code: r.get("code"),
+            name: r.get("name"),
+            native_name: r.get("native_name"),
+            language_code: r.get("language_code"),
+            country_code: r.get("country_code"),
+            is_rtl: r.get::<i32, _>("is_rtl") != 0,
+            date_format: r.get("date_format"),
+            time_format: r.get("time_format"),
+            number_format: r.get("number_format"),
+            currency_symbol: r.get("currency_symbol"),
+            currency_position: r.get("currency_position"),
+            decimal_separator: r.get("decimal_separator"),
+            thousand_separator: r.get("thousand_separator"),
+            status: r.get("status"),
+            is_default: r.get::<i32, _>("is_default") != 0,
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }).collect())
     }
 
@@ -169,7 +169,7 @@ impl I18nService {
     }
 
     pub async fn get_translations(&self, pool: &SqlitePool, locale_code: &str, namespace: &str) -> Result<Vec<Translation>> {
-        let rows = sqlx::query_as::<_, (String, String, String, String, String, Option<String>, Option<String>, bool, Option<String>, Option<String>, Option<String>, String, String)>(
+        let rows = sqlx::query(
             "SELECT id, locale_code, namespace, key, value, plural_form, context, is_approved, translated_by, reviewed_by, reviewed_at, created_at, updated_at FROM i18n_translations WHERE locale_code = ? AND namespace = ?"
         )
         .bind(locale_code)
@@ -178,19 +178,19 @@ impl I18nService {
         .await?;
 
         Ok(rows.into_iter().map(|r| Translation {
-            id: r.0.parse().unwrap_or_default(),
-            locale_code: r.1,
-            namespace: r.2,
-            key: r.3,
-            value: r.4,
-            plural_form: r.5,
-            context: r.6,
-            is_approved: r.7,
-            translated_by: r.8.and_then(|s| s.parse().ok()),
-            reviewed_by: r.9.and_then(|s| s.parse().ok()),
-            reviewed_at: r.10.and_then(|s| s.parse().ok()),
-            created_at: r.11.parse().unwrap_or_default(),
-            updated_at: r.12.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            locale_code: r.get("locale_code"),
+            namespace: r.get("namespace"),
+            key: r.get("key"),
+            value: r.get("value"),
+            plural_form: r.get("plural_form"),
+            context: r.get("context"),
+            is_approved: r.get::<i32, _>("is_approved") != 0,
+            translated_by: r.get::<Option<String>, _>("translated_by").and_then(|s| s.parse().ok()),
+            reviewed_by: r.get::<Option<String>, _>("reviewed_by").and_then(|s| s.parse().ok()),
+            reviewed_at: r.get::<Option<String>, _>("reviewed_at").and_then(|s| s.parse().ok()),
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }).collect())
     }
 
@@ -241,7 +241,7 @@ impl I18nService {
     }
 
     pub async fn get_user_preference(&self, pool: &SqlitePool, user_id: Uuid) -> Result<Option<UserLocalePreference>> {
-        let row = sqlx::query_as::<_, (String, String, String, String, Option<String>, Option<String>, Option<String>, String, String)>(
+        let row = sqlx::query(
             "SELECT id, user_id, locale_code, timezone, date_format_override, time_format_override, number_format_override, created_at, updated_at FROM i18n_user_preferences WHERE user_id = ?"
         )
         .bind(user_id.to_string())
@@ -249,15 +249,15 @@ impl I18nService {
         .await?;
 
         Ok(row.map(|r| UserLocalePreference {
-            id: r.0.parse().unwrap_or_default(),
-            user_id: r.1.parse().unwrap_or_default(),
-            locale_code: r.2,
-            timezone: r.3,
-            date_format_override: r.4,
-            time_format_override: r.5,
-            number_format_override: r.6,
-            created_at: r.7.parse().unwrap_or_default(),
-            updated_at: r.8.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            user_id: r.get::<String, _>("user_id").parse().unwrap_or_default(),
+            locale_code: r.get("locale_code"),
+            timezone: r.get("timezone"),
+            date_format_override: r.get("date_format_override"),
+            time_format_override: r.get("time_format_override"),
+            number_format_override: r.get("number_format_override"),
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }))
     }
 }

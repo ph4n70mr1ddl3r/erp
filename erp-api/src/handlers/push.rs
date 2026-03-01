@@ -38,19 +38,14 @@ pub async fn register_device(
     Json(req): Json<RegisterDeviceRequest>,
 ) -> ApiResult<Json<DeviceResponse>> {
     let user_id = Uuid::parse_str(&req.user_id)?;
-    let platform = match req.platform.as_str() {
-        "IOS" => erp_push::DevicePlatform::IOS,
-        "Android" => erp_push::DevicePlatform::Android,
-        "Windows" => erp_push::DevicePlatform::Windows,
-        "MacOS" => erp_push::DevicePlatform::MacOS,
-        _ => erp_push::DevicePlatform::Web,
-    };
+    // Platform is stored as a string in the model
+    let platform = req.platform;
 
     let service = erp_push::PushService::new();
     let device = service.register_device(&state.pool, user_id, req.device_token, platform).await?;
 
     Ok(Json(DeviceResponse {
-        id: device.base.id.to_string(),
+        id: device.id.to_string(),
         user_id: device.user_id.to_string(),
         platform: format!("{:?}", device.platform),
         is_active: device.is_active,
@@ -70,7 +65,7 @@ pub async fn get_user_devices(
     let devices = service.get_user_devices(&state.pool, user_id).await?;
 
     Ok(Json(devices.into_iter().map(|d| DeviceResponse {
-        id: d.base.id.to_string(),
+        id: d.id.to_string(),
         user_id: d.user_id.to_string(),
         platform: format!("{:?}", d.platform),
         is_active: d.is_active,
@@ -105,7 +100,7 @@ pub async fn send_notification(
     let notification = service.send_notification(&state.pool, req.title, req.body, user_ids, req.data).await?;
 
     Ok(Json(NotificationResponse {
-        id: notification.base.id.to_string(),
+        id: notification.id.to_string(),
         title: notification.title,
         body: notification.body,
         status: notification.status,
@@ -127,7 +122,7 @@ pub async fn send_broadcast(
     let notification = service.send_to_all(&state.pool, req.title, req.body, req.data).await?;
 
     Ok(Json(NotificationResponse {
-        id: notification.base.id.to_string(),
+        id: notification.id.to_string(),
         title: notification.title,
         body: notification.body,
         status: notification.status,
@@ -160,7 +155,7 @@ pub async fn create_template(
     let template = service.create_template(&state.pool, req.code, req.name, req.title_template, req.body_template, req.category).await?;
 
     Ok(Json(TemplateResponse {
-        id: template.base.id.to_string(),
+        id: template.id.to_string(),
         code: template.code,
         name: template.name,
         category: template.category,

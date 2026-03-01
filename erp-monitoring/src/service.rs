@@ -203,11 +203,11 @@ impl MonitoringService {
         let metadata = tokio::fs::metadata("./erp.db").await.ok();
         let size_bytes = metadata.map(|m| m.len() as i64).unwrap_or(0);
         
-        let table_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
-            .fetch_one(pool).await?.unwrap_or(0);
+        let table_count: i32 = sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM sqlite_master WHERE type='table'")
+            .fetch_one(pool).await?;
         
-        let index_count: i32 = sqlx::query_scalar("SELECT COUNT(*) FROM sqlite_master WHERE type='index'")
-            .fetch_one(pool).await?.unwrap_or(0);
+        let index_count: i32 = sqlx::query_scalar::<_, i32>("SELECT COUNT(*) FROM sqlite_master WHERE type='index'")
+            .fetch_one(pool).await?;
         
         Ok(DatabaseStats {
             size_bytes,

@@ -64,7 +64,7 @@ pub async fn create_kpi(
     let kpi = service.create_kpi(&state.pool, req.name, req.code, req.category, kpi_type, aggregation, req.data_source).await?;
 
     Ok(Json(KPIResponse {
-        id: kpi.base.id.to_string(),
+        id: kpi.id.to_string(),
         name: kpi.name,
         code: kpi.code,
         category: kpi.category,
@@ -78,7 +78,7 @@ pub async fn list_kpis(State(state): State<AppState>) -> ApiResult<Json<Vec<KPIR
     let kpis = service.list_kpis(&state.pool, None).await?;
 
     Ok(Json(kpis.into_iter().map(|k| KPIResponse {
-        id: k.base.id.to_string(),
+        id: k.id.to_string(),
         name: k.name,
         code: k.code,
         category: k.category,
@@ -96,7 +96,7 @@ pub async fn get_kpi(
     let kpi = service.get_kpi(&state.pool, id).await?.ok_or_else(|| anyhow::anyhow!("KPI not found"))?;
 
     Ok(Json(KPIResponse {
-        id: kpi.base.id.to_string(),
+        id: kpi.id.to_string(),
         name: kpi.name,
         code: kpi.code,
         category: kpi.category,
@@ -161,7 +161,7 @@ pub async fn create_dashboard(
     let dashboard = service.create_dashboard(&state.pool, req.name, owner_id, req.layout_config).await?;
 
     Ok(Json(DashboardResponse {
-        id: dashboard.base.id.to_string(),
+        id: dashboard.id.to_string(),
         name: dashboard.name,
         owner_id: dashboard.owner_id.to_string(),
         is_default: dashboard.is_default,
@@ -237,7 +237,7 @@ pub async fn add_widget(
     let widget = service.add_widget(&state.pool, dashboard_id, widget_type, req.title, req.config).await?;
 
     Ok(Json(serde_json::json!({
-        "id": widget.base.id.to_string(),
+        "id": widget.id.to_string(),
         "dashboard_id": widget.dashboard_id.to_string(),
         "widget_type": format!("{:?}", widget.widget_type),
         "title": widget.title
@@ -278,7 +278,7 @@ pub async fn create_report(
     let report = service.create_report(&state.pool, req.name, req.code, req.category, req.query, req.columns, created_by).await?;
 
     Ok(Json(serde_json::json!({
-        "id": report.base.id.to_string(),
+        "id": report.id.to_string(),
         "name": report.name,
         "code": report.code
     })))

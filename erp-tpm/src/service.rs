@@ -231,7 +231,7 @@ impl<R: TPMRepository> TPMService<R> {
         self.repo.create_rebate_payment(&payment).await?;
         
         for accrual in unpaid_accruals {
-            let mut line = RebatePaymentLine {
+            let line = RebatePaymentLine {
                 id: Uuid::new_v4(),
                 payment_id: payment.id,
                 accrual_id: accrual.id,

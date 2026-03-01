@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDate, Utc};
-use erp_core::BaseEntity;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -59,9 +59,9 @@ pub enum ReminderType {
     All,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct CalendarEvent {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub title: String,
     pub description: Option<String>,
     pub location: Option<String>,
@@ -100,9 +100,9 @@ pub enum EventVisibility {
     Confidential,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EventAttendee {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub event_id: Uuid,
     pub user_id: Option<Uuid>,
     pub email: String,
@@ -126,9 +126,9 @@ pub enum AttendeeRole {
     NonParticipant,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EventReminder {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub event_id: Uuid,
     pub user_id: Uuid,
     pub reminder_type: ReminderType,
@@ -140,9 +140,9 @@ pub struct EventReminder {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Calendar {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub color: String,
@@ -159,7 +159,7 @@ pub struct Calendar {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CalendarShare {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub calendar_id: Uuid,
     pub shared_with_user_id: Option<Uuid>,
     pub shared_with_email: Option<String>,
@@ -181,7 +181,7 @@ pub enum CalendarPermission {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventResource {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub name: String,
     pub resource_type: ResourceType,
     pub location: Option<String>,
@@ -208,7 +208,7 @@ pub enum ResourceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceBooking {
-    pub base: BaseEntity,
+    pub id: Uuid,
     pub resource_id: Uuid,
     pub event_id: Uuid,
     pub booked_by: Uuid,

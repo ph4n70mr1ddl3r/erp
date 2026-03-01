@@ -26,8 +26,9 @@ pub enum AutomationStatus {
     Error,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct AutomationWorkflow {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,
@@ -103,8 +104,9 @@ pub enum WorkflowStepType {
     WaitForEvent,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct WorkflowExecution {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub workflow_id: Uuid,
     pub execution_number: String,
@@ -174,8 +176,9 @@ pub struct StepExecution {
     pub attempts: i32,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct AutomationTrigger {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub trigger_type: TriggerType,
@@ -192,8 +195,9 @@ pub struct AutomationTrigger {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct WebhookEndpoint {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub endpoint_path: String,
@@ -247,8 +251,9 @@ pub struct WebhookRequest {
     pub processed_at: Option<DateTime<Utc>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ScheduledJob {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub job_type: String,
@@ -282,8 +287,9 @@ pub enum MisfirePolicy {
     DisableJob,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct JobExecution {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub scheduled_job_id: Uuid,
     pub execution_number: String,
@@ -302,8 +308,9 @@ pub struct JobExecution {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ActionTemplate {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,

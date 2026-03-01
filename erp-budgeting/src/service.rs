@@ -20,7 +20,7 @@ impl BudgetService {
 
     pub async fn create_budget(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         name: String,
         code: String,
         budget_type: BudgetType,
@@ -34,10 +34,10 @@ impl BudgetService {
         project_id: Option<Uuid>,
     ) -> Result<Budget> {
         if start_date >= end_date {
-            return Err(Error::validation("Start date must be before end date".into()));
+            return Err(Error::validation("Start date must be before end date".to_string()));
         }
         if fiscal_year < 2000 || fiscal_year > 2100 {
-            return Err(Error::validation("Invalid fiscal year".into()));
+            return Err(Error::validation("Invalid fiscal year".to_string()));
         }
         let budget = Budget {
             base: BaseEntity::new(),
@@ -49,7 +49,7 @@ impl BudgetService {
             fiscal_year,
             start_date,
             end_date,
-            total_amount: Money::new(total_amount, currency),
+            total_amount: Money::new(total_amount, currency.clone()),
             currency: currency.to_string(),
             department_id,
             project_id,
@@ -62,43 +62,43 @@ impl BudgetService {
         self.budget_repo.create(&budget).await
     }
 
-    pub async fn get_budget(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<Budget>> {
+    pub async fn get_budget(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<Budget>> {
         self.budget_repo.find_by_id(id).await
     }
 
-    pub async fn list_budgets(&self, pool: &SqlitePool, page: i32, limit: i32) -> Result<Vec<Budget>> {
+    pub async fn list_budgets(&self, _pool: &SqlitePool, page: i32, limit: i32) -> Result<Vec<Budget>> {
         self.budget_repo.find_all(page, limit).await
     }
 
-    pub async fn update_budget(&self, pool: &SqlitePool, budget: Budget) -> Result<Budget> {
+    pub async fn update_budget(&self, _pool: &SqlitePool, budget: Budget) -> Result<Budget> {
         self.budget_repo.update(&budget).await
     }
 
-    pub async fn submit_for_approval(&self, pool: &SqlitePool, id: Uuid) -> Result<Budget> {
+    pub async fn submit_for_approval(&self, _pool: &SqlitePool, id: Uuid) -> Result<Budget> {
         let mut budget = self.budget_repo.find_by_id(id).await?
             .ok_or(Error::not_found("budget", &id.to_string()))?;
         if budget.status != BudgetStatus::Draft {
-            return Err(Error::validation("Only draft budgets can be submitted".into()));
+            return Err(Error::validation("Only draft budgets can be submitted".to_string()));
         }
         budget.status = BudgetStatus::Submitted;
         self.budget_repo.update(&budget).await
     }
 
-    pub async fn approve_budget(&self, pool: &SqlitePool, id: Uuid) -> Result<Budget> {
+    pub async fn approve_budget(&self, _pool: &SqlitePool, id: Uuid) -> Result<Budget> {
         let mut budget = self.budget_repo.find_by_id(id).await?
             .ok_or(Error::not_found("budget", &id.to_string()))?;
         if budget.status != BudgetStatus::Submitted && budget.status != BudgetStatus::UnderReview {
-            return Err(Error::validation("Budget must be submitted first".into()));
+            return Err(Error::validation("Budget must be submitted first".to_string()));
         }
         budget.status = BudgetStatus::Approved;
         self.budget_repo.update(&budget).await
     }
 
-    pub async fn activate_budget(&self, pool: &SqlitePool, id: Uuid) -> Result<Budget> {
+    pub async fn activate_budget(&self, _pool: &SqlitePool, id: Uuid) -> Result<Budget> {
         let mut budget = self.budget_repo.find_by_id(id).await?
             .ok_or(Error::not_found("budget", &id.to_string()))?;
         if budget.status != BudgetStatus::Approved {
-            return Err(Error::validation("Only approved budgets can be activated".into()));
+            return Err(Error::validation("Only approved budgets can be activated".to_string()));
         }
         budget.status = BudgetStatus::Active;
         self.budget_repo.update(&budget).await
@@ -106,7 +106,7 @@ impl BudgetService {
 
     pub async fn create_budget_line(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         budget_id: Uuid,
         account_id: Uuid,
         account_code: String,
@@ -188,7 +188,7 @@ impl ForecastService {
         periods_ahead: i32,
     ) -> Result<Vec<i64>> {
         if historical_data.is_empty() {
-            return Err(Error::validation("No historical data provided".into()));
+            return Err(Error::validation("No historical data provided".to_string()));
         }
         let forecasts = match method {
             ForecastMethod::Linear => self.linear_forecast(historical_data, periods_ahead)?,
@@ -262,7 +262,7 @@ impl BudgetAlertService {
         Self { pool }
     }
 
-    pub async fn check_budget_thresholds(&self, budget_id: Uuid) -> Result<Vec<BudgetAlert>> {
+    pub async fn check_budget_thresholds(&self, _budget_id: Uuid) -> Result<Vec<BudgetAlert>> {
         Ok(Vec::new())
     }
 
@@ -319,7 +319,7 @@ impl BudgetTransferService {
         Ok(transfer)
     }
 
-    pub async fn approve_transfer(&self, transfer_id: Uuid, approver_id: Uuid) -> Result<BudgetTransfer> {
+    pub async fn approve_transfer(&self, _transfer_id: Uuid, approver_id: Uuid) -> Result<BudgetTransfer> {
         Ok(BudgetTransfer {
             base: BaseEntity::new(),
             from_budget_line_id: Uuid::nil(),

@@ -6,7 +6,7 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::AppState;
-use crate::handlers::ApiResult;
+use crate::error::ApiResult;
 use erp_ocr::{OcrService, UploadDocumentRequest, OcrDocument, DocumentType, OcrTemplate, OcrSettings};
 
 #[derive(Deserialize)]

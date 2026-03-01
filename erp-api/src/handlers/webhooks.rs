@@ -97,7 +97,7 @@ pub async fn get_webhook(
 ) -> ApiResult<Json<WebhookEndpointResponse>> {
     let service = erp_webhooks::WebhookService::new();
     let endpoint = service.get_endpoint(&state.pool, id).await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Webhook not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Webhook not found".into(.into())))?;
     
     Ok(Json(WebhookEndpointResponse {
         id: endpoint.base.id,

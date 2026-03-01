@@ -1,0 +1,24 @@
+-- Fix work_orders table to have EAM fields
+ALTER TABLE work_orders ADD COLUMN work_order_type TEXT;
+ALTER TABLE work_orders ADD COLUMN priority TEXT;
+ALTER TABLE work_orders ADD COLUMN asset_id TEXT;
+ALTER TABLE work_orders ADD COLUMN location_id TEXT;
+ALTER TABLE work_orders ADD COLUMN failure_code_id TEXT;
+ALTER TABLE work_orders ADD COLUMN problem_description TEXT;
+ALTER TABLE work_orders ADD COLUMN cause_description TEXT;
+ALTER TABLE work_orders ADD COLUMN remedy_description TEXT;
+ALTER TABLE work_orders ADD COLUMN requested_by TEXT;
+ALTER TABLE work_orders ADD COLUMN requested_date TEXT;
+ALTER TABLE work_orders ADD COLUMN required_date TEXT;
+ALTER TABLE work_orders ADD COLUMN scheduled_start TEXT;
+ALTER TABLE work_orders ADD COLUMN scheduled_end TEXT;
+ALTER TABLE work_orders ADD COLUMN assigned_to TEXT;
+ALTER TABLE work_orders ADD COLUMN assigned_team_id TEXT;
+ALTER TABLE work_orders ADD COLUMN estimated_labor_hours REAL;
+ALTER TABLE work_orders ADD COLUMN actual_labor_hours REAL;
+ALTER TABLE work_orders ADD COLUMN estimated_cost INTEGER;
+ALTER TABLE work_orders ADD COLUMN actual_cost INTEGER;
+ALTER TABLE work_orders ADD COLUMN downtime_hours REAL;
+ALTER TABLE work_orders ADD COLUMN completion_notes TEXT;
+ALTER TABLE work_orders ADD COLUMN closed_by TEXT;
+ALTER TABLE work_orders ADD COLUMN closed_at TEXT;

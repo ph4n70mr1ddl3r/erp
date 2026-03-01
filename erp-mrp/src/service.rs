@@ -2,7 +2,7 @@ use crate::models::*;
 use crate::repository::MrpRepository;
 use anyhow::Result;
 use chrono::{NaiveDate, Utc};
-use erp_core::BaseEntity;
+use erp_core::{BaseEntity, Status};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -135,6 +135,7 @@ impl MrpService {
             firmed: false,
             converted_type: None,
             converted_id: None,
+            created_at: Utc::now(),
         };
         
         MrpRepository::create_planned_order(pool, &order).await?;

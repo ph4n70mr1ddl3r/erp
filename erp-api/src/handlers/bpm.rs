@@ -50,7 +50,7 @@ pub async fn create_process(
     let process = service.create_process(&state.pool, req.name, req.code, req.category, owner_id, req.diagram_data).await?;
 
     Ok(Json(ProcessResponse {
-        id: process.base.id.to_string(),
+        id: process.id.to_string(),
         name: process.name,
         code: process.code,
         category: process.category,
@@ -64,7 +64,7 @@ pub async fn list_processes(State(state): State<AppState>) -> ApiResult<Json<Vec
     let processes = service.list_processes(&state.pool, None).await?;
 
     Ok(Json(processes.into_iter().map(|p| ProcessResponse {
-        id: p.base.id.to_string(),
+        id: p.id.to_string(),
         name: p.name,
         code: p.code,
         category: p.category,
@@ -82,7 +82,7 @@ pub async fn get_process(
     let process = service.get_process(&state.pool, id).await?.ok_or_else(|| anyhow::anyhow!("Process not found"))?;
 
     Ok(Json(serde_json::json!({
-        "id": process.base.id.to_string(),
+        "id": process.id.to_string(),
         "name": process.name,
         "code": process.code,
         "description": process.description,
@@ -106,7 +106,7 @@ pub async fn publish_process(
     let process = service.publish_process(&state.pool, id, published_by).await?;
 
     Ok(Json(ProcessResponse {
-        id: process.base.id.to_string(),
+        id: process.id.to_string(),
         name: process.name,
         code: process.code,
         category: process.category,
@@ -135,20 +135,14 @@ pub async fn add_node(
     Json(req): Json<AddNodeRequest>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let process_id = Uuid::parse_str(&process_id)?;
-    let task_type = match req.task_type.as_str() {
-        "ServiceTask" => erp_bpm::TaskType::ServiceTask,
-        "ScriptTask" => erp_bpm::TaskType::ScriptTask,
-        "Gateway" => erp_bpm::TaskType::Gateway,
-        "Event" => erp_bpm::TaskType::Event,
-        "SubProcess" => erp_bpm::TaskType::SubProcess,
-        _ => erp_bpm::TaskType::UserTask,
-    };
+    // TaskType is stored as a string in the model
+    let task_type = req.task_type;
 
     let service = erp_bpm::BPMService::new();
-    let node = service.add_node(&state.pool, process_id, req.node_id, req.name, task_type, req.position_x, req.position_y).await?;
+    let node = service.add_node(&state.pool, process_id, req.node_id, req.name, task_type, req.position_x, req.position_y).await?
 
     Ok(Json(serde_json::json!({
-        "id": node.base.id.to_string(),
+        "id": node.id.to_string(),
         "node_id": node.node_id,
         "name": node.name,
         "task_type": format!("{:?}", node.task_type)
@@ -173,7 +167,7 @@ pub async fn add_flow(
     let flow = service.add_flow(&state.pool, process_id, req.flow_id, req.source_node_id, req.target_node_id, req.condition_expression).await?;
 
     Ok(Json(serde_json::json!({
-        "id": flow.base.id.to_string(),
+        "id": flow.id.to_string(),
         "flow_id": flow.flow_id,
         "source_node_id": flow.source_node_id,
         "target_node_id": flow.target_node_id,
@@ -209,7 +203,7 @@ pub async fn start_instance(
     let instance = service.start_instance(&state.pool, process_definition_id, started_by, req.business_key, req.variables).await?;
 
     Ok(Json(InstanceResponse {
-        id: instance.base.id.to_string(),
+        id: instance.id.to_string(),
         process_definition_id: instance.process_definition_id.to_string(),
         status: format!("{:?}", instance.status),
         started_by: instance.started_by.to_string(),
@@ -222,7 +216,7 @@ pub async fn list_instances(State(state): State<AppState>) -> ApiResult<Json<Vec
     let instances = service.list_active_instances(&state.pool).await?;
 
     Ok(Json(instances.into_iter().map(|i| InstanceResponse {
-        id: i.base.id.to_string(),
+        id: i.id.to_string(),
         process_definition_id: i.process_definition_id.to_string(),
         status: format!("{:?}", i.status),
         started_by: i.started_by.to_string(),
@@ -239,7 +233,7 @@ pub async fn get_instance(
     let instance = service.get_instance(&state.pool, id).await?.ok_or_else(|| anyhow::anyhow!("Instance not found"))?;
 
     Ok(Json(serde_json::json!({
-        "id": instance.base.id.to_string(),
+        "id": instance.id.to_string(),
         "process_definition_id": instance.process_definition_id.to_string(),
         "business_key": instance.business_key,
         "status": format!("{:?}", instance.status),
@@ -272,7 +266,7 @@ pub async fn list_user_tasks(
     let tasks = service.get_user_tasks(&state.pool, user_id).await?;
 
     Ok(Json(tasks.into_iter().map(|t| TaskResponse {
-        id: t.base.id.to_string(),
+        id: t.id.to_string(),
         process_instance_id: t.process_instance_id.to_string(),
         name: t.name,
         status: format!("{:?}", t.status),
@@ -298,7 +292,7 @@ pub async fn claim_task(
     let task = service.claim_task(&state.pool, task_id, user_id).await?;
 
     Ok(Json(TaskResponse {
-        id: task.base.id.to_string(),
+        id: task.id.to_string(),
         process_instance_id: task.process_instance_id.to_string(),
         name: task.name,
         status: format!("{:?}", task.status),
@@ -325,7 +319,7 @@ pub async fn complete_task(
     let task = service.complete_task(&state.pool, task_id, user_id, req.outcome).await?;
 
     Ok(Json(TaskResponse {
-        id: task.base.id.to_string(),
+        id: task.id.to_string(),
         process_instance_id: task.process_instance_id.to_string(),
         name: task.name,
         status: format!("{:?}", task.status),

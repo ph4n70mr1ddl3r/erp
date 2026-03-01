@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -66,7 +66,7 @@ pub async fn get_item(
     let item = erp_plm::PLMService::new(erp_plm::SqlitePLMRepository::new(state.pool.clone()))
         .get_item(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Item not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Item not found".into(.into())))?;
     Ok(Json(item))
 }
 

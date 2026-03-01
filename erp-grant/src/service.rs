@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use erp_core::error::{Error, Result};
-use erp_core::models::{BaseEntity, Money, Currency, Status};
+use erp_core::models::{BaseEntity, Money, Currency};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -20,7 +20,7 @@ impl GrantService {
 
     pub async fn create_grant(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         grant_number: String,
         title: String,
         grant_type: GrantType,
@@ -68,11 +68,11 @@ impl GrantService {
         self.grant_repo.create(&grant).await
     }
 
-    pub async fn get_grant(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<Grant>> {
+    pub async fn get_grant(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<Grant>> {
         self.grant_repo.find_by_id(id).await
     }
 
-    pub async fn submit_grant(&self, pool: &SqlitePool, id: Uuid) -> Result<Grant> {
+    pub async fn submit_grant(&self, _pool: &SqlitePool, id: Uuid) -> Result<Grant> {
         let mut grant = self.grant_repo.find_by_id(id).await?
             .ok_or(Error::not_found("grant", &id.to_string()))?;
         if grant.status != GrantStatus::Draft {
@@ -82,7 +82,7 @@ impl GrantService {
         self.grant_repo.update(&grant).await
     }
 
-    pub async fn award_grant(&self, pool: &SqlitePool, id: Uuid, award_number: String) -> Result<Grant> {
+    pub async fn award_grant(&self, _pool: &SqlitePool, id: Uuid, award_number: String) -> Result<Grant> {
         let mut grant = self.grant_repo.find_by_id(id).await?
             .ok_or(Error::not_found("grant", &id.to_string()))?;
         grant.status = GrantStatus::Awarded;
@@ -90,7 +90,7 @@ impl GrantService {
         self.grant_repo.update(&grant).await
     }
 
-    pub async fn activate_grant(&self, pool: &SqlitePool, id: Uuid) -> Result<Grant> {
+    pub async fn activate_grant(&self, _pool: &SqlitePool, id: Uuid) -> Result<Grant> {
         let mut grant = self.grant_repo.find_by_id(id).await?
             .ok_or(Error::not_found("grant", &id.to_string()))?;
         if grant.status != GrantStatus::Awarded {
@@ -104,7 +104,7 @@ impl GrantService {
         ((direct_costs as f64) * rate / 100.0).round() as i64
     }
 
-    pub async fn check_budget_balance(&self, pool: &SqlitePool, grant_id: Uuid) -> Result<BudgetBalance> {
+    pub async fn check_budget_balance(&self, _pool: &SqlitePool, grant_id: Uuid) -> Result<BudgetBalance> {
         Ok(BudgetBalance {
             grant_id,
             total_award: 0,
@@ -160,7 +160,7 @@ impl GrantBudgetService {
 
     pub async fn modify_budget(
         &self,
-        budget_id: Uuid,
+        _budget_id: Uuid,
         new_amount: i64,
         justification: String,
     ) -> Result<GrantBudget> {
@@ -311,7 +311,7 @@ impl GrantReportService {
         Ok(report)
     }
 
-    pub async fn submit_report(&self, report_id: Uuid, prepared_by: Uuid) -> Result<GrantReport> {
+    pub async fn submit_report(&self, _report_id: Uuid, prepared_by: Uuid) -> Result<GrantReport> {
         Ok(GrantReport {
             base: BaseEntity::new(),
             grant_id: Uuid::nil(),
@@ -328,7 +328,7 @@ impl GrantReportService {
         })
     }
 
-    pub async fn get_upcoming_reports(&self, days: i32) -> Result<Vec<GrantReport>> {
+    pub async fn get_upcoming_reports(&self, _days: i32) -> Result<Vec<GrantReport>> {
         Ok(Vec::new())
     }
 }
@@ -365,7 +365,7 @@ impl GrantComplianceService {
         Ok(compliance)
     }
 
-    pub async fn mark_compliant(&self, id: Uuid) -> Result<GrantCompliance> {
+    pub async fn mark_compliant(&self, _id: Uuid) -> Result<GrantCompliance> {
         Ok(GrantCompliance {
             base: BaseEntity::new(),
             grant_id: Uuid::nil(),
@@ -428,7 +428,7 @@ impl GrantCloseoutService {
         Ok(closeout)
     }
 
-    pub async fn complete_closeout(&self, closeout_id: Uuid, closed_by: Uuid) -> Result<GrantCloseout> {
+    pub async fn complete_closeout(&self, _closeout_id: Uuid, closed_by: Uuid) -> Result<GrantCloseout> {
         Ok(GrantCloseout {
             base: BaseEntity::new(),
             grant_id: Uuid::nil(),

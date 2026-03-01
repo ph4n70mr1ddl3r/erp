@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -41,7 +41,7 @@ pub async fn get_contract(
         .repo
         .get_contract(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Contract not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Contract not found".into(.into())))?;
     Ok(Json(contract))
 }
 
@@ -100,7 +100,7 @@ pub async fn create_allocation_rule(
     Ok(Json(rule))
 }
 
-pub fn routes() -> axum::Router<crate::state::AppState> {
+pub fn routes() -> axum::Router<crate::db::AppState> {
     axum::Router::new()
         .route("/contracts", axum::routing::post(create_contract))
         .route("/contracts/:id", axum::routing::get(get_contract))

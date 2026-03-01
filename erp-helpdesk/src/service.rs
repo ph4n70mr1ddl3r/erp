@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use erp_core::error::{Error, Result};
-use erp_core::models::{BaseEntity, Status};
+use erp_core::models::BaseEntity;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -24,7 +24,7 @@ impl TicketService {
 
     pub async fn create_ticket(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         subject: String,
         description: String,
         ticket_type: TicketType,
@@ -73,11 +73,11 @@ impl TicketService {
         self.ticket_repo.create(&ticket).await
     }
 
-    pub async fn get_ticket(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<Ticket>> {
+    pub async fn get_ticket(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<Ticket>> {
         self.ticket_repo.find_by_id(id).await
     }
 
-    pub async fn assign_ticket(&self, pool: &SqlitePool, id: Uuid, assignee_id: Uuid) -> Result<Ticket> {
+    pub async fn assign_ticket(&self, _pool: &SqlitePool, id: Uuid, assignee_id: Uuid) -> Result<Ticket> {
         let mut ticket = self.ticket_repo.find_by_id(id).await?
             .ok_or(Error::not_found("ticket", &id.to_string()))?;
         ticket.assignee_id = Some(assignee_id);
@@ -87,10 +87,10 @@ impl TicketService {
         self.ticket_repo.update(&ticket).await
     }
 
-    pub async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: TicketStatus) -> Result<Ticket> {
+    pub async fn update_status(&self, _pool: &SqlitePool, id: Uuid, status: TicketStatus) -> Result<Ticket> {
         let mut ticket = self.ticket_repo.find_by_id(id).await?
             .ok_or(Error::not_found("ticket", &id.to_string()))?;
-        let old_status = ticket.status.clone();
+        let _old_status = ticket.status.clone();
         ticket.status = status.clone();
         match status {
             TicketStatus::Resolved => {
@@ -110,7 +110,7 @@ impl TicketService {
 
     pub async fn add_comment(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         ticket_id: Uuid,
         author_id: Uuid,
         author_name: String,
@@ -134,7 +134,7 @@ impl TicketService {
 
     pub async fn merge_tickets(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         primary_id: Uuid,
         merge_ids: Vec<Uuid>,
         merged_by: Uuid,
@@ -153,7 +153,7 @@ impl TicketService {
 
     pub async fn split_ticket(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         original_id: Uuid,
         new_ticket: Ticket,
         split_by: Uuid,
@@ -244,7 +244,7 @@ impl SLAService {
         Ok(tracker)
     }
 
-    pub async fn record_first_response(&self, tracker_id: Uuid, responded_at: DateTime<Utc>) -> Result<SLATracker> {
+    pub async fn record_first_response(&self, _tracker_id: Uuid, _responded_at: DateTime<Utc>) -> Result<SLATracker> {
         Ok(SLATracker {
             base: BaseEntity::new(),
             ticket_id: Uuid::nil(),
@@ -323,7 +323,7 @@ impl EscalationService {
         true
     }
 
-    pub async fn execute_actions(&self, ticket_id: Uuid, actions: &[EscalationAction]) -> Result<()> {
+    pub async fn execute_actions(&self, _ticket_id: Uuid, _actions: &[EscalationAction]) -> Result<()> {
         Ok(())
     }
 }
@@ -337,7 +337,7 @@ impl AssignmentService {
         Self { pool }
     }
 
-    pub async fn auto_assign(&self, ticket: &Ticket, agents: &[SupportAgent]) -> Option<Uuid> {
+    pub async fn auto_assign(&self, _ticket: &Ticket, agents: &[SupportAgent]) -> Option<Uuid> {
         let available_agents: Vec<_> = agents.iter()
             .filter(|a| a.is_available && a.active_tickets < a.max_tickets)
             .collect();
@@ -349,7 +349,7 @@ impl AssignmentService {
             .map(|a| a.user_id)
     }
 
-    pub async fn assign_by_round_robin(&self, ticket: &Ticket, team: &SupportTeam) -> Option<Uuid> {
+    pub async fn assign_by_round_robin(&self, _ticket: &Ticket, team: &SupportTeam) -> Option<Uuid> {
         if team.members.is_empty() {
             return None;
         }
@@ -551,7 +551,7 @@ impl HelpdeskAnalyticsService {
         }
     }
 
-    pub async fn get_ticket_volume_by_day(&self, days: i32) -> Vec<DailyVolume> {
+    pub async fn get_ticket_volume_by_day(&self, _days: i32) -> Vec<DailyVolume> {
         Vec::new()
     }
 

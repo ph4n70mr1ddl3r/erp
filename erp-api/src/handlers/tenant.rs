@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -57,7 +57,7 @@ pub async fn get_tenant(
     let tenant = erp_tenant::TenantService::new(erp_tenant::SqliteTenantRepository::new(state.pool.clone()))
         .get_tenant(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Tenant not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Tenant not found".into(.into())))?;
     Ok(Json(tenant))
 }
 
@@ -125,7 +125,7 @@ pub async fn get_stats(
     Ok(Json(stats))
 }
 
-pub fn routes() -> axum::Router<crate::state::AppState> {
+pub fn routes() -> axum::Router<crate::db::AppState> {
     axum::Router::new()
         .route("/", axum::routing::get(list_tenants).post(create_tenant))
         .route("/:id", axum::routing::get(get_tenant))

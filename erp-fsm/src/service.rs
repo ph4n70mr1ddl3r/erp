@@ -144,8 +144,8 @@ impl<R: FSMRepository> FSMService<R> {
             phone,
             email,
             status: TechnicianStatus::Available,
-            skills: serde_json::json!([]),
-            certifications: serde_json::json!([]),
+            skills: "[]".to_string(),
+            certifications: "[]".to_string(),
             home_location_lat: None,
             home_location_lng: None,
             current_location_lat: None,
@@ -190,7 +190,7 @@ impl<R: FSMRepository> FSMService<R> {
             id: Uuid::new_v4(),
             route_number,
             technician_id: req.technician_id,
-            route_date: req.route_date,
+            route_date: req.route_date.to_rfc3339(),
             status: "Planned".to_string(),
             total_appointments: req.service_order_ids.len() as i32,
             completed_appointments: 0,
@@ -224,9 +224,9 @@ impl<R: FSMRepository> FSMService<R> {
                 route_id: route.id,
                 appointment_id: *order_id,
                 stop_sequence: i as i32 + 1,
-                planned_arrival: arrival_time,
+                planned_arrival: arrival_time.to_rfc3339(),
                 actual_arrival: None,
-                planned_departure: departure_time,
+                planned_departure: departure_time.to_rfc3339(),
                 actual_departure: None,
                 travel_distance: distance,
                 travel_time_minutes: travel_time,
@@ -329,7 +329,7 @@ impl<R: FSMRepository> FSMService<R> {
         Ok(contract)
     }
 
-    pub async fn find_available_technician(&self, lat: f64, lng: f64, skills: Option<Vec<String>>) -> anyhow::Result<Option<Technician>> {
+    pub async fn find_available_technician(&self, lat: f64, lng: f64, _skills: Option<Vec<String>>) -> anyhow::Result<Option<Technician>> {
         let techs = self.repo.list_technicians(Some(TechnicianStatus::Available)).await?;
         let mut best_tech: Option<Technician> = None;
         let mut min_distance = f64::MAX;

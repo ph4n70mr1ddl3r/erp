@@ -2,7 +2,8 @@ use crate::models::*;
 use async_trait::async_trait;
 use chrono::Utc;
 use erp_core::{Currency, Status, Money};
-use sqlx::SqlitePool;
+use serde_json::Value;
+use sqlx::{SqlitePool, Row, Column};
 use uuid::Uuid;
 
 #[async_trait]
@@ -91,7 +92,7 @@ impl BundleRepository for SqliteBundleRepository {
 
         if let Some(r) = row {
             let components = self.get_components(pool, id).await?;
-            let row_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(&r).unwrap_or_default()).unwrap_or_default();
+            let row_map = sqlite_row_to_map(&r);
             
             let bundle = parse_bundle_from_row(&row_map, components)?;
             Ok(Some(bundle))
@@ -108,7 +109,7 @@ impl BundleRepository for SqliteBundleRepository {
         .fetch_optional(pool).await?;
 
         if let Some(r) = row {
-            let row_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(&r).unwrap_or_default()).unwrap_or_default();
+            let row_map = sqlite_row_to_map(&r);
             let id_str = row_map.get("id").and_then(|v| v.as_str()).unwrap_or("");
             let id = Uuid::parse_str(id_str).unwrap_or(Uuid::nil());
             let components = self.get_components(pool, id).await?;
@@ -129,8 +130,7 @@ impl BundleRepository for SqliteBundleRepository {
         .bind(&status_filter)
         .fetch_one(pool).await?;
 
-        let count_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(&count_result).unwrap_or_default()).unwrap_or_default();
-        let total: i64 = count_map.get("count").and_then(|v| v.as_i64()).unwrap_or(0);
+        let total: i64 = count_result.try_get("count").unwrap_or(0);
 
         let rows = sqlx::query(
             r#"SELECT id, bundle_code, name, bundle_type, list_price_amount, list_price_currency, status, created_at FROM product_bundles WHERE (?1 IS NULL OR status = ?1) ORDER BY created_at DESC LIMIT ?2 OFFSET ?3"#
@@ -141,7 +141,7 @@ impl BundleRepository for SqliteBundleRepository {
         .fetch_all(pool).await?;
 
         let items = rows.iter().filter_map(|r| {
-            let row_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(r).ok()?).ok()?;
+            let row_map = sqlite_row_to_map(r);
             parse_bundle_summary(&row_map)
         }).collect();
 
@@ -245,7 +245,7 @@ impl BundleRepository for SqliteBundleRepository {
         .fetch_all(pool).await?;
 
         let components = rows.iter().filter_map(|r| {
-            let row_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(r).ok()?).ok()?;
+            let row_map = sqlite_row_to_map(r);
             parse_component(&row_map)
         }).collect();
 
@@ -265,8 +265,7 @@ impl BundleRepository for SqliteBundleRepository {
             .bind(component.product_id.to_string())
             .fetch_one(pool).await?;
 
-            let stock_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(&stock_result).unwrap_or_default()).unwrap_or_default();
-            let available: i64 = stock_map.get("available").and_then(|v| v.as_i64()).unwrap_or(0);
+            let available: i64 = stock_result.try_get("available").unwrap_or(0);
             let bundle_qty = available / component.quantity.max(1);
             total_available = total_available.min(bundle_qty);
 
@@ -330,7 +329,7 @@ impl BundleRepository for SqliteBundleRepository {
         .fetch_all(pool).await?;
 
         let rules = rows.iter().filter_map(|r| {
-            let row_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(r).ok()?).ok()?;
+            let row_map = sqlite_row_to_map(r);
             parse_price_rule(&row_map)
         }).collect();
 
@@ -379,14 +378,12 @@ impl BundleRepository for SqliteBundleRepository {
         .bind(period_end.to_rfc3339())
         .fetch_one(pool).await?;
 
-        let result_map: std::collections::HashMap<String, serde_json::Value> = serde_json::from_value(serde_json::to_value(&result).unwrap_or_default()).unwrap_or_default();
-        
-        let total_sold: i64 = result_map.get("total_sold").and_then(|v| v.as_i64()).unwrap_or(0);
-        let total_revenue: i64 = result_map.get("total_revenue").and_then(|v| v.as_i64()).unwrap_or(0);
-        let total_margin: i64 = result_map.get("total_margin").and_then(|v| v.as_i64()).unwrap_or(0);
+        let total_sold: i64 = result.try_get("total_sold").unwrap_or(0);
+        let total_revenue: i64 = result.try_get("total_revenue").unwrap_or(0);
+        let total_margin: i64 = result.try_get("total_margin").unwrap_or(0);
         let margin_percent = if total_revenue > 0 { (total_margin as f64 / total_revenue as f64) * 100.0 } else { 0.0 };
-        let order_count: i32 = result_map.get("order_count").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
-        let customer_count: i32 = result_map.get("customer_count").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
+        let order_count: i32 = result.try_get::<i64, _>("order_count").unwrap_or(0) as i32;
+        let customer_count: i32 = result.try_get::<i64, _>("customer_count").unwrap_or(0) as i32;
 
         Ok(BundleAnalytics {
             bundle_id,
@@ -527,4 +524,26 @@ fn parse_price_rule(row_map: &std::collections::HashMap<String, serde_json::Valu
         status,
         created_at: chrono::DateTime::parse_from_rfc3339(created_at_str).map(|d| d.with_timezone(&Utc)).unwrap_or(Utc::now()),
     })
+}
+
+fn sqlite_row_to_map(row: &sqlx::sqlite::SqliteRow) -> std::collections::HashMap<String, Value> {
+    let mut map = std::collections::HashMap::new();
+    for (i, column) in row.columns().iter().enumerate() {
+        let name = column.name();
+        let value: Value = if let Ok(v) = row.try_get::<i64, _>(i) {
+            Value::Number(v.into())
+        } else if let Ok(v) = row.try_get::<f64, _>(i) {
+            serde_json::Number::from_f64(v)
+                .map(Value::Number)
+                .unwrap_or(Value::Null)
+        } else if let Ok(v) = row.try_get::<String, _>(i) {
+            Value::String(v)
+        } else if let Ok(v) = row.try_get::<bool, _>(i) {
+            Value::Bool(v)
+        } else {
+            Value::Null
+        };
+        map.insert(name.to_string(), value);
+    }
+    map
 }

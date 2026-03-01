@@ -20,7 +20,7 @@ impl CostPoolService {
 
     pub async fn create_cost_pool(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         name: String,
         code: String,
         pool_type: CostPoolType,
@@ -48,11 +48,11 @@ impl CostPoolService {
         self.pool_repo.create(&cost_pool).await
     }
 
-    pub async fn get_cost_pool(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<CostPool>> {
+    pub async fn get_cost_pool(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<CostPool>> {
         self.pool_repo.find_by_id(id).await
     }
 
-    pub async fn calculate_pool_total(&self, pool: &SqlitePool, id: Uuid) -> Result<i64> {
+    pub async fn calculate_pool_total(&self, _pool: &SqlitePool, _id: Uuid) -> Result<i64> {
         Ok(0)
     }
 }
@@ -176,7 +176,7 @@ impl CostDriverService {
         Ok(driver)
     }
 
-    pub async fn record_usage(&self, driver_id: Uuid, quantity: f64) -> Result<CostDriver> {
+    pub async fn record_usage(&self, _driver_id: Uuid, quantity: f64) -> Result<CostDriver> {
         Ok(CostDriver {
             base: BaseEntity::new(),
             name: String::new(),
@@ -286,12 +286,12 @@ impl AllocationService {
     pub async fn two_stage_allocation(
         &self,
         resources: Vec<ResourceAllocation>,
-        activities: Vec<ActivityAllocation>,
-        cost_objects: Vec<Uuid>,
+        _activities: Vec<ActivityAllocation>,
+        _cost_objects: Vec<Uuid>,
     ) -> Result<AllocationResult> {
         let mut total_allocated = 0i64;
         for resource in &resources {
-            total_allocated += resource.amount.cents;
+            total_allocated += resource.amount.amount;
         }
         Ok(AllocationResult {
             total_allocated: Money::new(total_allocated, Currency::USD),
@@ -583,7 +583,7 @@ impl BillOfActivitiesService {
         name: String,
         activities: Vec<BillOfActivityLine>,
     ) -> Result<BillOfActivities> {
-        let total: i64 = activities.iter().map(|a| a.total_cost.cents).sum::<f64>();
+        let total: i64 = activities.iter().map(|a| a.total_cost.amount).sum();
         let boa = BillOfActivities {
             base: BaseEntity::new(),
             cost_object_id,

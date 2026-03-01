@@ -43,7 +43,7 @@ pub async fn create_locale(
     let locale = service.create_locale(&state.pool, req.code.clone(), req.name, req.native_name, req.language_code).await?;
 
     Ok(Json(LocaleResponse {
-        id: locale.base.id.to_string(),
+        id: locale.id.to_string(),
         code: locale.code,
         name: locale.name,
         native_name: locale.native_name,
@@ -56,7 +56,7 @@ pub async fn list_locales(State(state): State<AppState>) -> ApiResult<Json<Vec<L
     let locales = service.list_locales(&state.pool, true).await?;
 
     Ok(Json(locales.into_iter().map(|l| LocaleResponse {
-        id: l.base.id.to_string(),
+        id: l.id.to_string(),
         code: l.code,
         name: l.name,
         native_name: l.native_name,
@@ -72,7 +72,7 @@ pub async fn get_locale(
     let locale = service.get_locale(&state.pool, &code).await?.ok_or_else(|| anyhow::anyhow!("Locale not found"))?;
 
     Ok(Json(serde_json::json!({
-        "id": locale.base.id.to_string(),
+        "id": locale.id.to_string(),
         "code": locale.code,
         "name": locale.name,
         "native_name": locale.native_name,
@@ -113,7 +113,7 @@ pub async fn set_translation(
     let translation = service.set_translation(&state.pool, req.locale_code, req.namespace, req.key, req.value).await?;
 
     Ok(Json(TranslationResponse {
-        id: translation.base.id.to_string(),
+        id: translation.id.to_string(),
         locale_code: translation.locale_code,
         namespace: translation.namespace,
         key: translation.key,

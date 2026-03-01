@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use erp_core::models::{BaseEntity, Status};
+use erp_core::models::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

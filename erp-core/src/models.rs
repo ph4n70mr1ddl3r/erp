@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct BaseEntity {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
@@ -51,6 +51,23 @@ pub enum Status {
 impl Default for Status {
     fn default() -> Self {
         Status::Active
+    }
+}
+
+impl std::str::FromStr for Status {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "active" => Ok(Status::Active),
+            "inactive" => Ok(Status::Inactive),
+            "draft" => Ok(Status::Draft),
+            "pending" => Ok(Status::Pending),
+            "approved" => Ok(Status::Approved),
+            "rejected" => Ok(Status::Rejected),
+            "completed" => Ok(Status::Completed),
+            "cancelled" | "canceled" => Ok(Status::Cancelled),
+            _ => Ok(Status::Active),
+        }
     }
 }
 
@@ -118,6 +135,25 @@ impl std::fmt::Display for Currency {
             Currency::CHF => write!(f, "CHF"),
             Currency::INR => write!(f, "INR"),
             Currency::MXN => write!(f, "MXN"),
+        }
+    }
+}
+
+impl std::str::FromStr for Currency {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_uppercase().as_str() {
+            "USD" => Ok(Currency::USD),
+            "EUR" => Ok(Currency::EUR),
+            "GBP" => Ok(Currency::GBP),
+            "JPY" => Ok(Currency::JPY),
+            "CNY" => Ok(Currency::CNY),
+            "CAD" => Ok(Currency::CAD),
+            "AUD" => Ok(Currency::AUD),
+            "CHF" => Ok(Currency::CHF),
+            "INR" => Ok(Currency::INR),
+            "MXN" => Ok(Currency::MXN),
+            _ => Ok(Currency::USD),
         }
     }
 }

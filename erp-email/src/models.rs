@@ -52,8 +52,9 @@ pub enum SubscriberStatus {
     Cleaned,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailTemplate {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,
@@ -74,8 +75,9 @@ pub struct EmailTemplate {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailCampaign {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
@@ -87,6 +89,7 @@ pub struct EmailCampaign {
     pub from_name: String,
     pub from_email: String,
     pub reply_to: Option<String>,
+    #[sqlx(json)]
     pub list_ids: Vec<Uuid>,
     pub segment_rules: Option<serde_json::Value>,
     pub status: CampaignStatus,
@@ -109,8 +112,9 @@ pub struct EmailCampaign {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailList {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
@@ -128,8 +132,9 @@ pub struct EmailList {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailSubscriber {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub email: String,
     pub first_name: Option<String>,
@@ -165,7 +170,7 @@ pub struct ListMembership {
     pub source: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailQueue {
     pub id: Uuid,
     pub campaign_id: Option<Uuid>,
@@ -215,8 +220,9 @@ pub struct EmailEvent {
     pub details: Option<serde_json::Value>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailSuppression {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub email: String,
     pub reason: SuppressionReason,
@@ -234,8 +240,9 @@ pub enum SuppressionReason {
     Manual,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailProvider {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,

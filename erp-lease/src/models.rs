@@ -16,6 +16,23 @@ pub enum LeaseType {
     Vehicle,
 }
 
+impl std::str::FromStr for LeaseType {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "operating" => Ok(LeaseType::Operating),
+            "finance" => Ok(LeaseType::Finance),
+            "shortterm" | "short_term" => Ok(LeaseType::ShortTerm),
+            "lowvalue" | "low_value" => Ok(LeaseType::LowValue),
+            "land" => Ok(LeaseType::Land),
+            "building" => Ok(LeaseType::Building),
+            "equipment" => Ok(LeaseType::Equipment),
+            "vehicle" => Ok(LeaseType::Vehicle),
+            _ => Ok(LeaseType::Operating),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "TEXT")]
 pub enum LeaseStatus {
@@ -27,6 +44,23 @@ pub enum LeaseStatus {
     Expired,
     Terminated,
     Renewed,
+}
+
+impl std::str::FromStr for LeaseStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "draft" => Ok(LeaseStatus::Draft),
+            "pendingapproval" | "pending_approval" => Ok(LeaseStatus::PendingApproval),
+            "active" => Ok(LeaseStatus::Active),
+            "modified" => Ok(LeaseStatus::Modified),
+            "underreview" | "under_review" => Ok(LeaseStatus::UnderReview),
+            "expired" => Ok(LeaseStatus::Expired),
+            "terminated" => Ok(LeaseStatus::Terminated),
+            "renewed" => Ok(LeaseStatus::Renewed),
+            _ => Ok(LeaseStatus::Draft),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -125,6 +159,21 @@ pub enum PaymentStatus {
     Cancelled,
 }
 
+impl std::str::FromStr for PaymentStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "scheduled" => Ok(PaymentStatus::Scheduled),
+            "due" => Ok(PaymentStatus::Due),
+            "paid" => Ok(PaymentStatus::Paid),
+            "overdue" => Ok(PaymentStatus::Overdue),
+            "waived" => Ok(PaymentStatus::Waived),
+            "cancelled" => Ok(PaymentStatus::Cancelled),
+            _ => Ok(PaymentStatus::Scheduled),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LeasePaymentSchedule {
     pub base: BaseEntity,
@@ -177,6 +226,19 @@ pub enum DepreciationMethod {
     UnitsOfProduction,
 }
 
+impl std::str::FromStr for DepreciationMethod {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "straightline" | "straight_line" => Ok(DepreciationMethod::StraightLine),
+            "decliningbalance" | "declining_balance" => Ok(DepreciationMethod::DecliningBalance),
+            "sumofyearsdigits" | "sum_of_years_digits" => Ok(DepreciationMethod::SumOfYearsDigits),
+            "unitsofproduction" | "units_of_production" => Ok(DepreciationMethod::UnitsOfProduction),
+            _ => Ok(DepreciationMethod::StraightLine),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LeaseLiability {
     pub base: BaseEntity,
@@ -199,6 +261,17 @@ pub struct LeaseLiability {
 pub enum AmortizationMethod {
     EffectiveInterest,
     StraightLine,
+}
+
+impl std::str::FromStr for AmortizationMethod {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "effectiveinterest" | "effective_interest" => Ok(AmortizationMethod::EffectiveInterest),
+            "straightline" | "straight_line" => Ok(AmortizationMethod::StraightLine),
+            _ => Ok(AmortizationMethod::EffectiveInterest),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use crate::db::AppState;
-use crate::handlers::ApiResult;
+use crate::error::ApiResult;
 use erp_processmining::{ProcessMiningService, ProcessDefinition, ProcessCategory, ProcessStatus, ImportEventsRequest, ProcessEventImport, SimulationScenario};
 
 #[derive(Deserialize)]

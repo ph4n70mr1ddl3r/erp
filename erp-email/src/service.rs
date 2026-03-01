@@ -271,7 +271,7 @@ impl EmailCampaignService {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, sqlx::FromRow)]
 pub struct CampaignRecipient {
     pub subscriber_id: Option<Uuid>,
     pub email: String,

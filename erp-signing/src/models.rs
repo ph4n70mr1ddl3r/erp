@@ -26,7 +26,7 @@ pub enum SignatureType {
     ClickToSign,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum SignerStatus {
     Pending,
@@ -172,8 +172,9 @@ pub struct Signature {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SigningTemplate {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
@@ -193,7 +194,7 @@ pub struct SigningTemplate {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct SigningAudit {
     pub id: Uuid,
     pub document_id: Uuid,

@@ -2,6 +2,7 @@ use crate::models::*;
 use crate::repository::{BankRepository, SqliteBankRepository};
 use chrono::{NaiveDate, Utc};
 use erp_core::{BaseEntity, Result};
+use serde::Deserialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 

@@ -3,7 +3,7 @@ use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum JobStatus {
     Pending,
@@ -15,7 +15,7 @@ pub enum JobStatus {
     Paused,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum JobType {
     OneTime,
@@ -33,8 +33,9 @@ pub enum JobPriority {
     Critical,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ScheduledJob {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub job_type: JobType,
@@ -69,8 +70,9 @@ pub struct ScheduledJob {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct JobExecution {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub job_id: Uuid,
     pub execution_number: i64,
@@ -146,8 +148,9 @@ pub enum WorkerStatus {
     Crashed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct JobSchedule {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub job_template_id: Option<Uuid>,

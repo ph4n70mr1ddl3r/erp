@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_security::{SecurityService, TwoFactorSetupRequest, TwoFactorVerifyRequest, TwoFactorSetupResponse};
-use erp_auth::AuthUser;
+use crate::handlers::auth::AuthUser;
 use uuid::Uuid;
 
 #[derive(Debug, Deserialize)]

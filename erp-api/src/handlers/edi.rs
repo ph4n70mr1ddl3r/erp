@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -93,7 +93,7 @@ pub async fn list_transactions(
     Ok(Json(txns))
 }
 
-pub fn routes() -> axum::Router<crate::state::AppState> {
+pub fn routes() -> axum::Router<crate::db::AppState> {
     axum::Router::new()
         .route("/partners", axum::routing::get(list_partners).post(create_partner))
         .route("/inbound", axum::routing::post(process_inbound))

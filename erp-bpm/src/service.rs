@@ -1,4 +1,4 @@
-use sqlx::SqlitePool;
+use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 use chrono::Utc;
 use crate::models::*;
@@ -122,8 +122,8 @@ impl BPMService {
             process_definition_id: r.1.parse().unwrap_or_default(),
             process_definition_version: r.2,
             business_key: r.3,
-            status: r.4,
-            variables: r.5,
+            status: r.4.to_string(),
+            variables: r.5.and_then(|s| serde_json::from_str(&s).ok()),
             started_by: r.6.parse().unwrap_or_default(),
             started_at: r.7.parse().unwrap_or_default(),
             completed_at: r.8.and_then(|s| s.parse().ok()),
@@ -146,8 +146,8 @@ impl BPMService {
             process_definition_id: r.1.parse().unwrap_or_default(),
             process_definition_version: r.2,
             business_key: r.3,
-            status: r.4,
-            variables: r.5,
+            status: r.4.to_string(),
+            variables: r.5.and_then(|s| serde_json::from_str(&s).ok()),
             started_by: r.6.parse().unwrap_or_default(),
             started_at: r.7.parse().unwrap_or_default(),
             completed_at: r.8.and_then(|s| s.parse().ok()),
@@ -233,35 +233,38 @@ impl BPMService {
         .execute(pool)
         .await?;
 
-        let row = sqlx::query_as::<_, (String, String, String, String, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, i32, Option<String>, String, Option<String>, Option<String>, Option<String>, Option<String>, String)>(
-            "SELECT id, process_instance_id, process_definition_id, node_id, name, task_type, status, assignee_id, candidate_users, candidate_groups, form_key, form_data, variables, priority, due_date, created_at, claimed_at, completed_at, completed_by, outcome, updated_at FROM bpm_process_tasks WHERE id = ?"
-        )
+        let row = sqlx::query(r#"
+            SELECT id, process_instance_id, process_definition_id, node_id, name, task_type, status, 
+                assignee_id, candidate_users, candidate_groups, form_key, form_data, variables, 
+                priority, due_date, created_at, claimed_at, completed_at, completed_by, outcome, updated_at 
+            FROM bpm_process_tasks WHERE id = ?
+        "#)
         .bind(task_id.to_string())
         .fetch_optional(pool)
         .await?;
 
         row.map(|r| ProcessTask {
-            id: r.0.parse().unwrap_or_default(),
-            process_instance_id: r.1.parse().unwrap_or_default(),
-            process_definition_id: r.2.parse().unwrap_or_default(),
-            node_id: r.3,
-            name: r.4,
-            task_type: r.5,
-            status: r.6,
-            assignee_id: r.7.and_then(|s| s.parse().ok()),
-            candidate_users: r.8,
-            candidate_groups: r.9,
-            form_key: r.10,
-            form_data: r.11,
-            variables: r.12,
-            priority: r.13,
-            due_date: r.14.and_then(|s| s.parse().ok()),
-            created_at: r.15.parse().unwrap_or_default(),
-            claimed_at: r.16.and_then(|s| s.parse().ok()),
-            completed_at: r.17.and_then(|s| s.parse().ok()),
-            completed_by: r.18.and_then(|s| s.parse().ok()),
-            outcome: r.19,
-            updated_at: r.20.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            process_instance_id: r.get::<String, _>("process_instance_id").parse().unwrap_or_default(),
+            process_definition_id: r.get::<String, _>("process_definition_id").parse().unwrap_or_default(),
+            node_id: r.get("node_id"),
+            name: r.get("name"),
+            task_type: r.get::<String, _>("task_type"),
+            status: r.get::<String, _>("status"),
+            assignee_id: r.get::<Option<String>, _>("assignee_id").and_then(|s| s.parse().ok()),
+            candidate_users: r.get::<Option<String>, _>("candidate_users").and_then(|s| serde_json::from_str(&s).ok()),
+            candidate_groups: r.get::<Option<String>, _>("candidate_groups").and_then(|s| serde_json::from_str(&s).ok()),
+            form_key: r.get("form_key"),
+            form_data: r.get::<Option<String>, _>("form_data").and_then(|s| serde_json::from_str(&s).ok()),
+            variables: r.get::<Option<String>, _>("variables").and_then(|s| serde_json::from_str(&s).ok()),
+            priority: r.get::<i32, _>("priority"),
+            due_date: r.get::<Option<String>, _>("due_date").and_then(|s| s.parse().ok()),
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            claimed_at: r.get::<Option<String>, _>("claimed_at").and_then(|s| s.parse().ok()),
+            completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| s.parse().ok()),
+            completed_by: r.get::<Option<String>, _>("completed_by").and_then(|s| s.parse().ok()),
+            outcome: r.get("outcome"),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }).ok_or_else(|| anyhow::anyhow!("Task not found").into())
     }
 
@@ -282,69 +285,77 @@ impl BPMService {
         .execute(pool)
         .await?;
 
-        let row = sqlx::query_as::<_, (String, String, String, String, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, i32, Option<String>, String, Option<String>, Option<String>, Option<String>, Option<String>, String)>(
-            "SELECT id, process_instance_id, process_definition_id, node_id, name, task_type, status, assignee_id, candidate_users, candidate_groups, form_key, form_data, variables, priority, due_date, created_at, claimed_at, completed_at, completed_by, outcome, updated_at FROM bpm_process_tasks WHERE id = ?"
-        )
+        let row = sqlx::query(r#"
+            SELECT id, process_instance_id, process_definition_id, node_id, name, task_type, status, 
+                assignee_id, candidate_users, candidate_groups, form_key, form_data, variables, 
+                priority, due_date, created_at, claimed_at, completed_at, completed_by, outcome, updated_at 
+            FROM bpm_process_tasks WHERE id = ?
+        "#)
         .bind(task_id.to_string())
         .fetch_optional(pool)
         .await?;
 
         row.map(|r| ProcessTask {
-            id: r.0.parse().unwrap_or_default(),
-            process_instance_id: r.1.parse().unwrap_or_default(),
-            process_definition_id: r.2.parse().unwrap_or_default(),
-            node_id: r.3,
-            name: r.4,
-            task_type: r.5,
-            status: r.6,
-            assignee_id: r.7.and_then(|s| s.parse().ok()),
-            candidate_users: r.8,
-            candidate_groups: r.9,
-            form_key: r.10,
-            form_data: r.11,
-            variables: r.12,
-            priority: r.13,
-            due_date: r.14.and_then(|s| s.parse().ok()),
-            created_at: r.15.parse().unwrap_or_default(),
-            claimed_at: r.16.and_then(|s| s.parse().ok()),
-            completed_at: r.17.and_then(|s| s.parse().ok()),
-            completed_by: r.18.and_then(|s| s.parse().ok()),
-            outcome: r.19,
-            updated_at: r.20.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            process_instance_id: r.get::<String, _>("process_instance_id").parse().unwrap_or_default(),
+            process_definition_id: r.get::<String, _>("process_definition_id").parse().unwrap_or_default(),
+            node_id: r.get("node_id"),
+            name: r.get("name"),
+            task_type: r.get::<String, _>("task_type"),
+            status: r.get::<String, _>("status"),
+            assignee_id: r.get::<Option<String>, _>("assignee_id").and_then(|s| s.parse().ok()),
+            candidate_users: r.get::<Option<String>, _>("candidate_users").and_then(|s| serde_json::from_str(&s).ok()),
+            candidate_groups: r.get::<Option<String>, _>("candidate_groups").and_then(|s| serde_json::from_str(&s).ok()),
+            form_key: r.get("form_key"),
+            form_data: r.get::<Option<String>, _>("form_data").and_then(|s| serde_json::from_str(&s).ok()),
+            variables: r.get::<Option<String>, _>("variables").and_then(|s| serde_json::from_str(&s).ok()),
+            priority: r.get::<i32, _>("priority"),
+            due_date: r.get::<Option<String>, _>("due_date").and_then(|s| s.parse().ok()),
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            claimed_at: r.get::<Option<String>, _>("claimed_at").and_then(|s| s.parse().ok()),
+            completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| s.parse().ok()),
+            completed_by: r.get::<Option<String>, _>("completed_by").and_then(|s| s.parse().ok()),
+            outcome: r.get("outcome"),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }).ok_or_else(|| anyhow::anyhow!("Task not found").into())
     }
 
     pub async fn get_user_tasks(&self, pool: &SqlitePool, user_id: Uuid) -> Result<Vec<ProcessTask>> {
-        let rows = sqlx::query_as::<_, (String, String, String, String, String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, i32, Option<String>, String, Option<String>, Option<String>, Option<String>, Option<String>, String)>(
-            "SELECT id, process_instance_id, process_definition_id, node_id, name, task_type, status, assignee_id, candidate_users, candidate_groups, form_key, form_data, variables, priority, due_date, created_at, claimed_at, completed_at, completed_by, outcome, updated_at FROM bpm_process_tasks WHERE (assignee_id = ? OR candidate_users LIKE ?) AND status IN ('Created', 'Assigned', 'InProgress') ORDER BY priority DESC, created_at ASC"
-        )
+        let rows = sqlx::query(r#"
+            SELECT id, process_instance_id, process_definition_id, node_id, name, task_type, status, 
+                assignee_id, candidate_users, candidate_groups, form_key, form_data, variables, 
+                priority, due_date, created_at, claimed_at, completed_at, completed_by, outcome, updated_at 
+            FROM bpm_process_tasks 
+            WHERE (assignee_id = ? OR candidate_users LIKE ?) AND status IN ('Created', 'Assigned', 'InProgress') 
+            ORDER BY priority DESC, created_at ASC
+        "#)
         .bind(user_id.to_string())
         .bind(format!("%{}%", user_id))
         .fetch_all(pool)
         .await?;
 
         Ok(rows.into_iter().map(|r| ProcessTask {
-            id: r.0.parse().unwrap_or_default(),
-            process_instance_id: r.1.parse().unwrap_or_default(),
-            process_definition_id: r.2.parse().unwrap_or_default(),
-            node_id: r.3,
-            name: r.4,
-            task_type: r.5,
-            status: r.6,
-            assignee_id: r.7.and_then(|s| s.parse().ok()),
-            candidate_users: r.8,
-            candidate_groups: r.9,
-            form_key: r.10,
-            form_data: r.11,
-            variables: r.12,
-            priority: r.13,
-            due_date: r.14.and_then(|s| s.parse().ok()),
-            created_at: r.15.parse().unwrap_or_default(),
-            claimed_at: r.16.and_then(|s| s.parse().ok()),
-            completed_at: r.17.and_then(|s| s.parse().ok()),
-            completed_by: r.18.and_then(|s| s.parse().ok()),
-            outcome: r.19,
-            updated_at: r.20.parse().unwrap_or_default(),
+            id: r.get::<String, _>("id").parse().unwrap_or_default(),
+            process_instance_id: r.get::<String, _>("process_instance_id").parse().unwrap_or_default(),
+            process_definition_id: r.get::<String, _>("process_definition_id").parse().unwrap_or_default(),
+            node_id: r.get("node_id"),
+            name: r.get("name"),
+            task_type: r.get::<String, _>("task_type"),
+            status: r.get::<String, _>("status"),
+            assignee_id: r.get::<Option<String>, _>("assignee_id").and_then(|s| s.parse().ok()),
+            candidate_users: r.get::<Option<String>, _>("candidate_users").and_then(|s| serde_json::from_str(&s).ok()),
+            candidate_groups: r.get::<Option<String>, _>("candidate_groups").and_then(|s| serde_json::from_str(&s).ok()),
+            form_key: r.get("form_key"),
+            form_data: r.get::<Option<String>, _>("form_data").and_then(|s| serde_json::from_str(&s).ok()),
+            variables: r.get::<Option<String>, _>("variables").and_then(|s| serde_json::from_str(&s).ok()),
+            priority: r.get::<i32, _>("priority"),
+            due_date: r.get::<Option<String>, _>("due_date").and_then(|s| s.parse().ok()),
+            created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+            claimed_at: r.get::<Option<String>, _>("claimed_at").and_then(|s| s.parse().ok()),
+            completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| s.parse().ok()),
+            completed_by: r.get::<Option<String>, _>("completed_by").and_then(|s| s.parse().ok()),
+            outcome: r.get("outcome"),
+            updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
         }).collect())
     }
 

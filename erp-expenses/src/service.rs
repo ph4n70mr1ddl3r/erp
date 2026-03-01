@@ -1,4 +1,3 @@
-use crate::models::*;
 use crate::repository::SqliteExpensesRepository;
 
 pub struct ExpensesService {

@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{Pagination, Money, Currency};
-use erp_projects::{ProjectService, TimesheetService, Project, ProjectTask, ProjectMilestone, ProjectStatus, TaskStatus, MilestoneStatus, Timesheet, TimesheetEntry};
+use erp_projects::{ProjectService, TimesheetService, Project, ProjectTask, ProjectMilestone, ProjectStatus, TaskStatus, MilestoneStatus, Timesheet, TimesheetEntry, BillingStatus};
 
 #[derive(Deserialize)]
 pub struct CreateProjectRequest {
@@ -91,7 +91,7 @@ impl From<Project> for ProjectResponse {
             name: p.name,
             description: p.description,
             customer_id: p.customer_id.map(|id| id.to_string()),
-            project_manager_id: p.project_manager_id.map(|id| id.to_string()),
+            project_manager_id: p.project_manager.map(|id| id.to_string()),
             status: format!("{:?}", p.status),
             start_date: p.start_date.to_rfc3339(),
             end_date: p.end_date.map(|d| d.to_rfc3339()),
@@ -119,7 +119,7 @@ pub async fn create_project(
         name: req.name,
         description: req.description,
         customer_id: req.customer_id.and_then(|id| Uuid::parse_str(&id).ok()),
-        project_manager_id: req.project_manager_id.and_then(|id| Uuid::parse_str(&id).ok()),
+        project_manager: req.project_manager_id.and_then(|id| Uuid::parse_str(&id).ok()),
         status: ProjectStatus::Active,
         start_date: chrono::DateTime::parse_from_rfc3339(&req.start_date)
             .map(|d| d.with_timezone(&Utc))
@@ -188,7 +188,7 @@ impl From<ProjectTask> for TaskResponse {
             assigned_to: t.assigned_to.map(|id| id.to_string()),
             status: format!("{:?}", t.status),
             start_date: t.start_date.map(|d| d.to_rfc3339()),
-            due_date: t.due_date.map(|d| d.to_rfc3339()),
+            due_date: t.end_date.map(|d| d.to_rfc3339()),
             estimated_hours: t.estimated_hours,
             actual_hours: t.actual_hours,
             percent_complete: t.percent_complete,
@@ -202,7 +202,7 @@ pub async fn list_tasks(
 ) -> ApiResult<Json<Vec<TaskResponse>>> {
     let service = ProjectService::new();
     let project_id = Uuid::parse_str(&project_id).map_err(|_| erp_core::Error::validation("Invalid project id"))?;
-    let tasks = service.task_repo.find_by_project(&state.pool, project_id).await?;
+    let tasks = service.list_tasks_by_project(&state.pool, project_id).await?;
     Ok(Json(tasks.into_iter().map(|t| t.into()).collect()))
 }
 
@@ -221,7 +221,7 @@ pub async fn create_task(
         status: TaskStatus::NotStarted,
         start_date: chrono::DateTime::parse_from_rfc3339(&req.start_date)
             .map(|d| d.with_timezone(&Utc)).ok(),
-        due_date: req.due_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
+        end_date: req.due_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
             .map(|d| d.with_timezone(&Utc)),
         estimated_hours: req.estimated_hours,
         actual_hours: 0.0,
@@ -274,7 +274,7 @@ pub async fn list_milestones(
 ) -> ApiResult<Json<Vec<MilestoneResponse>>> {
     let service = ProjectService::new();
     let project_id = Uuid::parse_str(&project_id).map_err(|_| erp_core::Error::validation("Invalid project id"))?;
-    let milestones = service.milestone_repo.find_by_project(&state.pool, project_id).await?;
+    let milestones = service.list_milestones_by_project(&state.pool, project_id).await?;
     Ok(Json(milestones.into_iter().map(|m| m.into()).collect()))
 }
 
@@ -293,7 +293,8 @@ pub async fn create_milestone(
             .map(|d| d.with_timezone(&Utc)).ok(),
         actual_date: None,
         status: MilestoneStatus::Planned,
-        billing_amount: req.billing_amount,
+        billing_amount: req.billing_amount.unwrap_or(0),
+        billing_status: BillingStatus::NotBilled,
     };
     let milestone = service.add_milestone(&state.pool, milestone).await?;
     Ok(Json(milestone.into()))
@@ -361,6 +362,7 @@ pub async fn create_timesheet(
             .map(|d| d.with_timezone(&Utc))
             .unwrap_or_else(|_| Utc::now()),
         total_hours: 0.0,
+        overtime_hours: 0.0,
         status: erp_projects::TimesheetStatus::Draft,
         submitted_at: None,
         approved_at: None,

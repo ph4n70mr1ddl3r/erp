@@ -662,9 +662,8 @@ pub async fn list_warranty_extensions(
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<ApiResponse<Vec<WarrantyExtensionResponse>>>> {
     let repo = SqliteWarrantyRepository::new();
-    let svc = WarrantyService::new(repo);
     
-    let extensions = svc.repo.list_extensions(id).await.map_err(|e| anyhow::anyhow!(e))?;
+    let extensions = repo.list_extensions(id).await.map_err(|e| anyhow::anyhow!(e))?;
     let items: Vec<WarrantyExtensionResponse> = extensions.into_iter().map(WarrantyExtensionResponse::from).collect();
     
     Ok(Json(ApiResponse { success: true, data: items }))

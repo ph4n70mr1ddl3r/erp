@@ -119,7 +119,7 @@ pub async fn get_template(
 ) -> ApiResult<Json<serde_json::Value>> {
     let service = erp_templates::TemplateService::new();
     let template = service.get(&state.pool, id).await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Template not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Template not found".into(.into())))?;
     
     Ok(Json(serde_json::json!({
         "id": template.base.id,
@@ -149,10 +149,10 @@ pub async fn render_template(
     } else if let Some(code) = req.template_code.as_ref() {
         service.get_by_code(&state.pool, code).await?
     } else {
-        return Err(crate::error::ApiError::BadRequest("Either template_id or template_code is required".into()));
+        return Err(erp_core::Error::validation("Either template_id or template_code is required".into()));
     };
     
-    let template = template.ok_or_else(|| crate::error::ApiError::NotFound("Template not found".into()))?;
+    let template = template.ok_or_else(|| erp_core::Error::NotFound("Template not found".into(.into())))?;
     let rendered = service.render(&template, &req.variables)?;
     
     Ok(Json(RenderedTemplateResponse {
@@ -238,7 +238,7 @@ pub async fn render_email_template(
 ) -> ApiResult<Json<serde_json::Value>> {
     let service = erp_templates::EmailTemplateService::new();
     let template = service.get(&state.pool, id).await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Email template not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Email template not found".into(.into())))?;
     
     let rendered = service.render(&template, &variables)?;
     

@@ -164,7 +164,7 @@ impl TemplateService {
     pub fn extract_variables(&self, template_body: &str) -> Vec<String> {
         let re = Regex::new(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)\s*\}\}").unwrap();
         re.captures_iter(template_body)
-            .filter_map(|cap| cap.get(1).map(|m| m.as_string().to_string()))
+            .filter_map(|cap| cap.get(1).map(|m| m.as_str().to_string()))
             .collect()
     }
 }

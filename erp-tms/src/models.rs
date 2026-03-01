@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
@@ -52,7 +53,7 @@ pub enum VehicleStatus {
     OutOfService,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Vehicle {
     pub id: Uuid,
     pub vehicle_number: String,
@@ -76,7 +77,7 @@ pub struct Vehicle {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Driver {
     pub id: Uuid,
     pub employee_id: Option<Uuid>,
@@ -98,7 +99,7 @@ pub struct Driver {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct CarrierContract {
     pub id: Uuid,
     pub carrier_id: Uuid,
@@ -116,7 +117,7 @@ pub struct CarrierContract {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct FreightRate {
     pub id: Uuid,
     pub contract_id: Uuid,
@@ -136,7 +137,7 @@ pub struct FreightRate {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Load {
     pub id: Uuid,
     pub load_number: String,
@@ -179,7 +180,7 @@ pub struct Load {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct LoadStop {
     pub id: Uuid,
     pub load_id: Uuid,
@@ -202,7 +203,7 @@ pub struct LoadStop {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct LoadItem {
     pub id: Uuid,
     pub load_id: Uuid,
@@ -217,7 +218,7 @@ pub struct LoadItem {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Route {
     pub id: Uuid,
     pub route_number: String,
@@ -239,7 +240,7 @@ pub struct Route {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct RouteStop {
     pub id: Uuid,
     pub route_id: Uuid,
@@ -262,7 +263,7 @@ pub struct RouteStop {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct FreightInvoice {
     pub id: Uuid,
     pub invoice_number: String,
@@ -287,7 +288,7 @@ pub struct FreightInvoice {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct FreightInvoiceLine {
     pub id: Uuid,
     pub invoice_id: Uuid,
@@ -304,7 +305,7 @@ pub struct FreightInvoiceLine {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct FuelPurchase {
     pub id: Uuid,
     pub vehicle_id: Option<Uuid>,
@@ -323,7 +324,7 @@ pub struct FuelPurchase {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct AccessorialCharge {
     pub id: Uuid,
     pub code: String,

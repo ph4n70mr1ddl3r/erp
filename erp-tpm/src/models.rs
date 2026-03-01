@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
@@ -12,6 +13,33 @@ pub enum PromotionStatus {
     Cancelled,
 }
 
+impl FromStr for PromotionStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Draft" => Ok(Self::Draft),
+            "Planned" => Ok(Self::Planned),
+            "Active" => Ok(Self::Active),
+            "Completed" => Ok(Self::Completed),
+            "Cancelled" => Ok(Self::Cancelled),
+            _ => Ok(Self::Draft),
+        }
+    }
+}
+
+impl ToString for PromotionStatus {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Draft => "Draft".to_string(),
+            Self::Planned => "Planned".to_string(),
+            Self::Active => "Active".to_string(),
+            Self::Completed => "Completed".to_string(),
+            Self::Cancelled => "Cancelled".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum RebateStatus {
@@ -22,6 +50,33 @@ pub enum RebateStatus {
     Cancelled,
 }
 
+impl FromStr for RebateStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Pending" => Ok(Self::Pending),
+            "Approved" => Ok(Self::Approved),
+            "Paid" => Ok(Self::Paid),
+            "PartiallyPaid" => Ok(Self::PartiallyPaid),
+            "Cancelled" => Ok(Self::Cancelled),
+            _ => Ok(Self::Pending),
+        }
+    }
+}
+
+impl ToString for RebateStatus {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Pending => "Pending".to_string(),
+            Self::Approved => "Approved".to_string(),
+            Self::Paid => "Paid".to_string(),
+            Self::PartiallyPaid => "PartiallyPaid".to_string(),
+            Self::Cancelled => "Cancelled".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum ClaimStatus {
@@ -30,6 +85,33 @@ pub enum ClaimStatus {
     Approved,
     Rejected,
     Paid,
+}
+
+impl FromStr for ClaimStatus {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Submitted" => Ok(Self::Submitted),
+            "UnderReview" => Ok(Self::UnderReview),
+            "Approved" => Ok(Self::Approved),
+            "Rejected" => Ok(Self::Rejected),
+            "Paid" => Ok(Self::Paid),
+            _ => Ok(Self::Submitted),
+        }
+    }
+}
+
+impl ToString for ClaimStatus {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Submitted => "Submitted".to_string(),
+            Self::UnderReview => "UnderReview".to_string(),
+            Self::Approved => "Approved".to_string(),
+            Self::Rejected => "Rejected".to_string(),
+            Self::Paid => "Paid".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
@@ -44,6 +126,37 @@ pub enum PromotionType {
     GrowthIncentive,
 }
 
+impl FromStr for PromotionType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "OffInvoice" => Ok(Self::OffInvoice),
+            "OnInvoice" => Ok(Self::OnInvoice),
+            "BillBack" => Ok(Self::BillBack),
+            "ScanDown" => Ok(Self::ScanDown),
+            "LumpSum" => Ok(Self::LumpSum),
+            "VolumeIncentive" => Ok(Self::VolumeIncentive),
+            "GrowthIncentive" => Ok(Self::GrowthIncentive),
+            _ => Ok(Self::OffInvoice),
+        }
+    }
+}
+
+impl ToString for PromotionType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::OffInvoice => "OffInvoice".to_string(),
+            Self::OnInvoice => "OnInvoice".to_string(),
+            Self::BillBack => "BillBack".to_string(),
+            Self::ScanDown => "ScanDown".to_string(),
+            Self::LumpSum => "LumpSum".to_string(),
+            Self::VolumeIncentive => "VolumeIncentive".to_string(),
+            Self::GrowthIncentive => "GrowthIncentive".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum FundType {
@@ -53,6 +166,35 @@ pub enum FundType {
     Sampling,
     TradeShow,
     Other,
+}
+
+impl FromStr for FundType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "MarketingDevelopment" => Ok(Self::MarketingDevelopment),
+            "CooperativeAdvertising" => Ok(Self::CooperativeAdvertising),
+            "Display" => Ok(Self::Display),
+            "Sampling" => Ok(Self::Sampling),
+            "TradeShow" => Ok(Self::TradeShow),
+            "Other" => Ok(Self::Other),
+            _ => Ok(Self::Other),
+        }
+    }
+}
+
+impl ToString for FundType {
+    fn to_string(&self) -> String {
+        match self {
+            Self::MarketingDevelopment => "MarketingDevelopment".to_string(),
+            Self::CooperativeAdvertising => "CooperativeAdvertising".to_string(),
+            Self::Display => "Display".to_string(),
+            Self::Sampling => "Sampling".to_string(),
+            Self::TradeShow => "TradeShow".to_string(),
+            Self::Other => "Other".to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -7,7 +7,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use crate::db::AppState;
-use crate::handlers::ApiResult;
+use crate::error::ApiResult;
 use erp_fraud::{FraudService, CreateAlertRequest, ReviewAlertRequest, FraudRule, FraudCase, CaseResolution, Evidence, EvidenceType};
 
 #[derive(Deserialize)]

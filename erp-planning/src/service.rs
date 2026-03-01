@@ -1,4 +1,3 @@
-use crate::models::*;
 use crate::repository::SqlitePlanningRepository;
 
 pub struct PlanningService {

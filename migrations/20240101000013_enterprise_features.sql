@@ -53,13 +53,23 @@ CREATE TABLE IF NOT EXISTS bank_transactions (
 CREATE TABLE IF NOT EXISTS reconciliation_rules (
     id TEXT PRIMARY KEY,
     bank_account_id TEXT NOT NULL,
+    rule_name TEXT,
     rule_type TEXT NOT NULL,
+    description TEXT,
     match_field TEXT NOT NULL,
     match_pattern TEXT,
+    match_criteria TEXT,
     tolerance_days INTEGER DEFAULT 0,
     tolerance_amount INTEGER DEFAULT 0,
+    tolerance_type TEXT,
+    tolerance_value REAL,
+    date_tolerance_days INTEGER,
+    reference_patterns TEXT,
     auto_match INTEGER DEFAULT 0,
-    created_at TEXT NOT NULL
+    priority INTEGER,
+    status TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT
 );
 
 -- Cash Flow Management
@@ -725,15 +735,28 @@ CREATE TABLE IF NOT EXISTS maintenance_schedules (
     id TEXT PRIMARY KEY,
     schedule_number TEXT NOT NULL UNIQUE,
     equipment_id TEXT NOT NULL,
+    asset_id TEXT,
     maintenance_type TEXT NOT NULL,
     frequency_type TEXT NOT NULL,
     frequency_value INTEGER NOT NULL,
     last_maintenance TEXT,
     next_maintenance TEXT NOT NULL,
+    scheduled_date TEXT,
     estimated_duration INTEGER,
+    estimated_duration_hours REAL,
+    estimated_cost INTEGER,
+    currency TEXT,
+    priority TEXT,
+    prediction_id TEXT,
+    description TEXT,
+    tasks TEXT,
+    parts_required TEXT,
     assigned_to TEXT,
     status TEXT DEFAULT 'Active',
+    completed_date TEXT,
+    actual_cost INTEGER,
     created_at TEXT NOT NULL,
+    updated_at TEXT,
     FOREIGN KEY (equipment_id) REFERENCES equipment(id)
 );
 

@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_enterprise::{ArchivalService, ArchiveRequest, CreateRetentionPolicyRequest, ArchivedRecord, DataRetentionPolicy, ArchiveStats};
-use erp_auth::AuthUser;
+use crate::handlers::auth::AuthUser;
 use uuid::Uuid;
 
 pub async fn list_retention_policies(

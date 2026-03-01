@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use erp_core::error::{Error, Result};
-use erp_core::models::{BaseEntity, Status};
+use erp_core::models::BaseEntity;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -29,7 +29,7 @@ impl ArticleService {
 
     pub async fn create_article(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         title: String,
         content: String,
         article_type: ArticleType,
@@ -74,15 +74,15 @@ impl ArticleService {
         self.article_repo.create(&article).await
     }
 
-    pub async fn get_article(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<KnowledgeArticle>> {
+    pub async fn get_article(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<KnowledgeArticle>> {
         self.article_repo.find_by_id(id).await
     }
 
-    pub async fn get_article_by_slug(&self, pool: &SqlitePool, slug: &str) -> Result<Option<KnowledgeArticle>> {
+    pub async fn get_article_by_slug(&self, _pool: &SqlitePool, slug: &str) -> Result<Option<KnowledgeArticle>> {
         self.article_repo.find_by_slug(slug).await
     }
 
-    pub async fn publish_article(&self, pool: &SqlitePool, id: Uuid) -> Result<KnowledgeArticle> {
+    pub async fn publish_article(&self, _pool: &SqlitePool, id: Uuid) -> Result<KnowledgeArticle> {
         let mut article = self.article_repo.find_by_id(id).await?
             .ok_or(Error::not_found("article", &id.to_string()))?;
         if article.status != ArticleStatus::Draft && article.status != ArticleStatus::PendingReview {
@@ -93,27 +93,27 @@ impl ArticleService {
         self.article_repo.update(&article).await
     }
 
-    pub async fn archive_article(&self, pool: &SqlitePool, id: Uuid) -> Result<KnowledgeArticle> {
+    pub async fn archive_article(&self, _pool: &SqlitePool, id: Uuid) -> Result<KnowledgeArticle> {
         let mut article = self.article_repo.find_by_id(id).await?
             .ok_or(Error::not_found("article", &id.to_string()))?;
         article.status = ArticleStatus::Archived;
         self.article_repo.update(&article).await
     }
 
-    pub async fn update_article(&self, pool: &SqlitePool, article: KnowledgeArticle) -> Result<KnowledgeArticle> {
+    pub async fn update_article(&self, _pool: &SqlitePool, article: KnowledgeArticle) -> Result<KnowledgeArticle> {
         self.article_repo.update(&article).await
     }
 
     pub async fn search_articles(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         query: &str,
         filters: SearchFilters,
     ) -> Result<Vec<KnowledgeArticle>> {
         self.article_repo.search(query, filters).await
     }
 
-    pub async fn record_view(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    pub async fn record_view(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
         self.article_repo.increment_view_count(id).await
     }
 }
@@ -150,11 +150,11 @@ impl ArticleVersionService {
         Ok(version)
     }
 
-    pub async fn get_version_history(&self, article_id: Uuid) -> Result<Vec<ArticleVersion>> {
+    pub async fn get_version_history(&self, _article_id: Uuid) -> Result<Vec<ArticleVersion>> {
         Ok(Vec::new())
     }
 
-    pub async fn restore_version(&self, article_id: Uuid, version: i32) -> Result<KnowledgeArticle> {
+    pub async fn restore_version(&self, _article_id: Uuid, version: i32) -> Result<KnowledgeArticle> {
         Ok(KnowledgeArticle {
             base: BaseEntity::new(),
             title: String::new(),
@@ -219,7 +219,7 @@ impl ArticleFeedbackService {
         Ok(feedback)
     }
 
-    pub async fn get_article_feedback(&self, article_id: Uuid) -> Result<Vec<ArticleFeedback>> {
+    pub async fn get_article_feedback(&self, _article_id: Uuid) -> Result<Vec<ArticleFeedback>> {
         Ok(Vec::new())
     }
 
@@ -262,7 +262,7 @@ impl KnowledgeSearchService {
             results_count: 0,
             clicked_article_id: None,
             searched_at: Utc::now(),
-            filters: serde_json::to_value(&filters)?,
+            filters: serde_json::to_value(&filters).map_err(|e| Error::internal(format!("Failed to serialize filters: {}", e)))?,
         };
         Ok(SearchResult {
             search,
@@ -271,7 +271,7 @@ impl KnowledgeSearchService {
         })
     }
 
-    pub async fn record_click(&self, search_id: Uuid, article_id: Uuid) -> Result<()> {
+    pub async fn record_click(&self, _search_id: Uuid, _article_id: Uuid) -> Result<()> {
         Ok(())
     }
 
@@ -391,7 +391,7 @@ impl ArticleWorkflowService {
         Ok(workflow)
     }
 
-    pub async fn approve_review(&self, workflow_id: Uuid) -> Result<ArticleWorkflow> {
+    pub async fn approve_review(&self, _workflow_id: Uuid) -> Result<ArticleWorkflow> {
         Ok(ArticleWorkflow {
             base: BaseEntity::new(),
             article_id: Uuid::nil(),
@@ -406,7 +406,7 @@ impl ArticleWorkflowService {
         })
     }
 
-    pub async fn reject_review(&self, workflow_id: Uuid, reason: String) -> Result<ArticleWorkflow> {
+    pub async fn reject_review(&self, _workflow_id: Uuid, _reason: String) -> Result<ArticleWorkflow> {
         Ok(ArticleWorkflow {
             base: BaseEntity::new(),
             article_id: Uuid::nil(),
@@ -449,11 +449,11 @@ impl KnowledgeAnalyticsService {
         Ok(analytics)
     }
 
-    pub async fn get_trending_articles(&self, days: i32) -> Result<Vec<TopArticle>> {
+    pub async fn get_trending_articles(&self, _days: i32) -> Result<Vec<TopArticle>> {
         Ok(Vec::new())
     }
 
-    pub async fn get_search_trends(&self, days: i32) -> Result<Vec<TopSearch>> {
+    pub async fn get_search_trends(&self, _days: i32) -> Result<Vec<TopSearch>> {
         Ok(Vec::new())
     }
 
@@ -507,7 +507,7 @@ impl ArticleTranslationService {
 
     pub async fn complete_translation(
         &self,
-        translation_id: Uuid,
+        _translation_id: Uuid,
         title: String,
         content: String,
         translated_by: Uuid,
@@ -561,6 +561,7 @@ impl KnowledgeTemplateService {
         let mut content = template.template_content.clone();
         for placeholder in &template.placeholders {
             let value = values.get(placeholder.name.as_str())
+                .copied()
                 .or(placeholder.default_value.as_deref())
                 .unwrap_or("");
             content = content.replace(&format!("{{{{{}}}}}", placeholder.name), value);

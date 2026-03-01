@@ -74,6 +74,63 @@ pub struct WebhookEndpoint {
     pub updated_at: DateTime<Utc>,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookEndpoint {
+    fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> sqlx::Result<Self> {
+        use sqlx::Row;
+        
+        let events_json: String = row.try_get("events")?;
+        let events: Vec<WebhookEventType> = serde_json::from_str(&events_json)
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        
+        let headers: Option<String> = row.try_get("headers")?;
+        let headers: Option<serde_json::Value> = headers
+            .map(|h| serde_json::from_str(&h))
+            .transpose()
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        
+        let auth_json: Option<String> = row.try_get("authentication")?;
+        let authentication: Option<WebhookAuth> = auth_json
+            .map(|a| serde_json::from_str(&a))
+            .transpose()
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        
+        let retry_json: String = row.try_get("retry_policy")?;
+        let retry_policy: RetryPolicy = serde_json::from_str(&retry_json)
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        
+        let base = BaseEntity {
+            id: row.try_get("id")?,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("updated_at")?,
+            created_by: None,
+            updated_by: None,
+        };
+        
+        Ok(Self {
+            base,
+            name: row.try_get("name")?,
+            description: row.try_get("description")?,
+            url: row.try_get("url")?,
+            secret: row.try_get("secret")?,
+            events,
+            headers,
+            authentication,
+            timeout_seconds: row.try_get("timeout_seconds")?,
+            retry_policy,
+            status: row.try_get("status")?,
+            created_by: row.try_get("created_by")?,
+            last_triggered_at: row.try_get("last_triggered_at")?,
+            last_success_at: row.try_get("last_success_at")?,
+            last_failure_at: row.try_get("last_failure_at")?,
+            total_triggers: row.try_get("total_triggers")?,
+            successful_triggers: row.try_get("successful_triggers")?,
+            failed_triggers: row.try_get("failed_triggers")?,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("updated_at")?,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WebhookAuth {
     pub auth_type: WebhookAuthType,
@@ -134,6 +191,53 @@ pub struct WebhookDelivery {
     pub created_at: DateTime<Utc>,
 }
 
+impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookDelivery {
+    fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> sqlx::Result<Self> {
+        use sqlx::Row;
+        
+        let headers: Option<String> = row.try_get("headers")?;
+        let headers: Option<serde_json::Value> = headers
+            .map(|h| serde_json::from_str(&h))
+            .transpose()
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        
+        let response_headers: Option<String> = row.try_get("response_headers")?;
+        let response_headers: Option<serde_json::Value> = response_headers
+            .map(|h| serde_json::from_str(&h))
+            .transpose()
+            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+        
+        let base = BaseEntity {
+            id: row.try_get("id")?,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("created_at")?, // Use created_at as updated_at since deliveries don't update
+            created_by: None,
+            updated_by: None,
+        };
+        
+        Ok(Self {
+            base,
+            endpoint_id: row.try_get("endpoint_id")?,
+            event_type: row.try_get("event_type")?,
+            event_id: row.try_get("event_id")?,
+            payload: serde_json::from_str(row.try_get::<&str, _>("payload")?)
+                .map_err(|e| sqlx::Error::Decode(Box::new(e)))?,
+            headers,
+            response_status: row.try_get("response_status")?,
+            response_body: row.try_get("response_body")?,
+            response_headers,
+            duration_ms: row.try_get("duration_ms")?,
+            attempt_number: row.try_get("attempt_number")?,
+            max_attempts: row.try_get("max_attempts")?,
+            next_retry_at: row.try_get("next_retry_at")?,
+            delivered_at: row.try_get("delivered_at")?,
+            status: row.try_get("status")?,
+            error_message: row.try_get("error_message")?,
+            created_at: row.try_get("created_at")?,
+        })
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "TEXT")]
 pub enum DeliveryStatus {
@@ -157,6 +261,34 @@ pub struct WebhookEvent {
     pub delivered: bool,
     pub delivery_count: i32,
     pub created_at: DateTime<Utc>,
+}
+
+impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookEvent {
+    fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> sqlx::Result<Self> {
+        use sqlx::Row;
+        
+        let base = BaseEntity {
+            id: row.try_get("id")?,
+            created_at: row.try_get("created_at")?,
+            updated_at: row.try_get("created_at")?, // Use created_at as updated_at since events don't update
+            created_by: None,
+            updated_by: None,
+        };
+        
+        Ok(Self {
+            base,
+            event_type: row.try_get("event_type")?,
+            source_entity_type: row.try_get("source_entity_type")?,
+            source_entity_id: row.try_get("source_entity_id")?,
+            payload: serde_json::from_str(row.try_get::<&str, _>("payload")?)
+                .map_err(|e| sqlx::Error::Decode(Box::new(e)))?,
+            triggered_by: row.try_get("triggered_by")?,
+            triggered_at: row.try_get("triggered_at")?,
+            delivered: row.try_get("delivered")?,
+            delivery_count: row.try_get("delivery_count")?,
+            created_at: row.try_get("created_at")?,
+        })
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -201,7 +333,7 @@ pub struct WebhookSignature {
 impl WebhookSignature {
     pub fn new(secret: &str, payload: &[u8]) -> Self {
         use hmac::{Hmac, Mac};
-        use sha2::{Digest, Sha256};
+        use sha2::Sha256;
 
         let timestamp = Utc::now().timestamp();
         let payload_with_timestamp = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));

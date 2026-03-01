@@ -32,7 +32,7 @@ impl CalendarEventRepository for SqliteCalendarEventRepository {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING *"#,
         )
-        .bind(event.base.id)
+        .bind(event.id)
         .bind(&event.title)
         .bind(&event.description)
         .bind(&event.location)
@@ -105,7 +105,7 @@ impl CalendarEventRepository for SqliteCalendarEventRepository {
             .bind(event.end_at)
             .bind(&event.status)
             .bind(now)
-            .bind(event.base.id)
+            .bind(event.id)
             .execute(pool)
             .await?;
         Ok(())
@@ -152,7 +152,7 @@ impl EventAttendeeRepository for SqliteEventAttendeeRepository {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING *"#,
         )
-        .bind(attendee.base.id)
+        .bind(attendee.id)
         .bind(attendee.event_id)
         .bind(attendee.user_id)
         .bind(&attendee.email)
@@ -229,7 +229,7 @@ impl CalendarRepository for SqliteCalendarRepository {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING *"#,
         )
-        .bind(calendar.base.id)
+        .bind(calendar.id)
         .bind(&calendar.name)
         .bind(&calendar.description)
         .bind(&calendar.color)
@@ -270,7 +270,7 @@ impl CalendarRepository for SqliteCalendarRepository {
             .bind(&calendar.description)
             .bind(&calendar.color)
             .bind(now)
-            .bind(calendar.base.id)
+            .bind(calendar.id)
             .execute(pool)
             .await?;
         Ok(())

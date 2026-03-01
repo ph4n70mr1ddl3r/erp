@@ -47,7 +47,7 @@ pub async fn create_api_key(
     let expires_at = req.expires_at.as_deref()
         .map(|s| chrono::DateTime::parse_from_rfc3339(s))
         .transpose()
-        .map_err(|e| crate::error::ApiError::BadRequest(format!("Invalid expires_at: {}", e)))?
+        .map_err(|e| erp_core::Error::validation(format!("Invalid expires_at: {}", e)))?
         .map(|dt| dt.with_timezone(&chrono::Utc));
     
     let service = erp_integration::APIKeyService::new();

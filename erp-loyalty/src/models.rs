@@ -45,7 +45,7 @@ pub struct LoyaltyProgram {
     pub program_type: ProgramType,
     pub points_name: String,
     pub earn_rate: f64,
-    earn_currency: String,
+    pub earn_currency: String,
     pub minimum_points_redemption: i64,
     pub points_expiry_months: Option<i32>,
     pub enrollment_bonus: i64,

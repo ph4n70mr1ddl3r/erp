@@ -1,7 +1,7 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use serde_json::Value;
-use erp_core::{Result, BaseEntity, Status};
+use erp_core::{Result, BaseEntity};
 use crate::models::*;
 use crate::repository::*;
 

@@ -2,6 +2,7 @@ use crate::models::*;
 use crate::repository::{PredictiveRepository, SqlitePredictiveRepository};
 use chrono::{NaiveDate, Utc};
 use erp_core::{BaseEntity, Result};
+use serde::Deserialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -188,7 +189,7 @@ impl PredictiveService {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct RegisterSensorRequest {
     pub asset_id: Uuid,
     pub name: String,
@@ -207,7 +208,7 @@ pub struct RegisterSensorRequest {
     pub alert_threshold_high: Option<f64>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct CreateModelRequest {
     pub name: String,
     pub description: Option<String>,
@@ -219,7 +220,7 @@ pub struct CreateModelRequest {
     pub retraining_frequency_days: Option<i32>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct PredictFailureRequest {
     pub asset_id: Uuid,
     pub model_id: Option<Uuid>,
@@ -235,7 +236,7 @@ pub struct PredictFailureRequest {
     pub currency: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ScheduleMaintenanceRequest {
     pub asset_id: Uuid,
     pub maintenance_type: MaintenanceStrategy,
@@ -251,7 +252,7 @@ pub struct ScheduleMaintenanceRequest {
     pub assigned_to: Option<Uuid>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct DetectAnomalyRequest {
     pub asset_id: Uuid,
     pub sensor_id: Option<Uuid>,

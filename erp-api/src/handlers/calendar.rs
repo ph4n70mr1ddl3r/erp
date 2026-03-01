@@ -54,7 +54,7 @@ pub struct EventResponse {
 impl From<CalendarEvent> for EventResponse {
     fn from(e: CalendarEvent) -> Self {
         Self {
-            id: e.base.id,
+            id: e.id,
             title: e.title,
             start_at: e.start_at,
             end_at: e.end_at,

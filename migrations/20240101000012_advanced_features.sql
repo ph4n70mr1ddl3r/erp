@@ -134,6 +134,8 @@ CREATE INDEX IF NOT EXISTS idx_opportunities_stage ON opportunities(stage);
 -- Demand Planning
 CREATE TABLE IF NOT EXISTS demand_forecasts (
     id TEXT PRIMARY KEY,
+    forecast_number TEXT,
+    name TEXT,
     product_id TEXT NOT NULL,
     warehouse_id TEXT,
     period_start TEXT NOT NULL,
@@ -141,7 +143,11 @@ CREATE TABLE IF NOT EXISTS demand_forecasts (
     forecast_quantity INTEGER NOT NULL,
     confidence_level INTEGER DEFAULT 80,
     method TEXT NOT NULL DEFAULT 'MovingAverage',
-    created_at TEXT NOT NULL
+    forecast_method TEXT,
+    status TEXT,
+    created_by TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS safety_stock (

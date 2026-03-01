@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -65,7 +65,7 @@ pub async fn get_promotion(
     let promo = erp_tpm::TPMService::new(erp_tpm::SqliteTPMRepository::new(state.pool.clone()))
         .get_promotion(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Promotion not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Promotion not found".into(.into())))?;
     Ok(Json(promo))
 }
 
@@ -106,7 +106,7 @@ pub async fn get_rebate_agreement(
     let agreement = erp_tpm::TPMService::new(erp_tpm::SqliteTPMRepository::new(state.pool.clone()))
         .get_rebate_agreement(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Rebate agreement not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Rebate agreement not found".into(.into())))?;
     Ok(Json(agreement))
 }
 

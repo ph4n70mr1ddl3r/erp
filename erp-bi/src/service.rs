@@ -1,8 +1,8 @@
-use sqlx::SqlitePool;
+use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 use chrono::Utc;
 use crate::models::*;
-use erp_core::Result;
+use erp_core::{BaseEntity, Result};
 
 pub struct BIService;
 
@@ -40,7 +40,7 @@ impl BIService {
         .await?;
 
         Ok(KPI {
-            id,
+            base: BaseEntity::new(),
             name,
             code,
             description: None,
@@ -55,13 +55,11 @@ impl BIService {
             unit: None,
             refresh_interval_seconds: 300,
             is_active: true,
-            created_at: now,
-            updated_at: now,
         })
     }
 
     pub async fn get_kpi(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<KPI>> {
-        let row = sqlx::query_as::<_, (String, String, String, Option<String>, String, String, String, String, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<String>, i32, bool, String, String)>(
+        let row = sqlx::query(
             "SELECT id, name, code, description, category, kpi_type, aggregation, data_source, query, target_value, warning_threshold, critical_threshold, unit, refresh_interval_seconds, is_active, created_at, updated_at FROM bi_kpis WHERE id = ?"
         )
         .bind(id.to_string())
@@ -69,36 +67,40 @@ impl BIService {
         .await?;
 
         Ok(row.map(|r| KPI {
-            id: r.0.parse().unwrap_or_default(),
-            name: r.1,
-            code: r.2,
-            description: r.3,
-            category: r.4,
-            kpi_type: r.5,
-            aggregation: r.6,
-            data_source: r.7,
-            query: r.8,
-            target_value: r.9,
-            warning_threshold: r.10,
-            critical_threshold: r.11,
-            unit: r.12,
-            refresh_interval_seconds: r.13,
-            is_active: r.14,
-            created_at: r.15.parse().unwrap_or_default(),
-            updated_at: r.16.parse().unwrap_or_default(),
+            base: BaseEntity {
+                id: r.get::<String, _>("id").parse().unwrap_or_default(),
+                created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+                updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
+                created_by: None,
+                updated_by: None,
+            },
+            name: r.get("name"),
+            code: r.get("code"),
+            description: r.get("description"),
+            category: r.get("category"),
+            kpi_type: r.get("kpi_type"),
+            aggregation: r.get("aggregation"),
+            data_source: r.get("data_source"),
+            query: r.get("query"),
+            target_value: r.get("target_value"),
+            warning_threshold: r.get("warning_threshold"),
+            critical_threshold: r.get("critical_threshold"),
+            unit: r.get("unit"),
+            refresh_interval_seconds: r.get::<i32, _>("refresh_interval_seconds"),
+            is_active: r.get::<bool, _>("is_active"),
         }))
     }
 
     pub async fn list_kpis(&self, pool: &SqlitePool, category: Option<&str>) -> Result<Vec<KPI>> {
         let rows = if let Some(cat) = category {
-            sqlx::query_as::<_, (String, String, String, Option<String>, String, String, String, String, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<String>, i32, bool, String, String)>(
+            sqlx::query(
                 "SELECT id, name, code, description, category, kpi_type, aggregation, data_source, query, target_value, warning_threshold, critical_threshold, unit, refresh_interval_seconds, is_active, created_at, updated_at FROM bi_kpis WHERE category = ?"
             )
             .bind(cat)
             .fetch_all(pool)
             .await?
         } else {
-            sqlx::query_as::<_, (String, String, String, Option<String>, String, String, String, String, Option<String>, Option<f64>, Option<f64>, Option<f64>, Option<String>, i32, bool, String, String)>(
+            sqlx::query(
                 "SELECT id, name, code, description, category, kpi_type, aggregation, data_source, query, target_value, warning_threshold, critical_threshold, unit, refresh_interval_seconds, is_active, created_at, updated_at FROM bi_kpis"
             )
             .fetch_all(pool)
@@ -106,23 +108,27 @@ impl BIService {
         };
         
         Ok(rows.into_iter().map(|r| KPI {
-            id: r.0.parse().unwrap_or_default(),
-            name: r.1,
-            code: r.2,
-            description: r.3,
-            category: r.4,
-            kpi_type: r.5,
-            aggregation: r.6,
-            data_source: r.7,
-            query: r.8,
-            target_value: r.9,
-            warning_threshold: r.10,
-            critical_threshold: r.11,
-            unit: r.12,
-            refresh_interval_seconds: r.13,
-            is_active: r.14,
-            created_at: r.15.parse().unwrap_or_default(),
-            updated_at: r.16.parse().unwrap_or_default(),
+            base: BaseEntity {
+                id: r.get::<String, _>("id").parse().unwrap_or_default(),
+                created_at: r.get::<String, _>("created_at").parse().unwrap_or_default(),
+                updated_at: r.get::<String, _>("updated_at").parse().unwrap_or_default(),
+                created_by: None,
+                updated_by: None,
+            },
+            name: r.get("name"),
+            code: r.get("code"),
+            description: r.get("description"),
+            category: r.get("category"),
+            kpi_type: r.get("kpi_type"),
+            aggregation: r.get("aggregation"),
+            data_source: r.get("data_source"),
+            query: r.get("query"),
+            target_value: r.get("target_value"),
+            warning_threshold: r.get("warning_threshold"),
+            critical_threshold: r.get("critical_threshold"),
+            unit: r.get("unit"),
+            refresh_interval_seconds: r.get::<i32, _>("refresh_interval_seconds"),
+            is_active: r.get::<bool, _>("is_active"),
         }).collect())
     }
 

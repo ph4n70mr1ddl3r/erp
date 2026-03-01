@@ -116,6 +116,7 @@ async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"
 http-body-util = "0.1"
+rand = "0.8"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }

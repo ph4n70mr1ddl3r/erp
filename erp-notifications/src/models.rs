@@ -53,8 +53,9 @@ pub enum NotificationType {
     Update,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Notification {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub user_id: Uuid,
     pub notification_type: NotificationType,
@@ -84,8 +85,9 @@ pub struct Notification {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct NotificationPreference {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub user_id: Uuid,
     pub notification_type: NotificationType,
@@ -110,8 +112,9 @@ pub enum DigestFrequency {
     Weekly,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct NotificationTemplate {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,

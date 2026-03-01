@@ -1,4 +1,3 @@
-use crate::models::*;
 use crate::repository::SqliteTreasuryRepository;
 
 pub struct TreasuryService {

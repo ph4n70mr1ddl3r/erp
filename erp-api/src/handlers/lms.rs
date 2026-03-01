@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -65,7 +65,7 @@ pub async fn get_course(
         .repo
         .get_course(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Course not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Course not found".into(.into())))?;
     Ok(Json(course))
 }
 
@@ -177,7 +177,7 @@ pub async fn record_training(
     Ok(Json(record))
 }
 
-pub fn routes() -> axum::Router<crate::state::AppState> {
+pub fn routes() -> axum::Router<crate::db::AppState> {
     axum::Router::new()
         .route("/courses", axum::routing::get(list_courses).post(create_course))
         .route("/courses/:id", axum::routing::get(get_course))

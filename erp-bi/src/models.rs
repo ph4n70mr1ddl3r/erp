@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -25,7 +26,7 @@ pub enum AggregationType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KPI {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub name: String,
     pub code: String,
     pub description: Option<String>,
@@ -40,8 +41,6 @@ pub struct KPI {
     pub unit: Option<String>,
     pub refresh_interval_seconds: i32,
     pub is_active: bool,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]

@@ -33,8 +33,9 @@ pub enum TemplateFormat {
     CSV,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Template {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,
@@ -103,8 +104,9 @@ pub enum VariableType {
     Email,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct GeneratedDocument {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub template_id: Uuid,
     pub template_version: i32,
@@ -122,8 +124,9 @@ pub struct GeneratedDocument {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct EmailTemplate {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,

@@ -13,6 +13,21 @@ pub enum ServiceOrderStatus {
     Cancelled,
 }
 
+impl std::str::FromStr for ServiceOrderStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Scheduled" => Ok(ServiceOrderStatus::Scheduled),
+            "Dispatched" => Ok(ServiceOrderStatus::Dispatched),
+            "InProgress" => Ok(ServiceOrderStatus::InProgress),
+            "OnHold" => Ok(ServiceOrderStatus::OnHold),
+            "Completed" => Ok(ServiceOrderStatus::Completed),
+            "Cancelled" => Ok(ServiceOrderStatus::Cancelled),
+            _ => Ok(ServiceOrderStatus::Scheduled),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum TechnicianStatus {
@@ -23,6 +38,20 @@ pub enum TechnicianStatus {
     Traveling,
 }
 
+impl std::str::FromStr for TechnicianStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Available" => Ok(TechnicianStatus::Available),
+            "Busy" => Ok(TechnicianStatus::Busy),
+            "OnBreak" => Ok(TechnicianStatus::OnBreak),
+            "OffDuty" => Ok(TechnicianStatus::OffDuty),
+            "Traveling" => Ok(TechnicianStatus::Traveling),
+            _ => Ok(TechnicianStatus::Available),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum Priority {
@@ -31,6 +60,20 @@ pub enum Priority {
     High,
     Critical,
     Emergency,
+}
+
+impl std::str::FromStr for Priority {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Low" => Ok(Priority::Low),
+            "Medium" => Ok(Priority::Medium),
+            "High" => Ok(Priority::High),
+            "Critical" => Ok(Priority::Critical),
+            "Emergency" => Ok(Priority::Emergency),
+            _ => Ok(Priority::Medium),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
@@ -44,6 +87,61 @@ pub enum WorkType {
     Training,
     Consultation,
     Other,
+}
+
+impl std::str::FromStr for WorkType {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "installation" => Ok(WorkType::Installation),
+            "maintenance" => Ok(WorkType::Maintenance),
+            "repair" => Ok(WorkType::Repair),
+            "inspection" => Ok(WorkType::Inspection),
+            "calibration" => Ok(WorkType::Calibration),
+            "training" => Ok(WorkType::Training),
+            "consultation" => Ok(WorkType::Consultation),
+            _ => Ok(WorkType::Other),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum TaskStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum AppointmentStatus {
+    Scheduled,
+    Confirmed,
+    InProgress,
+    Completed,
+    Cancelled,
+    NoShow,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ContractStatus {
+    Draft,
+    Pending,
+    Active,
+    Expired,
+    Cancelled,
+    Suspended,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ContractType {
+    Standard,
+    Premium,
+    Basic,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,8 +210,8 @@ pub struct Technician {
     pub phone: String,
     pub email: Option<String>,
     pub status: TechnicianStatus,
-    pub skills: serde_json::Value,
-    pub certifications: serde_json::Value,
+    pub skills: String,
+    pub certifications: String,
     pub home_location_lat: Option<f64>,
     pub home_location_lng: Option<f64>,
     pub current_location_lat: Option<f64>,
@@ -134,7 +232,7 @@ pub struct Technician {
 pub struct TechnicianAvailability {
     pub id: Uuid,
     pub technician_id: Uuid,
-    pub date: DateTime<Utc>,
+    pub date: String,
     pub start_time: String,
     pub end_time: String,
     pub status: String,
@@ -150,7 +248,7 @@ pub struct ServiceTerritory {
     pub description: Option<String>,
     pub parent_territory_id: Option<Uuid>,
     pub boundary_type: String,
-    pub boundary_data: serde_json::Value,
+    pub boundary_data: String,
     pub manager_id: Option<Uuid>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
@@ -191,7 +289,7 @@ pub struct ServiceRoute {
     pub id: Uuid,
     pub route_number: String,
     pub technician_id: Uuid,
-    pub route_date: DateTime<Utc>,
+    pub route_date: String,
     pub status: String,
     pub total_appointments: i32,
     pub completed_appointments: i32,
@@ -208,10 +306,10 @@ pub struct ServiceRouteStop {
     pub route_id: Uuid,
     pub appointment_id: Uuid,
     pub stop_sequence: i32,
-    pub planned_arrival: DateTime<Utc>,
-    pub actual_arrival: Option<DateTime<Utc>>,
-    pub planned_departure: DateTime<Utc>,
-    pub actual_departure: Option<DateTime<Utc>>,
+    pub planned_arrival: String,
+    pub actual_arrival: Option<String>,
+    pub planned_departure: String,
+    pub actual_departure: Option<String>,
     pub travel_distance: f64,
     pub travel_time_minutes: i32,
     pub status: String,
@@ -293,6 +391,7 @@ pub struct ServiceChecklistItem {
     pub notes: Option<String>,
     pub completed: bool,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -324,8 +423,8 @@ pub struct DispatchRule {
     pub rule_name: String,
     pub description: Option<String>,
     pub priority: i32,
-    pub conditions: serde_json::Value,
-    pub actions: serde_json::Value,
+    pub conditions: String,
+    pub actions: String,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -338,7 +437,7 @@ pub struct TechnicianSkill {
     pub skill_name: String,
     pub category: String,
     pub description: Option<String>,
-    pub proficiency_levels: serde_json::Value,
+    pub proficiency_levels: String,
     pub created_at: DateTime<Utc>,
 }
 

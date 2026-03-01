@@ -1,8 +1,8 @@
 use crate::models::*;
 use crate::repository::EamRepository;
 use anyhow::Result;
-use chrono::{NaiveDate, Utc};
-use erp_core::BaseEntity;
+use chrono::Utc;
+use erp_core::{BaseEntity, Status};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 

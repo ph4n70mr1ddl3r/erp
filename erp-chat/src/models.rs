@@ -51,8 +51,9 @@ pub enum MembershipRole {
     Guest,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ChatChannel {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
@@ -75,8 +76,9 @@ pub struct ChatChannel {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ChatMessage {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub channel_id: Uuid,
     pub sender_id: Uuid,
@@ -86,6 +88,7 @@ pub struct ChatMessage {
     pub content: String,
     pub formatted_content: Option<String>,
     pub attachments: Option<serde_json::Value>,
+    #[sqlx(json)]
     pub mentions: Option<Vec<Uuid>>,
     pub reactions: Option<serde_json::Value>,
     pub reply_count: i32,
@@ -101,8 +104,9 @@ pub struct ChatMessage {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ChatMembership {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub channel_id: Uuid,
     pub user_id: Uuid,
@@ -123,8 +127,9 @@ pub struct ChatMembership {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct DirectMessage {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub sender_id: Uuid,
     pub recipient_id: Uuid,

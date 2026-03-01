@@ -62,7 +62,7 @@ pub async fn submit_job(
     let scheduled_at = req.scheduled_at.as_deref()
         .map(|s| chrono::DateTime::parse_from_rfc3339(s))
         .transpose()
-        .map_err(|e| crate::error::ApiError::BadRequest(format!("Invalid scheduled_at: {}", e)))?
+        .map_err(|e| erp_core::Error::validation(format!("Invalid scheduled_at: {}", e)))?
         .map(|dt| dt.with_timezone(&chrono::Utc));
     
     let service = erp_jobs::JobService::new();
@@ -127,7 +127,7 @@ pub async fn get_job(
 ) -> ApiResult<Json<JobResponse>> {
     let service = erp_jobs::JobService::new();
     let job = service.get(&state.pool, id).await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Job not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Job not found".into(.into())))?;
     
     Ok(Json(JobResponse {
         id: job.base.id,

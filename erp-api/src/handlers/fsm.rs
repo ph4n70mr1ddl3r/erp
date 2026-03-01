@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -66,7 +66,7 @@ pub async fn get_service_order(
     let order = erp_fsm::FSMService::new(erp_fsm::SqliteFSMRepository::new(state.pool.clone()))
         .get_service_order(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Service order not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Service order not found".into(.into())))?;
     Ok(Json(order))
 }
 

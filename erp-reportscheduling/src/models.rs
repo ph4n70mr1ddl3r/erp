@@ -59,8 +59,9 @@ pub enum ExecutionStatus {
     Timeout,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ReportSchedule {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
@@ -76,8 +77,11 @@ pub struct ReportSchedule {
     pub format: ReportFormat,
     pub delivery_method: DeliveryMethod,
     pub delivery_config: Option<serde_json::Value>,
+    #[sqlx(json)]
     pub recipients: Vec<String>,
+    #[sqlx(json)]
     pub cc_recipients: Option<Vec<String>>,
+    #[sqlx(json)]
     pub bcc_recipients: Option<Vec<String>>,
     pub email_subject: Option<String>,
     pub email_body: Option<String>,
@@ -90,9 +94,11 @@ pub struct ReportSchedule {
     pub retry_interval_minutes: i32,
     pub notify_on_success: bool,
     pub notify_on_failure: bool,
+    #[sqlx(json)]
     pub notification_recipients: Option<Vec<String>>,
     pub status: ScheduleStatus,
     pub priority: i32,
+    #[sqlx(json)]
     pub tags: Option<Vec<String>>,
     pub owner_id: Uuid,
     pub department_id: Option<Uuid>,
@@ -100,8 +106,9 @@ pub struct ReportSchedule {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ScheduleExecution {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub schedule_id: Uuid,
     pub execution_number: i64,

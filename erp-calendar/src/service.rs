@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use erp_core::BaseEntity;
+
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -34,7 +34,7 @@ impl CalendarEventService {
         calendar_id: Option<Uuid>,
     ) -> anyhow::Result<CalendarEvent> {
         let event = CalendarEvent {
-            base: BaseEntity::new(),
+            id: Uuid::new_v4(),
             title,
             description,
             location,
@@ -106,7 +106,7 @@ impl CalendarEventService {
         role: AttendeeRole,
     ) -> anyhow::Result<EventAttendee> {
         let attendee = EventAttendee {
-            base: BaseEntity::new(),
+            id: Uuid::new_v4(),
             event_id,
             user_id,
             email,
@@ -175,7 +175,7 @@ impl CalendarService {
         is_default: bool,
     ) -> anyhow::Result<Calendar> {
         let calendar = Calendar {
-            base: BaseEntity::new(),
+            id: Uuid::new_v4(),
             name,
             description,
             color,

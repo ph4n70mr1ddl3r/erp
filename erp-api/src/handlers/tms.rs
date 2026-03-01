@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::error::ApiResult;
-use crate::state::AppState;
+use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
 pub struct ListQuery {
@@ -57,7 +57,7 @@ pub async fn get_vehicle(
     let vehicle = erp_tms::TMSService::new(erp_tms::SqliteTMSRepository::new(state.pool.clone()))
         .get_vehicle(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Vehicle not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Vehicle not found".into(.into())))?;
     Ok(Json(vehicle))
 }
 
@@ -95,7 +95,7 @@ pub async fn get_driver(
     let driver = erp_tms::TMSService::new(erp_tms::SqliteTMSRepository::new(state.pool.clone()))
         .get_driver(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Driver not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Driver not found".into(.into())))?;
     Ok(Json(driver))
 }
 
@@ -133,7 +133,7 @@ pub async fn get_load(
     let load = erp_tms::TMSService::new(erp_tms::SqliteTMSRepository::new(state.pool.clone()))
         .get_load(id)
         .await?
-        .ok_or_else(|| crate::error::ApiError::NotFound("Load not found".into()))?;
+        .ok_or_else(|| erp_core::Error::NotFound("Load not found".into(.into())))?;
     Ok(Json(load))
 }
 

@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 use erp_core::error::{Error, Result};
-use erp_core::models::{BaseEntity, Status};
+use erp_core::models::BaseEntity;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -20,7 +20,7 @@ impl DataQualityRuleService {
 
     pub async fn create_rule(
         &self,
-        pool: &SqlitePool,
+        _pool: &SqlitePool,
         name: String,
         code: String,
         rule_type: RuleType,
@@ -56,15 +56,15 @@ impl DataQualityRuleService {
         self.rule_repo.create(&rule).await
     }
 
-    pub async fn get_rule(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<DataQualityRule>> {
+    pub async fn get_rule(&self, _pool: &SqlitePool, id: Uuid) -> Result<Option<DataQualityRule>> {
         self.rule_repo.find_by_id(id).await
     }
 
-    pub async fn get_rules_for_entity(&self, pool: &SqlitePool, entity: &str) -> Result<Vec<DataQualityRule>> {
+    pub async fn get_rules_for_entity(&self, _pool: &SqlitePool, entity: &str) -> Result<Vec<DataQualityRule>> {
         self.rule_repo.find_by_entity(entity).await
     }
 
-    pub async fn execute_rule(&self, pool: &SqlitePool, rule: &DataQualityRule, data: &[serde_json::Value]) -> Result<QualityScore> {
+    pub async fn execute_rule(&self, _pool: &SqlitePool, rule: &DataQualityRule, data: &[serde_json::Value]) -> Result<QualityScore> {
         let mut passed = 0i64;
         let mut failed = 0i64;
         let mut errors = Vec::new();

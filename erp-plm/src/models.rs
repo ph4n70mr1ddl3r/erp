@@ -14,6 +14,22 @@ pub enum ItemStatus {
     Superseded,
 }
 
+impl std::str::FromStr for ItemStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "draft" => Ok(ItemStatus::Draft),
+            "indesign" | "in_design" => Ok(ItemStatus::InDesign),
+            "inreview" | "in_review" => Ok(ItemStatus::InReview),
+            "approved" => Ok(ItemStatus::Approved),
+            "released" => Ok(ItemStatus::Released),
+            "obsolete" => Ok(ItemStatus::Obsolete),
+            "superseded" => Ok(ItemStatus::Superseded),
+            _ => Ok(ItemStatus::Draft),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum ChangeRequestStatus {
@@ -26,6 +42,22 @@ pub enum ChangeRequestStatus {
     Cancelled,
 }
 
+impl std::str::FromStr for ChangeRequestStatus {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "draft" => Ok(ChangeRequestStatus::Draft),
+            "submitted" => Ok(ChangeRequestStatus::Submitted),
+            "underreview" | "under_review" => Ok(ChangeRequestStatus::UnderReview),
+            "approved" => Ok(ChangeRequestStatus::Approved),
+            "implemented" => Ok(ChangeRequestStatus::Implemented),
+            "rejected" => Ok(ChangeRequestStatus::Rejected),
+            "cancelled" => Ok(ChangeRequestStatus::Cancelled),
+            _ => Ok(ChangeRequestStatus::Draft),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum ChangeRequestPriority {
@@ -34,6 +66,20 @@ pub enum ChangeRequestPriority {
     High,
     Critical,
     Emergency,
+}
+
+impl std::str::FromStr for ChangeRequestPriority {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "low" => Ok(ChangeRequestPriority::Low),
+            "medium" => Ok(ChangeRequestPriority::Medium),
+            "high" => Ok(ChangeRequestPriority::High),
+            "critical" => Ok(ChangeRequestPriority::Critical),
+            "emergency" => Ok(ChangeRequestPriority::Emergency),
+            _ => Ok(ChangeRequestPriority::Medium),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, sqlx::Type, PartialEq)]
@@ -47,6 +93,22 @@ pub enum DocumentType {
     Certificate,
     Manual,
     Other,
+}
+
+impl std::str::FromStr for DocumentType {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "drawing" => Ok(DocumentType::Drawing),
+            "specification" => Ok(DocumentType::Specification),
+            "procedure" => Ok(DocumentType::Procedure),
+            "workinstruction" | "work_instruction" => Ok(DocumentType::WorkInstruction),
+            "testreport" | "test_report" => Ok(DocumentType::TestReport),
+            "certificate" => Ok(DocumentType::Certificate),
+            "manual" => Ok(DocumentType::Manual),
+            _ => Ok(DocumentType::Other),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

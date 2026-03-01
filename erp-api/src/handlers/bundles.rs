@@ -226,8 +226,8 @@ impl From<ProductBundle> for BundleResponse {
             description: b.description,
             bundle_type: format!("{:?}", b.bundle_type),
             pricing_method: format!("{:?}", b.pricing_method),
-            list_price: PriceResponse { cents: b.list_price.cents, currency: b.list_price.currency },
-            calculated_price: PriceResponse { cents: b.calculated_price.cents, currency: b.calculated_price.currency },
+            list_price: PriceResponse { cents: b.list_price.amount, currency: b.list_price.currency },
+            calculated_price: PriceResponse { cents: b.calculated_price.amount, currency: b.calculated_price.currency },
             discount_percent: b.discount_percent,
             components: b.components.into_iter().map(|c| ComponentResponse {
                 id: c.id.to_string(),
@@ -258,7 +258,7 @@ impl From<ProductBundleSummary> for BundleSummaryResponse {
             bundle_code: s.bundle_code,
             name: s.name,
             bundle_type: format!("{:?}", s.bundle_type),
-            list_price: PriceResponse { cents: s.list_price.cents, currency: s.list_price.currency },
+            list_price: PriceResponse { cents: s.list_price.amount, currency: s.list_price.currency },
             component_count: s.component_count,
             status: format!("{:?}", s.status),
             created_at: s.created_at.to_rfc3339(),
@@ -296,7 +296,7 @@ pub async fn create_bundle(
     };
 
     let bundle = service.create_bundle(&state.pool, req).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
     Ok(Json(BundleResponse::from(bundle)))
 }
 
@@ -306,7 +306,7 @@ pub async fn get_bundle(
 ) -> ApiResult<Json<BundleResponse>> {
     let service = BundleService::new();
     let bundle = service.get_bundle(&state.pool, id).await
-        .map_err(|e| crate::error::Error::NotFound(e.to_string()))?;
+        .map_err(|e| erp_core::Error::NotFound(e.to_string()))?;
     Ok(Json(BundleResponse::from(bundle)))
 }
 
@@ -320,7 +320,7 @@ pub async fn list_bundles(
     let status = query.status.and_then(|s| parse_status(&s));
 
     let result = service.list_bundles(&state.pool, page, per_page, status).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(BundleListApiResponse {
         items: result.items.into_iter().map(BundleSummaryResponse::from).collect(),
@@ -352,7 +352,7 @@ pub async fn update_bundle(
     };
 
     let bundle = service.update_bundle(&state.pool, id, req).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
     Ok(Json(BundleResponse::from(bundle)))
 }
 
@@ -362,7 +362,7 @@ pub async fn delete_bundle(
 ) -> ApiResult<StatusCode> {
     let service = BundleService::new();
     service.delete_bundle(&state.pool, id).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -382,7 +382,7 @@ pub async fn add_component(
     };
 
     let component = service.add_component(&state.pool, id, req).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(ComponentResponse {
         id: component.id.to_string(),
@@ -402,7 +402,7 @@ pub async fn remove_component(
 ) -> ApiResult<StatusCode> {
     let service = BundleService::new();
     service.remove_component(&state.pool, bundle_id, component_id).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -412,7 +412,7 @@ pub async fn get_availability(
 ) -> ApiResult<Json<AvailabilityResponse>> {
     let service = BundleService::new();
     let availability = service.get_availability(&state.pool, id).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(AvailabilityResponse {
         bundle_id: availability.bundle_id.to_string(),
@@ -453,7 +453,7 @@ pub async fn add_price_rule(
     };
 
     let rule = service.add_price_rule(&state.pool, id, rule).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(PriceRuleResponse {
         id: rule.id.to_string(),
@@ -477,7 +477,7 @@ pub async fn get_price_rules(
 ) -> ApiResult<Json<Vec<PriceRuleResponse>>> {
     let service = BundleService::new();
     let rules = service.get_price_rules(&state.pool, id).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(rules.into_iter().map(|r| PriceRuleResponse {
         id: r.id.to_string(),
@@ -502,7 +502,7 @@ pub async fn calculate_price(
 ) -> ApiResult<Json<serde_json::Value>> {
     let service = BundleService::new();
     let price = service.calculate_price_for_quantity(&state.pool, id, query.quantity, query.customer_group_id).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(serde_json::json!({
         "bundle_id": id.to_string(),
@@ -520,14 +520,14 @@ pub async fn get_analytics(
 ) -> ApiResult<Json<AnalyticsResponse>> {
     let service = BundleService::new();
     let period_start = DateTime::parse_from_rfc3339(&query.period_start)
-        .map_err(|_| crate::error::Error::BadRequest("Invalid period_start".to_string()))?
+        .map_err(|_| erp_core::Error::validation("Invalid period_start".to_string()))?
         .with_timezone(&Utc);
     let period_end = DateTime::parse_from_rfc3339(&query.period_end)
-        .map_err(|_| crate::error::Error::BadRequest("Invalid period_end".to_string()))?
+        .map_err(|_| erp_core::Error::validation("Invalid period_end".to_string()))?
         .with_timezone(&Utc);
 
     let analytics = service.get_analytics(&state.pool, id, period_start, period_end).await
-        .map_err(|e| crate::error::Error::BadRequest(e.to_string()))?;
+        .map_err(|e| erp_core::Error::validation(e.to_string()))?;
 
     Ok(Json(AnalyticsResponse {
         bundle_id: analytics.bundle_id.to_string(),

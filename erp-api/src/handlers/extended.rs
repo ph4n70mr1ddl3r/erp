@@ -3,7 +3,7 @@ use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_auth::AuthUser;
+use crate::handlers::auth::AuthUser;
 use erp_core::Pagination;
 use erp_finance::{CurrencyDef, ExchangeRate, BudgetWithVariance, CurrencyService, BudgetService};
 use erp_inventory::{Lot, LotService};

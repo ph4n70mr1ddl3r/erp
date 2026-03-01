@@ -50,3 +50,33 @@ impl From<sqlx::Error> for ApiError {
         ApiError(Error::Database(err))
     }
 }
+
+impl From<anyhow::Error> for ApiError {
+    fn from(err: anyhow::Error) -> Self {
+        ApiError(Error::Internal(err.to_string()))
+    }
+}
+
+impl From<serde_json::Error> for ApiError {
+    fn from(err: serde_json::Error) -> Self {
+        ApiError(Error::Validation(err.to_string()))
+    }
+}
+
+impl From<std::io::Error> for ApiError {
+    fn from(err: std::io::Error) -> Self {
+        ApiError(Error::Internal(err.to_string()))
+    }
+}
+
+impl From<uuid::Error> for ApiError {
+    fn from(err: uuid::Error) -> Self {
+        ApiError(Error::Validation(err.to_string()))
+    }
+}
+
+impl From<validator::ValidationErrors> for ApiError {
+    fn from(err: validator::ValidationErrors) -> Self {
+        ApiError(Error::Validation(err.to_string()))
+    }
+}

@@ -3,7 +3,7 @@ use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
 pub enum APIKeyStatus {
     Active,
@@ -12,14 +12,16 @@ pub enum APIKeyStatus {
     Revoked,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct APIKey {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
     pub key_hash: String,
     pub key_prefix: String,
     pub user_id: Option<Uuid>,
+    #[sqlx(json)]
     pub scopes: Vec<String>,
     pub rate_limit_per_minute: Option<i32>,
     pub rate_limit_per_hour: Option<i32>,
@@ -61,8 +63,9 @@ pub enum ConnectionStatus {
     Disabled,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ExternalConnection {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,
@@ -185,8 +188,9 @@ pub enum SyncDirection {
     Bidirectional,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct IntegrationFlow {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub code: String,

@@ -6,11 +6,10 @@ use axum::{
     routing::{delete, get, post, put},
     Extension, Router,
 };
-use http::{header, HeaderValue, Method};
+use axum::http::{header, HeaderValue, Method};
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use tower_http::limit::RequestBodyLimitLayer;
 
-const MAX_REQUEST_BODY_SIZE: usize = 1024 * 1024;
+
 
 pub fn create_router(state: AppState) -> Router {
     let rate_limiter = RateLimiter::new();
@@ -50,8 +49,7 @@ pub fn create_router(state: AppState) -> Router {
             get(handlers::security::list_oauth_providers),
         )
         .layer(middleware::from_fn(rate_limit_middleware))
-        .layer(Extension(rate_limiter.clone()))
-        .layer(RequestBodyLimitLayer::new(MAX_REQUEST_BODY_SIZE));
+        .layer(Extension(rate_limiter.clone()));
 
     let protected_routes = Router::new()
         .route("/auth/me", get(handlers::auth::me))
@@ -61,8 +59,7 @@ pub fn create_router(state: AppState) -> Router {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             handlers::auth::auth_middleware,
-        ))
-        .layer(RequestBodyLimitLayer::new(MAX_REQUEST_BODY_SIZE));
+        ));
 
     public_routes
         .merge(protected_routes)

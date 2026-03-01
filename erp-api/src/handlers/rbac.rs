@@ -5,6 +5,7 @@ use axum::{
 };
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use sqlx::Row;
 use crate::db::AppState;
 use crate::error::{ApiError, ApiResult};
 use erp_core::BaseEntity;
@@ -36,19 +37,19 @@ pub struct CreateRoleRequest {
 }
 
 pub async fn list_roles(State(state): State<AppState>) -> ApiResult<Json<Vec<RoleResponse>>> {
-    let rows = sqlx::query!(
+    let rows = sqlx::query(
         "SELECT id, name, code, description, is_system, is_active FROM custom_roles WHERE is_active = 1 ORDER BY name"
     ).fetch_all(&state.pool).await?;
     
     let mut roles = Vec::new();
     for r in rows {
         roles.push(RoleResponse {
-            id: parse_uuid(&r.id)?,
-            name: r.name,
-            code: r.code,
-            description: r.description,
-            is_system: r.is_system == 1,
-            is_active: r.is_active == 1,
+            id: parse_uuid(r.get::<String, _>("id").as_str())?,
+            name: r.get::<String, _>("name"),
+            code: r.get::<String, _>("code"),
+            description: r.get::<Option<String>, _>("description"),
+            is_system: r.get::<i32, _>("is_system") == 1,
+            is_active: r.get::<i32, _>("is_active") == 1,
         });
     }
     Ok(Json(roles))
@@ -61,10 +62,17 @@ pub async fn create_role(
     let id = Uuid::new_v4();
     let now = chrono::Utc::now().to_rfc3339();
     
-    sqlx::query!(
-        "INSERT INTO custom_roles (id, name, code, description, parent_role_id, is_system, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, 1, ?, ?)",
-        id.to_string(), req.name, req.code, req.description, req.parent_role_id.map(|id| id.to_string()), &now, &now
-    ).execute(&state.pool).await?;
+    sqlx::query(
+        "INSERT INTO custom_roles (id, name, code, description, parent_role_id, is_system, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, 1, ?, ?)"
+    )
+    .bind(id.to_string())
+    .bind(&req.name)
+    .bind(&req.code)
+    .bind(&req.description)
+    .bind(req.parent_role_id.map(|id| id.to_string()))
+    .bind(&now)
+    .bind(&now)
+    .execute(&state.pool).await?;
     
     Ok(Json(RoleResponse {
         id,
@@ -80,7 +88,8 @@ pub async fn delete_role(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    sqlx::query!("UPDATE custom_roles SET is_active = 0 WHERE id = ? AND is_system = 0", id.to_string())
+    sqlx::query("UPDATE custom_roles SET is_active = 0 WHERE id = ? AND is_system = 0")
+        .bind(id.to_string())
         .execute(&state.pool).await?;
     Ok(Json(serde_json::json!({ "status": "deleted" })))
 }
@@ -96,7 +105,7 @@ pub struct PermissionResponse {
 }
 
 pub async fn list_permissions(State(state): State<AppState>) -> ApiResult<Json<Vec<PermissionResponse>>> {
-    let rows = sqlx::query!(
+    let rows = sqlx::query(
         "SELECT id, code, name, module, resource, action FROM permissions ORDER BY module, resource, action"
     ).fetch_all(&state.pool).await?;
     
@@ -105,25 +114,33 @@ pub async fn list_permissions(State(state): State<AppState>) -> ApiResult<Json<V
         for perm in &default_perms {
             let id = Uuid::new_v4();
             let now = chrono::Utc::now().to_rfc3339();
-            let _ = sqlx::query!(
-                "INSERT OR IGNORE INTO permissions (id, code, name, description, module, resource, action, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                id.to_string(), perm.code, perm.name, perm.description, perm.module, perm.resource, perm.action, &now
-            ).execute(&state.pool).await;
+            let _ = sqlx::query(
+                "INSERT OR IGNORE INTO permissions (id, code, name, description, module, resource, action, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            )
+            .bind(id.to_string())
+            .bind(&perm.code)
+            .bind(&perm.name)
+            .bind(&perm.description)
+            .bind(&perm.module)
+            .bind(&perm.resource)
+            .bind(&perm.action)
+            .bind(&now)
+            .execute(&state.pool).await;
         }
         
-        let rows = sqlx::query!(
+        let rows = sqlx::query(
             "SELECT id, code, name, module, resource, action FROM permissions ORDER BY module, resource, action"
         ).fetch_all(&state.pool).await?;
         
         let mut perms = Vec::new();
         for r in rows {
             perms.push(PermissionResponse {
-                id: parse_uuid(&r.id)?,
-                code: r.code,
-                name: r.name,
-                module: r.module,
-                resource: r.resource,
-                action: r.action,
+                id: parse_uuid(r.get::<String, _>("id").as_str())?,
+                code: r.get::<String, _>("code"),
+                name: r.get::<String, _>("name"),
+                module: r.get::<String, _>("module"),
+                resource: r.get::<String, _>("resource"),
+                action: r.get::<String, _>("action"),
             });
         }
         return Ok(Json(perms));
@@ -132,12 +149,12 @@ pub async fn list_permissions(State(state): State<AppState>) -> ApiResult<Json<V
     let mut perms = Vec::new();
     for r in rows {
         perms.push(PermissionResponse {
-            id: parse_uuid(&r.id)?,
-            code: r.code,
-            name: r.name,
-            module: r.module,
-            resource: r.resource,
-            action: r.action,
+            id: parse_uuid(r.get::<String, _>("id").as_str())?,
+            code: r.get::<String, _>("code"),
+            name: r.get::<String, _>("name"),
+            module: r.get::<String, _>("module"),
+            resource: r.get::<String, _>("resource"),
+            action: r.get::<String, _>("action"),
         });
     }
     Ok(Json(perms))
@@ -156,10 +173,14 @@ pub async fn assign_permission(
     let id = Uuid::new_v4();
     let now = chrono::Utc::now().to_rfc3339();
     
-    sqlx::query!(
-        "INSERT OR IGNORE INTO role_permissions (id, role_id, permission_id, granted_at) VALUES (?, ?, ?, ?)",
-        id.to_string(), role_id.to_string(), req.permission_id.to_string(), &now
-    ).execute(&state.pool).await?;
+    sqlx::query(
+        "INSERT OR IGNORE INTO role_permissions (id, role_id, permission_id, granted_at) VALUES (?, ?, ?, ?)"
+    )
+    .bind(id.to_string())
+    .bind(role_id.to_string())
+    .bind(req.permission_id.to_string())
+    .bind(&now)
+    .execute(&state.pool).await?;
     
     Ok(Json(serde_json::json!({ "status": "assigned" })))
 }
@@ -168,10 +189,10 @@ pub async fn revoke_permission(
     State(state): State<AppState>,
     Path((role_id, permission_id)): Path<(Uuid, Uuid)>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    sqlx::query!(
-        "DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?",
-        role_id.to_string(), permission_id.to_string()
-    ).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM role_permissions WHERE role_id = ? AND permission_id = ?")
+        .bind(role_id.to_string())
+        .bind(permission_id.to_string())
+        .execute(&state.pool).await?;
     
     Ok(Json(serde_json::json!({ "status": "revoked" })))
 }
@@ -187,20 +208,21 @@ pub async fn list_role_permissions(
     State(state): State<AppState>,
     Path(role_id): Path<Uuid>,
 ) -> ApiResult<Json<Vec<RolePermissionResponse>>> {
-    let rows = sqlx::query!(
+    let rows = sqlx::query(
         r#"SELECT rp.permission_id, p.code, p.name 
            FROM role_permissions rp 
            JOIN permissions p ON rp.permission_id = p.id 
-           WHERE rp.role_id = ?"#,
-        role_id.to_string()
-    ).fetch_all(&state.pool).await?;
+           WHERE rp.role_id = ?"#
+    )
+    .bind(role_id.to_string())
+    .fetch_all(&state.pool).await?;
     
     let mut perms = Vec::new();
     for r in rows {
         perms.push(RolePermissionResponse {
-            permission_id: parse_uuid(&r.permission_id)?,
-            permission_code: r.code,
-            permission_name: r.name,
+            permission_id: parse_uuid(r.get::<String, _>("permission_id").as_str())?,
+            permission_code: r.get::<String, _>("code"),
+            permission_name: r.get::<String, _>("name"),
         });
     }
     Ok(Json(perms))
@@ -220,10 +242,15 @@ pub async fn assign_role_to_user(
     let id = Uuid::new_v4();
     let now = chrono::Utc::now().to_rfc3339();
     
-    sqlx::query!(
-        "INSERT OR REPLACE INTO user_role_assignments (id, user_id, role_id, assigned_at, expires_at) VALUES (?, ?, ?, ?, ?)",
-        id.to_string(), req.user_id.to_string(), role_id.to_string(), &now, req.expires_at
-    ).execute(&state.pool).await?;
+    sqlx::query(
+        "INSERT OR REPLACE INTO user_role_assignments (id, user_id, role_id, assigned_at, expires_at) VALUES (?, ?, ?, ?, ?)"
+    )
+    .bind(id.to_string())
+    .bind(req.user_id.to_string())
+    .bind(role_id.to_string())
+    .bind(&now)
+    .bind(&req.expires_at)
+    .execute(&state.pool).await?;
     
     Ok(Json(serde_json::json!({ "status": "assigned" })))
 }
@@ -232,10 +259,10 @@ pub async fn revoke_role_from_user(
     State(state): State<AppState>,
     Path((user_id, role_id)): Path<(Uuid, Uuid)>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    sqlx::query!(
-        "DELETE FROM user_role_assignments WHERE user_id = ? AND role_id = ?",
-        user_id.to_string(), role_id.to_string()
-    ).execute(&state.pool).await?;
+    sqlx::query("DELETE FROM user_role_assignments WHERE user_id = ? AND role_id = ?")
+        .bind(user_id.to_string())
+        .bind(role_id.to_string())
+        .execute(&state.pool).await?;
     
     Ok(Json(serde_json::json!({ "status": "revoked" })))
 }
@@ -251,20 +278,21 @@ pub async fn list_user_roles(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> ApiResult<Json<Vec<UserRolesResponse>>> {
-    let rows = sqlx::query!(
+    let rows = sqlx::query(
         r#"SELECT r.id, r.name, r.code 
            FROM user_role_assignments ura 
            JOIN custom_roles r ON ura.role_id = r.id 
-           WHERE ura.user_id = ? AND r.is_active = 1"#,
-        user_id.to_string()
-    ).fetch_all(&state.pool).await?;
+           WHERE ura.user_id = ? AND r.is_active = 1"#
+    )
+    .bind(user_id.to_string())
+    .fetch_all(&state.pool).await?;
     
     let mut roles = Vec::new();
     for r in rows {
         roles.push(UserRolesResponse {
-            role_id: parse_uuid(&r.id)?,
-            role_name: r.name,
-            role_code: r.code,
+            role_id: parse_uuid(r.get::<String, _>("id").as_str())?,
+            role_name: r.get::<String, _>("name"),
+            role_code: r.get::<String, _>("code"),
         });
     }
     Ok(Json(roles))
@@ -280,18 +308,19 @@ pub async fn get_user_effective_permissions(
     State(state): State<AppState>,
     Path(user_id): Path<Uuid>,
 ) -> ApiResult<Json<UserEffectivePermissionsResponse>> {
-    let rows = sqlx::query!(
+    let rows = sqlx::query(
         r#"SELECT DISTINCT p.code 
            FROM user_role_assignments ura 
            JOIN role_permissions rp ON ura.role_id = rp.role_id 
            JOIN permissions p ON rp.permission_id = p.id 
-           WHERE ura.user_id = ? AND (ura.expires_at IS NULL OR ura.expires_at > datetime('now'))"#,
-        user_id.to_string()
-    ).fetch_all(&state.pool).await?;
+           WHERE ura.user_id = ? AND (ura.expires_at IS NULL OR ura.expires_at > datetime('now'))"#
+    )
+    .bind(user_id.to_string())
+    .fetch_all(&state.pool).await?;
     
     Ok(Json(UserEffectivePermissionsResponse {
         user_id,
-        permissions: rows.into_iter().map(|r| r.code).collect(),
+        permissions: rows.into_iter().map(|r| r.get::<String, _>("code")).collect(),
     }))
 }
 
@@ -310,10 +339,16 @@ pub async fn set_data_permission(
     let id = Uuid::new_v4();
     let now = chrono::Utc::now().to_rfc3339();
     
-    sqlx::query!(
-        "INSERT OR REPLACE INTO data_permissions (id, role_id, resource, filter_type, filter_value, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-        id.to_string(), role_id.to_string(), req.resource, req.filter_type, req.filter_value, &now
-    ).execute(&state.pool).await?;
+    sqlx::query(
+        "INSERT OR REPLACE INTO data_permissions (id, role_id, resource, filter_type, filter_value, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+    )
+    .bind(id.to_string())
+    .bind(role_id.to_string())
+    .bind(&req.resource)
+    .bind(&req.filter_type)
+    .bind(&req.filter_value)
+    .bind(&now)
+    .execute(&state.pool).await?;
     
     Ok(Json(serde_json::json!({ "status": "set" })))
 }
@@ -335,10 +370,18 @@ pub async fn set_field_permission(
     let id = Uuid::new_v4();
     let now = chrono::Utc::now().to_rfc3339();
     
-    sqlx::query!(
-        "INSERT OR REPLACE INTO field_permissions (id, role_id, resource, field_name, can_read, can_write, can_create, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        id.to_string(), role_id.to_string(), req.resource, req.field_name, req.can_read as i32, req.can_write as i32, req.can_create as i32, &now
-    ).execute(&state.pool).await?;
+    sqlx::query(
+        "INSERT OR REPLACE INTO field_permissions (id, role_id, resource, field_name, can_read, can_write, can_create, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(id.to_string())
+    .bind(role_id.to_string())
+    .bind(&req.resource)
+    .bind(&req.field_name)
+    .bind(req.can_read as i32)
+    .bind(req.can_write as i32)
+    .bind(req.can_create as i32)
+    .bind(&now)
+    .execute(&state.pool).await?;
     
     Ok(Json(serde_json::json!({ "status": "set" })))
 }

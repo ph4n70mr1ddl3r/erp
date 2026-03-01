@@ -1,7 +1,8 @@
 use crate::models::*;
 use crate::repository::{LeaseRepository, SqliteLeaseRepository};
-use chrono::{NaiveDate, Utc};
+use chrono::{Datelike, NaiveDate, Utc};
 use erp_core::{BaseEntity, Result};
+use serde::Deserialize;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
