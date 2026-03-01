@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Shield, Users, FileCheck, AlertTriangle, Clock, Building2, Plus, X } from 'lucide-react';
 import { compliance, type ComplianceStats, type DataSubject, type ConsentRecord, type DSARRequest, type DataBreach } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 type Tab = 'overview' | 'subjects' | 'consents' | 'dsars' | 'breaches';
 
 export default function Compliance() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [stats, setStats] = useState<ComplianceStats | null>(null);
   const [subjects, setSubjects] = useState<DataSubject[]>([]);
@@ -32,8 +35,8 @@ export default function Compliance() {
       setConsents(consentsRes.data);
       setDsars(dsarsRes.data);
       setBreaches(breachesRes.data);
-    } catch (error) {
-      console.error('Failed to load compliance data:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load compliance data'));
     } finally {
       setLoading(false);
     }
@@ -52,8 +55,8 @@ export default function Compliance() {
       setShowModal(null);
       loadData();
       form.reset();
-    } catch (error) {
-      console.error('Failed to create subject:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create subject'));
     }
   };
 
@@ -70,8 +73,8 @@ export default function Compliance() {
       setShowModal(null);
       loadData();
       form.reset();
-    } catch (error) {
-      console.error('Failed to create DSAR:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create DSAR'));
     }
   };
 
@@ -79,8 +82,8 @@ export default function Compliance() {
     try {
       await compliance.withdrawConsent(id);
       loadData();
-    } catch (error) {
-      console.error('Failed to withdraw consent:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to withdraw consent'));
     }
   };
 
@@ -90,8 +93,8 @@ export default function Compliance() {
       try {
         await compliance.completeDSAR(id, response);
         loadData();
-      } catch (error) {
-        console.error('Failed to complete DSAR:', error);
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, 'Failed to complete DSAR'));
       }
     }
   };
@@ -110,8 +113,8 @@ export default function Compliance() {
       setShowModal(null);
       loadData();
       form.reset();
-    } catch (error) {
-      console.error('Failed to create breach:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create breach'));
     }
   };
 

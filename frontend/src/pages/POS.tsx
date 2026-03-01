@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { CreditCard, Store, Ticket, TrendingUp } from 'lucide-react';
 import api from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface POSStore {
   id: string;
@@ -20,6 +22,7 @@ interface POSTransaction {
 }
 
 export default function POS() {
+  const toast = useToast();
   const [stores, setStores] = useState<POSStore[]>([]);
   const [transactions, setTransactions] = useState<POSTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,8 +51,8 @@ export default function POS() {
       ]);
       setStores(storesRes.data.items || []);
       setTransactions(txRes.data.items || []);
-    } catch (err) {
-      console.error('Failed to load POS data:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load POS data'));
     } finally {
       setLoading(false);
     }
@@ -62,8 +65,8 @@ export default function POS() {
       setStoreForm({ store_code: '', name: '', address: '', city: '', state: '', postal_code: '', country: 'USA' });
       setShowStoreForm(false);
       loadData();
-    } catch (err) {
-      console.error('Failed to create store:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create store'));
     }
   };
 

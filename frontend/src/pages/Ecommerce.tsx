@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ShoppingBag, Link, Package, Truck, RefreshCw } from 'lucide-react';
 import api from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface EcommercePlatform {
   id: string;
@@ -20,6 +22,7 @@ interface EcommerceOrder {
 }
 
 export default function Ecommerce() {
+  const toast = useToast();
   const [platforms, setPlatforms] = useState<EcommercePlatform[]>([]);
   const [orders, setOrders] = useState<EcommerceOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,8 +50,8 @@ export default function Ecommerce() {
       ]);
       setPlatforms(platformsRes.data.items || []);
       setOrders(ordersRes.data.items || []);
-    } catch (err) {
-      console.error('Failed to load e-commerce data:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load e-commerce data'));
     } finally {
       setLoading(false);
     }
@@ -61,8 +64,8 @@ export default function Ecommerce() {
       setPlatformForm({ name: '', platform_type: 'Shopify', base_url: '', api_key: '', api_secret: '', store_id: '' });
       setShowPlatformForm(false);
       loadData();
-    } catch (err) {
-      console.error('Failed to create platform:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create platform'));
     }
   };
 

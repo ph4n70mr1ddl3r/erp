@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Folder, ListTodo, Flag, Clock, Plus, X, Check, Play, Pause, CheckCircle } from 'lucide-react';
 import { projects, type Project, type ProjectTask, type ProjectMilestone, type Timesheet } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 type Tab = 'projects' | 'tasks' | 'timesheets';
 
 export default function Projects() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('projects');
   const [projectList, setProjectList] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -26,8 +29,8 @@ export default function Projects() {
       ]);
       setProjectList(projectsRes.data);
       setTimesheets(timesheetsRes.data);
-    } catch (error) {
-      console.error('Failed to load data:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load data'));
     } finally {
       setLoading(false);
     }
@@ -41,8 +44,8 @@ export default function Projects() {
       ]);
       setTasks(tasksRes.data);
       setMilestones(milestonesRes.data);
-    } catch (error) {
-      console.error('Failed to load project details:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load project details'));
     }
   };
 
@@ -67,8 +70,8 @@ export default function Projects() {
       setShowModal(null);
       loadData();
       form.reset();
-    } catch (error) {
-      console.error('Failed to create project:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create project'));
     }
   };
 
@@ -86,8 +89,8 @@ export default function Projects() {
       setShowModal(null);
       loadProjectDetails(selectedProject);
       form.reset();
-    } catch (error) {
-      console.error('Failed to create task:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create task'));
     }
   };
 
@@ -97,8 +100,8 @@ export default function Projects() {
       if (selectedProject) {
         loadProjectDetails(selectedProject);
       }
-    } catch (error) {
-      console.error('Failed to complete task:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to complete task'));
     }
   };
 
@@ -116,8 +119,8 @@ export default function Projects() {
       setShowModal(null);
       loadProjectDetails(selectedProject);
       form.reset();
-    } catch (error) {
-      console.error('Failed to create milestone:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create milestone'));
     }
   };
 
@@ -127,8 +130,8 @@ export default function Projects() {
       if (selectedProject) {
         loadProjectDetails(selectedProject);
       }
-    } catch (error) {
-      console.error('Failed to complete milestone:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to complete milestone'));
     }
   };
 
@@ -136,8 +139,8 @@ export default function Projects() {
     try {
       await projects.updateStatus(projectId, status);
       loadData();
-    } catch (error) {
-      console.error('Failed to update status:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update status'));
     }
   };
 
@@ -145,8 +148,8 @@ export default function Projects() {
     try {
       await projects.approveTimesheet(id);
       loadData();
-    } catch (error) {
-      console.error('Failed to approve timesheet:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to approve timesheet'));
     }
   };
 

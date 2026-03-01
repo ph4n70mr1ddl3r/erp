@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { rules } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface Rule {
   id: string;
@@ -17,6 +19,7 @@ interface Ruleset {
 }
 
 const RulesPage: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('rules');
   const [rulesList, setRulesList] = useState<Rule[]>([]);
   const [rulesets, setRulesets] = useState<Ruleset[]>([]);
@@ -55,8 +58,8 @@ const RulesPage: React.FC = () => {
       ]);
       setRulesList(rulesRes.data);
       setRulesets(rulesetsRes.data);
-    } catch (error) {
-      console.error('Failed to load rules:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load rules'));
     }
   };
 
@@ -71,8 +74,8 @@ const RulesPage: React.FC = () => {
       setNewRule({ name: '', code: '', entity_type: '', conditions: '{}', actions: '{}', rule_type: 'Validation' });
       setShowCreateRule(false);
       loadData();
-    } catch (error) {
-      console.error('Failed to create rule:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create rule'));
     }
   };
 
@@ -83,8 +86,8 @@ const RulesPage: React.FC = () => {
       setNewRuleset({ name: '', code: '', entity_type: '', execution_mode: 'Sequential' });
       setShowCreateRuleset(false);
       loadData();
-    } catch (error) {
-      console.error('Failed to create ruleset:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create ruleset'));
     }
   };
 
@@ -97,8 +100,8 @@ const RulesPage: React.FC = () => {
         context: JSON.parse(execution.context),
       });
       alert(`Executed ${result.data.length} rules`);
-    } catch (error) {
-      console.error('Failed to execute rules:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to execute rules'));
       alert('Failed to execute rules');
     }
   };
@@ -108,8 +111,8 @@ const RulesPage: React.FC = () => {
       try {
         await rules.deleteRule(ruleId);
         loadData();
-      } catch (error) {
-        console.error('Failed to delete rule:', error);
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, 'Failed to delete rule'));
       }
     }
   };

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { config } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface ConfigItem {
   id: string;
@@ -21,6 +23,7 @@ interface AuditSettings {
 }
 
 const ConfigPage: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('general');
   const [configs, setConfigs] = useState<ConfigItem[]>([]);
   const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
@@ -40,8 +43,8 @@ const ConfigPage: React.FC = () => {
       setConfigs(configsRes.data);
       setCompanySettings(companyRes.data);
       setAuditSettings(auditRes.data);
-    } catch (error) {
-      console.error('Failed to load config:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load config'));
     }
   };
 
@@ -57,8 +60,8 @@ const ConfigPage: React.FC = () => {
       setKey('');
       setValue('');
       loadData();
-    } catch (error) {
-      console.error('Failed to set config:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to set config'));
     }
   };
 
@@ -69,8 +72,8 @@ const ConfigPage: React.FC = () => {
         await config.updateCompanySettings(companySettings);
         alert('Company settings updated');
       }
-    } catch (error) {
-      console.error('Failed to update company settings:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update company settings'));
     }
   };
 
@@ -81,8 +84,8 @@ const ConfigPage: React.FC = () => {
         await config.updateAuditSettings(auditSettings);
         alert('Audit settings updated');
       }
-    } catch (error) {
-      console.error('Failed to update audit settings:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to update audit settings'));
     }
   };
 

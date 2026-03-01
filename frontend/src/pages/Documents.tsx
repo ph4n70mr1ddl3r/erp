@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { documents as documentsApi } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface Document {
   id: string;
@@ -17,6 +19,7 @@ interface Folder {
 }
 
 const Documents: React.FC = () => {
+  const toast = useToast();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
@@ -29,8 +32,8 @@ const Documents: React.FC = () => {
     try {
       const res = await documentsApi.listFolders(selectedFolder);
       setFolders(res.data);
-    } catch (error) {
-      console.error('Failed to load folders:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load folders'));
     }
   };
 
@@ -38,8 +41,8 @@ const Documents: React.FC = () => {
     try {
       const res = await documentsApi.listDocuments(selectedFolder);
       setDocuments(res.data);
-    } catch (error) {
-      console.error('Failed to load documents:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load documents'));
     }
   };
 
@@ -58,8 +61,8 @@ const Documents: React.FC = () => {
       setNewFolderName('');
       setShowCreateFolder(false);
       loadFolders();
-    } catch (error) {
-      console.error('Failed to create folder:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create folder'));
     }
   };
 
@@ -78,8 +81,8 @@ const Documents: React.FC = () => {
       setNewDoc({ title: '', file_name: '' });
       setShowUpload(false);
       loadDocuments();
-    } catch (error) {
-      console.error('Failed to create document:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create document'));
     }
   };
 

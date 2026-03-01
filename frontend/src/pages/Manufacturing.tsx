@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import api from '../api/client';
 
 interface BOM {
   id: string;
@@ -26,32 +27,22 @@ export default function Manufacturing() {
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      fetch('http://127.0.0.1:3000/api/v1/manufacturing/boms?page=1&per_page=20', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      }).then(r => r.json()),
-      fetch('http://127.0.0.1:3000/api/v1/manufacturing/work-orders?page=1&per_page=20', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      }).then(r => r.json()),
+      api.get('/api/v1/manufacturing/boms?page=1&per_page=20'),
+      api.get('/api/v1/manufacturing/work-orders?page=1&per_page=20'),
     ]).then(([bomsData, woData]) => {
-      setBoms(bomsData.items || []);
-      setWorkOrders(woData.items || []);
+      setBoms(bomsData.data.items || []);
+      setWorkOrders(woData.data.items || []);
       setLoading(false);
     });
   }, []);
 
   const handleStart = async (id: string) => {
-    await fetch(`http://127.0.0.1:3000/api/v1/manufacturing/work-orders/${id}/start`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
+    await api.post(`/api/v1/manufacturing/work-orders/${id}/start`);
     window.location.reload();
   };
 
   const handleComplete = async (id: string) => {
-    await fetch(`http://127.0.0.1:3000/api/v1/manufacturing/work-orders/${id}/complete`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
+    await api.post(`/api/v1/manufacturing/work-orders/${id}/complete`);
     window.location.reload();
   };
 

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { pricing } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface PriceBook {
   id: string;
@@ -25,6 +27,7 @@ interface Promotion {
 }
 
 const Pricing: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('pricebooks');
   const [priceBooks, setPriceBooks] = useState<PriceBook[]>([]);
   const [discounts, setDiscounts] = useState<Discount[]>([]);
@@ -48,8 +51,8 @@ const Pricing: React.FC = () => {
       setPriceBooks(pbRes.data);
       setDiscounts(discRes.data);
       setPromotions(promoRes.data);
-    } catch (error) {
-      console.error('Failed to load pricing data:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load pricing data'));
     }
   };
 
@@ -64,8 +67,8 @@ const Pricing: React.FC = () => {
       setNewPriceBook({ name: '', code: '', currency: 'USD' });
       setShowCreatePriceBook(false);
       loadData();
-    } catch (error) {
-      console.error('Failed to create price book:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create price book'));
     }
   };
 
@@ -76,8 +79,8 @@ const Pricing: React.FC = () => {
       setNewDiscount({ name: '', code: '', discount_type: 'Percentage', value: 0 });
       setShowCreateDiscount(false);
       loadData();
-    } catch (error) {
-      console.error('Failed to create discount:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create discount'));
     }
   };
 
@@ -88,8 +91,8 @@ const Pricing: React.FC = () => {
       setNewPromotion({ name: '', code: '', start_date: '', end_date: '', rules: '{}', rewards: '{}' });
       setShowCreatePromotion(false);
       loadData();
-    } catch (error) {
-      console.error('Failed to create promotion:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create promotion'));
     }
   };
 

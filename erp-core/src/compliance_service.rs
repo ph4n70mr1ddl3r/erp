@@ -24,7 +24,7 @@ impl ComplianceService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(DataSubject {
             id,
@@ -45,7 +45,7 @@ impl ComplianceService {
         let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM data_subjects")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         let rows = sqlx::query_as::<_, DataSubjectRow>(
             "SELECT id, email, first_name, last_name, phone, address, identifier_type, identifier_value, verification_status, created_at, updated_at
@@ -55,7 +55,7 @@ impl ComplianceService {
         .bind(pagination.offset() as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(
             rows.into_iter().map(|r| r.into()).collect(),
@@ -84,7 +84,7 @@ impl ComplianceService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(ConsentRecord {
             id,
@@ -116,7 +116,7 @@ impl ComplianceService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_consent(pool, id).await
     }
@@ -129,7 +129,7 @@ impl ComplianceService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ConsentRecord", &id.to_string()))?;
         
         Ok(row.into())
@@ -153,7 +153,7 @@ impl ComplianceService {
             .await
         };
         
-        let rows = rows.map_err(|e| Error::Database(e.into()))?;
+        let rows = rows.map_err(Error::Database)?;
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
@@ -179,7 +179,7 @@ impl ComplianceService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(DSARRequest {
             id,
@@ -211,7 +211,7 @@ impl ComplianceService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_dsar(pool, id).await
     }
@@ -224,7 +224,7 @@ impl ComplianceService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("DSARRequest", &id.to_string()))?;
         
         Ok(row.into())
@@ -248,7 +248,7 @@ impl ComplianceService {
             .await
         };
         
-        let rows = rows.map_err(|e| Error::Database(e.into()))?;
+        let rows = rows.map_err(Error::Database)?;
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
@@ -278,7 +278,7 @@ impl ComplianceService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(DataBreach {
             id,
@@ -313,7 +313,7 @@ impl ComplianceService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -325,7 +325,7 @@ impl ComplianceService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -337,7 +337,7 @@ impl ComplianceService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -346,27 +346,27 @@ impl ComplianceService {
         let ds_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM data_subjects")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         let consent_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM consent_records WHERE status = 'Granted'")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         let pending_dsars: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM dsar_requests WHERE status IN ('Received', 'Verification', 'InProgress')")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         let active_breaches: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM data_breaches WHERE status NOT IN ('Resolved', 'Closed')")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         let processor_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM third_party_processors WHERE status = 'Active'")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         Ok(ComplianceStats {
             data_subjects: ds_count.0,
@@ -647,6 +647,7 @@ struct RetentionPolicyRow {
     review_frequency_days: i64,
     last_review_date: Option<String>,
     next_review_date: Option<String>,
+    #[allow(dead_code)]
     status: String,
     created_at: String,
     updated_at: String,
@@ -699,6 +700,7 @@ struct ProcessorRow {
     dpa_signed: i64,
     security_assessment_date: Option<String>,
     security_assessment_result: Option<String>,
+    #[allow(dead_code)]
     status: String,
     created_at: String,
     updated_at: String,

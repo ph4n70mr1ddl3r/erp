@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { stripe, payments } from '../api/client';
 import type { StripeCheckoutSession, StripePaymentIntent } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 export default function StripePayments() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'checkout' | 'intent' | 'history'>('checkout');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +54,8 @@ export default function StripePayments() {
       }
       
       setSuccess('Checkout session created! Redirecting to Stripe...');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create checkout session');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create checkout session'));
     } finally {
       setLoading(false);
     }
@@ -74,8 +77,8 @@ export default function StripePayments() {
       
       setPaymentIntent(response.data);
       setSuccess('Payment intent created! Use the client secret to complete payment.');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create payment intent');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create payment intent'));
     } finally {
       setLoading(false);
     }
@@ -91,8 +94,8 @@ export default function StripePayments() {
     try {
       const response = await payments.getCustomerPayments(checkoutForm.customer_id);
       setPaymentHistory(response.data.items || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load payment history');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load payment history'));
     } finally {
       setLoading(false);
     }

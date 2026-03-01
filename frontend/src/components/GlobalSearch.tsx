@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, Package, Users, ShoppingCart, Building2, Factory, UserCog, Folder, Headphones, Monitor } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from './Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface SearchResult {
   type: string;
@@ -66,6 +68,7 @@ const typeIcons: Record<string, React.ReactNode> = {
 };
 
 export default function GlobalSearch() {
+  const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -110,16 +113,16 @@ export default function GlobalSearch() {
       try {
         const res = await mockSearch(query);
         setResults(res);
-      } catch (error) {
-        console.error('Search failed:', error);
+      } catch (error: unknown) {
+        toast.error(getErrorMessage(error, 'Search failed'));
       } finally {
         setLoading(false);
       }
     };
-    
+
     const debounce = setTimeout(search, 200);
     return () => clearTimeout(debounce);
-  }, [query]);
+  }, [query, toast]);
 
   const handleSelect = (result: SearchResult) => {
     navigate(result.path);

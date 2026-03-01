@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { sourcing } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface SourcingEvent {
   id: string;
@@ -17,6 +19,7 @@ interface Bid {
 }
 
 const Sourcing: React.FC = () => {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState('events');
   const [events, setEvents] = useState<SourcingEvent[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null);
@@ -37,8 +40,8 @@ const Sourcing: React.FC = () => {
     try {
       const res = await sourcing.listEvents();
       setEvents(res.data);
-    } catch (error) {
-      console.error('Failed to load events:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load events'));
     }
   };
 
@@ -46,8 +49,8 @@ const Sourcing: React.FC = () => {
     try {
       const res = await sourcing.listBids(eventId);
       setBids(res.data);
-    } catch (error) {
-      console.error('Failed to load bids:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load bids'));
     }
   };
 
@@ -73,8 +76,8 @@ const Sourcing: React.FC = () => {
       setNewEvent({ title: '', event_type: 'RFQ', start_date: '', end_date: '', currency: 'USD', estimated_value: 0 });
       setShowCreateEvent(false);
       loadEvents();
-    } catch (error) {
-      console.error('Failed to create event:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to create event'));
     }
   };
 
@@ -82,8 +85,8 @@ const Sourcing: React.FC = () => {
     try {
       await sourcing.publishEvent(eventId);
       loadEvents();
-    } catch (error) {
-      console.error('Failed to publish event:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to publish event'));
     }
   };
 
@@ -91,8 +94,8 @@ const Sourcing: React.FC = () => {
     try {
       await sourcing.acceptBid(bidId);
       if (selectedEvent) loadBids(selectedEvent);
-    } catch (error) {
-      console.error('Failed to accept bid:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to accept bid'));
     }
   };
 

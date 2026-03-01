@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { service, type Ticket, type CreateTicketRequest, type KnowledgeArticle } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 const priorityColors: Record<string, string> = {
   Critical: 'bg-red-100 text-red-800',
@@ -17,6 +19,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function ServiceDesk() {
+  const toast = useToast();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -41,8 +44,8 @@ export default function ServiceDesk() {
       setLoading(true);
       const res = await service.getTickets();
       setTickets(res.data.items || []);
-    } catch (err) {
-      console.error('Failed to load tickets:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load tickets'));
     } finally {
       setLoading(false);
     }
@@ -52,8 +55,8 @@ export default function ServiceDesk() {
     try {
       const res = await service.getTicketStats();
       setStats(res.data.by_status || {});
-    } catch (err) {
-      console.error('Failed to load stats:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load stats'));
     }
   };
 
@@ -62,8 +65,8 @@ export default function ServiceDesk() {
     try {
       const res = await service.searchArticles(searchQuery);
       setArticles(res.data);
-    } catch (err) {
-      console.error('Search failed:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Search failed'));
     }
   };
 
@@ -75,8 +78,8 @@ export default function ServiceDesk() {
       setShowForm(false);
       loadTickets();
       loadStats();
-    } catch (err) {
-      console.error('Failed to create ticket:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create ticket'));
     }
   };
 
@@ -85,8 +88,8 @@ export default function ServiceDesk() {
       await service.updateTicketStatus(id, status);
       loadTickets();
       loadStats();
-    } catch (err) {
-      console.error('Failed to update status:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update status'));
     }
   };
 

@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import { notifications, type Notification } from '../api/client';
+import { useToast } from './Toast';
+import { getErrorMessage } from '../utils/errors';
 
 export default function NotificationCenter() {
+  const toast = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [notificationList, setNotificationList] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -16,10 +19,10 @@ export default function NotificationCenter() {
       ]);
       setNotificationList(listRes.data);
       setUnreadCount(countRes.data.count);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to load notifications'));
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     void loadNotifications();
@@ -41,19 +44,19 @@ export default function NotificationCenter() {
     try {
       await notifications.markRead(id);
       loadNotifications();
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to mark notification as read'));
     }
-  }, [loadNotifications]);
+  }, [loadNotifications, toast]);
 
   const handleMarkAllRead = useCallback(async () => {
     try {
       await notifications.markAllRead();
       loadNotifications();
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error, 'Failed to mark all notifications as read'));
     }
-  }, [loadNotifications]);
+  }, [loadNotifications, toast]);
 
   const getTypeColor = (type: string) => {
     switch (type) {

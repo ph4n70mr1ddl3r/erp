@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { assets, type ITAsset, type SoftwareLicense, type CreateITAssetRequest, type CreateLicenseRequest } from '../api/client';
+import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 const assetTypeColors: Record<string, string> = {
   Hardware: 'bg-blue-100 text-blue-800',
@@ -18,6 +20,7 @@ const assetStatusColors: Record<string, string> = {
 };
 
 export default function ITAssets() {
+  const toast = useToast();
   const [assetsList, setAssetsList] = useState<ITAsset[]>([]);
   const [licenses, setLicenses] = useState<SoftwareLicense[]>([]);
   const [assetStats, setAssetStats] = useState<Record<string, number>>({});
@@ -58,8 +61,8 @@ export default function ITAssets() {
       setAssetsList(assetsRes.data.items || []);
       setLicenses(licensesRes.data.items || []);
       setAssetStats(statsRes.data.by_status || {});
-    } catch (err) {
-      console.error('Failed to load data:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load data'));
     } finally {
       setLoading(false);
     }
@@ -78,8 +81,8 @@ export default function ITAssets() {
       });
       setShowAssetForm(false);
       loadData();
-    } catch (err) {
-      console.error('Failed to create asset:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create asset'));
     }
   };
 
@@ -99,8 +102,8 @@ export default function ITAssets() {
       });
       setShowLicenseForm(false);
       loadData();
-    } catch (err) {
-      console.error('Failed to create license:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to create license'));
     }
   };
 
@@ -108,8 +111,8 @@ export default function ITAssets() {
     try {
       await assets.updateAssetStatus(id, status);
       loadData();
-    } catch (err) {
-      console.error('Failed to update status:', err);
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to update status'));
     }
   };
 
