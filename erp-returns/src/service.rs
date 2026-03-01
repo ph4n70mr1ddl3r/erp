@@ -51,7 +51,7 @@ impl ReturnService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -98,7 +98,7 @@ impl ReturnService {
         .bind(return_order_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -161,7 +161,7 @@ impl CreditMemoService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -252,7 +252,7 @@ impl RefundService {
         .bind(refund.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(refund)
     }
@@ -268,7 +268,7 @@ impl RefundService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, id).await
     }
@@ -280,7 +280,7 @@ impl RefundService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Refund", &id.to_string()))?;
         
         Ok(row.into())
@@ -303,7 +303,7 @@ impl RefundService {
                 .fetch_all(pool)
                 .await
             }
-        }.map_err(|e| Error::Database(e))?;
+        }.map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -408,7 +408,7 @@ impl ReturnPolicyService {
         .bind(policy.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(policy)
     }
@@ -419,7 +419,7 @@ impl ReturnPolicyService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }

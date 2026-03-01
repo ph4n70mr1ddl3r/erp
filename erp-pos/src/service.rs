@@ -104,7 +104,7 @@ impl POSTransactionService {
         .bind(end_dt.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let transaction_count: i64 = sqlx::query_scalar(
             "SELECT COUNT(*) FROM pos_transactions WHERE store_id = ? AND created_at >= ? AND created_at <= ? AND status = 'Active'"
@@ -114,7 +114,7 @@ impl POSTransactionService {
         .bind(end_dt.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let total_tax: i64 = sqlx::query_scalar(
             "SELECT COALESCE(SUM(tax_amount), 0) FROM pos_transactions WHERE store_id = ? AND created_at >= ? AND created_at <= ? AND status = 'Active'"
@@ -124,7 +124,7 @@ impl POSTransactionService {
         .bind(end_dt.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(DailySummary {
             store_id,
@@ -194,7 +194,7 @@ impl GiftCardService {
         .bind(card.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         self.repo.find_by_number(pool, card_number).await
     }
@@ -233,7 +233,7 @@ impl LoyaltyService {
         .bind(account_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(points)
     }
@@ -249,7 +249,7 @@ impl LoyaltyService {
         .bind(account_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .unwrap_or(0);
         
         if balance < points {
@@ -267,7 +267,7 @@ impl LoyaltyService {
         .bind(account_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Money::new(value, Currency::USD))
     }

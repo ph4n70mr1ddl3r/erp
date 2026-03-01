@@ -23,7 +23,7 @@ impl EcommercePlatformRepository for SqliteEcommercePlatformRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("EcommercePlatform", &id.to_string()))?;
         
         Ok(row.into())
@@ -33,7 +33,7 @@ impl EcommercePlatformRepository for SqliteEcommercePlatformRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM ecommerce_platforms")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, EcommercePlatformRow>(
@@ -43,7 +43,7 @@ impl EcommercePlatformRepository for SqliteEcommercePlatformRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -71,7 +71,7 @@ impl EcommercePlatformRepository for SqliteEcommercePlatformRepository {
         .bind(platform.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(platform)
     }
@@ -87,7 +87,7 @@ impl EcommercePlatformRepository for SqliteEcommercePlatformRepository {
         .bind(platform.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(platform)
     }
@@ -180,7 +180,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("EcommerceOrder", &id.to_string()))?;
         
         let lines = self.get_lines(pool, id).await?;
@@ -195,7 +195,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
         .bind(external_id)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("EcommerceOrder", external_id))?;
         
         let id = Uuid::parse_str(&row.id).unwrap_or_default();
@@ -210,7 +210,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
                     .bind(pid.to_string())
                     .fetch_one(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                 
                 let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
                 let rows = sqlx::query_as::<_, EcommerceOrderRow>(
@@ -221,7 +221,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
                 .bind(offset as i64)
                 .fetch_all(pool)
                 .await
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
                 
                 (count, rows)
             }
@@ -229,7 +229,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
                 let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM ecommerce_orders")
                     .fetch_one(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                 
                 let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
                 let rows = sqlx::query_as::<_, EcommerceOrderRow>(
@@ -239,7 +239,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
                 .bind(offset as i64)
                 .fetch_all(pool)
                 .await
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
                 
                 (count, rows)
             }
@@ -300,7 +300,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
         .bind(order.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for line in &order.lines {
             self.create_line(pool, line).await?;
@@ -320,7 +320,7 @@ impl EcommerceOrderRepository for SqliteEcommerceOrderRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -334,7 +334,7 @@ impl SqliteEcommerceOrderRepository {
         .bind(order_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -361,7 +361,7 @@ impl SqliteEcommerceOrderRepository {
         .bind(line.quantity_fulfilled)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -558,7 +558,7 @@ impl ProductListingRepository for SqliteProductListingRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ProductListing", &id.to_string()))?;
         
         Ok(row.into())
@@ -571,7 +571,7 @@ impl ProductListingRepository for SqliteProductListingRepository {
         .bind(product_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -607,7 +607,7 @@ impl ProductListingRepository for SqliteProductListingRepository {
         .bind(listing.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(listing)
     }
@@ -625,7 +625,7 @@ impl ProductListingRepository for SqliteProductListingRepository {
         .bind(listing.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(listing)
     }

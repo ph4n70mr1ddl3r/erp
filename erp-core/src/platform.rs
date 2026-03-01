@@ -152,6 +152,7 @@ impl TenantService {
 pub struct AutomationService;
 
 impl AutomationService {
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_rule(
         pool: &SqlitePool,
         name: &str,
@@ -223,6 +224,7 @@ impl AutomationService {
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_rule(
         pool: &SqlitePool,
         id: Uuid,
@@ -409,6 +411,7 @@ impl AutomationService {
 pub struct EmailService;
 
 impl EmailService {
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_template(
         pool: &SqlitePool,
         template_code: &str,
@@ -482,6 +485,7 @@ impl EmailService {
         Ok(row.into())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn queue_email(
         pool: &SqlitePool,
         template_id: Option<Uuid>,
@@ -587,6 +591,7 @@ impl EmailService {
         Ok(processed)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn log_email(
         pool: &SqlitePool,
         message_id: Option<&str>,
@@ -641,6 +646,7 @@ impl EmailService {
 pub struct ReportService;
 
 impl ReportService {
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_report(
         pool: &SqlitePool,
         report_code: &str,
@@ -1069,6 +1075,7 @@ impl APIService {
         Ok(api_key)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn log_api_usage(
         pool: &SqlitePool,
         api_key_id: Option<Uuid>,

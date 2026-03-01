@@ -26,7 +26,7 @@ impl PortalUserRepository for SqlitePortalUserRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PortalUser", &id.to_string()))?;
         
         Ok(row.into())
@@ -39,7 +39,7 @@ impl PortalUserRepository for SqlitePortalUserRepository {
         .bind(email)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PortalUser", email))?;
         
         Ok(row.into())
@@ -52,7 +52,7 @@ impl PortalUserRepository for SqlitePortalUserRepository {
         .bind(username)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PortalUser", username))?;
         
         Ok(row.into())
@@ -84,7 +84,7 @@ impl PortalUserRepository for SqlitePortalUserRepository {
         .bind(user.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(user)
     }
@@ -102,7 +102,7 @@ impl PortalUserRepository for SqlitePortalUserRepository {
         .bind(user.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
     
@@ -114,7 +114,7 @@ impl PortalUserRepository for SqlitePortalUserRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -226,7 +226,7 @@ impl PortalOrderRepository for SqlitePortalOrderRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("PortalOrder", &id.to_string()))?;
         
         let lines = self.get_lines(pool, id).await?;
@@ -240,7 +240,7 @@ impl PortalOrderRepository for SqlitePortalOrderRepository {
         .bind(user_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let rows = sqlx::query_as::<_, PortalOrderRow>(
             "SELECT * FROM portal_orders WHERE portal_user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
@@ -250,7 +250,7 @@ impl PortalOrderRepository for SqlitePortalOrderRepository {
         .bind(pagination.offset())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let orders: Vec<PortalOrder> = futures::future::try_join_all(
             rows.into_iter().map(|r| async {
@@ -294,7 +294,7 @@ impl PortalOrderRepository for SqlitePortalOrderRepository {
         .bind(order.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for line in &order.lines {
             self.create_line(pool, line).await?;
@@ -316,7 +316,7 @@ impl PortalOrderRepository for SqlitePortalOrderRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -329,7 +329,7 @@ impl SqlitePortalOrderRepository {
         .bind(order_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -359,7 +359,7 @@ impl SqlitePortalOrderRepository {
         .bind(&line.notes)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -523,7 +523,7 @@ impl PortalSessionRepository for SqlitePortalSessionRepository {
         .bind(format!("{:?}", session.status))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(session)
     }
@@ -536,7 +536,7 @@ impl PortalSessionRepository for SqlitePortalSessionRepository {
         .bind(Utc::now().to_rfc3339())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::unauthorized("Invalid or expired session"))?;
         
         Ok(row.into())
@@ -550,7 +550,7 @@ impl PortalSessionRepository for SqlitePortalSessionRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }

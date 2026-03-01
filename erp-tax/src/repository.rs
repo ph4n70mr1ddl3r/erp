@@ -22,7 +22,7 @@ impl TaxJurisdictionRepository for SqliteTaxJurisdictionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("TaxJurisdiction", &id.to_string()))?;
         
         Ok(row.into())
@@ -32,7 +32,7 @@ impl TaxJurisdictionRepository for SqliteTaxJurisdictionRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tax_jurisdictions")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, TaxJurisdictionRow>(
@@ -42,7 +42,7 @@ impl TaxJurisdictionRepository for SqliteTaxJurisdictionRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -69,7 +69,7 @@ impl TaxJurisdictionRepository for SqliteTaxJurisdictionRepository {
         .bind(jurisdiction.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(jurisdiction)
     }
@@ -147,7 +147,7 @@ impl TaxRateRepository for SqliteTaxRateRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("TaxRate", &id.to_string()))?;
         
         Ok(row.into())
@@ -160,7 +160,7 @@ impl TaxRateRepository for SqliteTaxRateRepository {
         .bind(jurisdiction_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -169,7 +169,7 @@ impl TaxRateRepository for SqliteTaxRateRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM tax_rates")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, TaxRateRow>(
@@ -179,7 +179,7 @@ impl TaxRateRepository for SqliteTaxRateRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -208,7 +208,7 @@ impl TaxRateRepository for SqliteTaxRateRepository {
         .bind(rate.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rate)
     }
@@ -223,7 +223,7 @@ impl TaxRateRepository for SqliteTaxRateRepository {
         .bind(rate.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rate)
     }
@@ -316,7 +316,7 @@ impl TaxTransactionRepository for SqliteTaxTransactionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("TaxTransaction", &id.to_string()))?;
         
         Ok(row.into())
@@ -330,7 +330,7 @@ impl TaxTransactionRepository for SqliteTaxTransactionRepository {
         .bind(transaction_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -360,7 +360,7 @@ impl TaxTransactionRepository for SqliteTaxTransactionRepository {
         .bind(transaction.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(transaction)
     }
@@ -455,7 +455,7 @@ impl TaxExemptionRepository for SqliteTaxExemptionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("TaxExemption", &id.to_string()))?;
         
         Ok(row.into())
@@ -468,7 +468,7 @@ impl TaxExemptionRepository for SqliteTaxExemptionRepository {
         .bind(customer_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -492,7 +492,7 @@ impl TaxExemptionRepository for SqliteTaxExemptionRepository {
         .bind(exemption.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(exemption)
     }

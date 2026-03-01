@@ -236,7 +236,7 @@ impl TaxReportService {
         .bind(period_end.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let taxable_sales: i64 = sqlx::query_scalar(
             "SELECT COALESCE(SUM(taxable_amount), 0) FROM tax_transactions WHERE jurisdiction_id = ? AND transaction_date >= ? AND transaction_date <= ? AND exempt_amount = 0"
@@ -246,7 +246,7 @@ impl TaxReportService {
         .bind(period_end.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let tax_collected: i64 = sqlx::query_scalar(
             "SELECT COALESCE(SUM(tax_amount), 0) FROM tax_transactions WHERE jurisdiction_id = ? AND transaction_date >= ? AND transaction_date <= ?"
@@ -256,7 +256,7 @@ impl TaxReportService {
         .bind(period_end.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let exempt_sales = total_sales - taxable_sales;
         
@@ -300,7 +300,7 @@ impl TaxReportService {
         .bind(report.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(report)
     }

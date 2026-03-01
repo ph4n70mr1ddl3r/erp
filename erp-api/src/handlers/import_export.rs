@@ -38,7 +38,7 @@ async fn export_products(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<Str
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e.into()))?;
+    .map_err(|e| erp_core::Error::Database(e))?;
     
     let mut csv = String::from("id,sku,name,unit_of_measure,status\n");
     for (id, sku, name, uom, status) in rows {
@@ -53,7 +53,7 @@ async fn export_customers(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<St
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e.into()))?;
+    .map_err(|e| erp_core::Error::Database(e))?;
     
     let mut csv = String::from("id,code,name,email,status\n");
     for (id, code, name, email, status) in rows {
@@ -68,7 +68,7 @@ async fn export_vendors(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<Stri
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e.into()))?;
+    .map_err(|e| erp_core::Error::Database(e))?;
     
     let mut csv = String::from("id,code,name,email,status\n");
     for (id, code, name, email, status) in rows {
@@ -83,7 +83,7 @@ async fn export_accounts(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<Str
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e.into()))?;
+    .map_err(|e| erp_core::Error::Database(e))?;
     
     let mut csv = String::from("id,code,name,account_type,status\n");
     for (id, code, name, account_type, status) in rows {
@@ -98,7 +98,7 @@ async fn export_employees(pool: &sqlx::SqlitePool) -> crate::error::ApiResult<St
     )
     .fetch_all(pool)
     .await
-    .map_err(|e| erp_core::Error::Database(e.into()))?;
+    .map_err(|e| erp_core::Error::Database(e))?;
     
     let mut csv = String::from("id,employee_number,first_name,last_name,status\n");
     for (id, emp_num, first, last, status) in rows {

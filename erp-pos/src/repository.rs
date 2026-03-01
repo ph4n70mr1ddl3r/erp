@@ -23,7 +23,7 @@ impl POSStoreRepository for SqlitePOSStoreRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("POSStore", &id.to_string()))?;
         
         Ok(row.into())
@@ -33,7 +33,7 @@ impl POSStoreRepository for SqlitePOSStoreRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM pos_stores")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, POSStoreRow>(
@@ -43,7 +43,7 @@ impl POSStoreRepository for SqlitePOSStoreRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -73,7 +73,7 @@ impl POSStoreRepository for SqlitePOSStoreRepository {
         .bind(store.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(store)
     }
@@ -89,7 +89,7 @@ impl POSStoreRepository for SqlitePOSStoreRepository {
         .bind(store.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(store)
     }
@@ -171,7 +171,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("POSTransaction", &id.to_string()))?;
         
         let lines = self.get_lines(pool, id).await?;
@@ -186,7 +186,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
                     .bind(sid.to_string())
                     .fetch_one(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                 
                 let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
                 let rows = sqlx::query_as::<_, POSTransactionRow>(
@@ -197,7 +197,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
                 .bind(offset as i64)
                 .fetch_all(pool)
                 .await
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
                 
                 (count, rows)
             }
@@ -205,7 +205,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
                 let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM pos_transactions")
                     .fetch_one(pool)
                     .await
-                    .map_err(|e| Error::Database(e))?;
+                    .map_err(Error::Database)?;
                 
                 let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
                 let rows = sqlx::query_as::<_, POSTransactionRow>(
@@ -215,7 +215,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
                 .bind(offset as i64)
                 .fetch_all(pool)
                 .await
-                .map_err(|e| Error::Database(e))?;
+                .map_err(Error::Database)?;
                 
                 (count, rows)
             }
@@ -257,7 +257,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
         .bind(transaction.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for line in &transaction.lines {
             self.create_line(pool, line).await?;
@@ -279,7 +279,7 @@ impl POSTransactionRepository for SqlitePOSTransactionRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -293,7 +293,7 @@ impl SqlitePOSTransactionRepository {
         .bind(transaction_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -319,7 +319,7 @@ impl SqlitePOSTransactionRepository {
         .bind(&line.serial_number)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -331,7 +331,7 @@ impl SqlitePOSTransactionRepository {
         .bind(transaction_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -352,7 +352,7 @@ impl SqlitePOSTransactionRepository {
         .bind(payment.gift_card_id.map(|id| id.to_string()))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -522,7 +522,7 @@ impl GiftCardRepository for SqliteGiftCardRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("GiftCard", &id.to_string()))?;
         
         Ok(row.into())
@@ -535,7 +535,7 @@ impl GiftCardRepository for SqliteGiftCardRepository {
         .bind(number)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("GiftCard", number))?;
         
         Ok(row.into())
@@ -559,7 +559,7 @@ impl GiftCardRepository for SqliteGiftCardRepository {
         .bind(card.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(card)
     }
@@ -574,7 +574,7 @@ impl GiftCardRepository for SqliteGiftCardRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }

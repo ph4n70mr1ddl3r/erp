@@ -11,6 +11,12 @@ pub struct BaseEntity {
     pub updated_by: Option<Uuid>,
 }
 
+impl Default for BaseEntity {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BaseEntity {
     pub fn new() -> Self {
         let now = Utc::now();
@@ -35,9 +41,10 @@ impl BaseEntity {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type, Default)]
 #[sqlx(type_name = "TEXT")]
 pub enum Status {
+    #[default]
     Active,
     Inactive,
     Draft,
@@ -46,12 +53,6 @@ pub enum Status {
     Rejected,
     Completed,
     Cancelled,
-}
-
-impl Default for Status {
-    fn default() -> Self {
-        Status::Active
-    }
 }
 
 impl std::str::FromStr for Status {
@@ -101,9 +102,10 @@ impl Money {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Default)]
 #[sqlx(type_name = "TEXT")]
 pub enum Currency {
+    #[default]
     USD,
     EUR,
     GBP,
@@ -114,12 +116,6 @@ pub enum Currency {
     CHF,
     INR,
     MXN,
-}
-
-impl Default for Currency {
-    fn default() -> Self {
-        Currency::USD
-    }
 }
 
 impl std::fmt::Display for Currency {

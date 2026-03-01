@@ -6,9 +6,16 @@ use crate::models::{CustomFieldDefinition, CustomFieldType, CustomFieldValue};
 
 pub struct CustomFieldService;
 
+impl Default for CustomFieldService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CustomFieldService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_definition(
         pool: &SqlitePool,
         entity_type: &str,

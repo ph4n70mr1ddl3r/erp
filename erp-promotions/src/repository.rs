@@ -17,7 +17,7 @@ impl SqlitePromotionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Promotion", &id.to_string()))?;
 
         let applies_to = Self::load_applies_to(pool, id).await?;
@@ -34,7 +34,7 @@ impl SqlitePromotionRepository {
         .bind(code)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Promotion", code))?;
 
         let id = Uuid::parse_str(&row.id).unwrap_or_default();
@@ -55,12 +55,12 @@ impl SqlitePromotionRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM promotions")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         let mut promotions = Vec::new();
         for row in rows {
@@ -94,7 +94,7 @@ impl SqlitePromotionRepository {
         .bind(&now)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let mut promotions = Vec::new();
         for row in rows {
@@ -135,7 +135,7 @@ impl SqlitePromotionRepository {
         .bind(promotion.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Self::save_applies_to(pool, promotion.base.id, &promotion.applies_to).await?;
         Ok(())
@@ -169,7 +169,7 @@ impl SqlitePromotionRepository {
         .bind(promotion.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Self::save_applies_to(pool, promotion.base.id, &promotion.applies_to).await?;
         Ok(())
@@ -180,7 +180,7 @@ impl SqlitePromotionRepository {
             .bind(id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 
@@ -204,7 +204,7 @@ impl SqlitePromotionRepository {
         .bind(promotion_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let category_rows: Vec<CatRow> = sqlx::query_as(
             "SELECT category_id FROM promotion_categories WHERE promotion_id = ? AND include = 1"
@@ -212,7 +212,7 @@ impl SqlitePromotionRepository {
         .bind(promotion_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let exclude_product_rows: Vec<IdRow> = sqlx::query_as(
             "SELECT product_id FROM promotion_products WHERE promotion_id = ? AND include = 0"
@@ -220,7 +220,7 @@ impl SqlitePromotionRepository {
         .bind(promotion_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let exclude_category_rows: Vec<CatRow> = sqlx::query_as(
             "SELECT category_id FROM promotion_categories WHERE promotion_id = ? AND include = 0"
@@ -228,7 +228,7 @@ impl SqlitePromotionRepository {
         .bind(promotion_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let group_rows: Vec<GroupRow> = sqlx::query_as(
             "SELECT customer_group_id FROM promotion_customer_groups WHERE promotion_id = ?"
@@ -236,7 +236,7 @@ impl SqlitePromotionRepository {
         .bind(promotion_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(PromotionAppliesTo {
             product_ids: product_rows.iter().filter_map(|r| Uuid::parse_str(&r.product_id).ok()).collect(),
@@ -407,7 +407,7 @@ impl SqliteCouponRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Coupon", &id.to_string()))?;
 
         Ok(row.into())
@@ -423,7 +423,7 @@ impl SqliteCouponRepository {
         .bind(code)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Coupon", code))?;
 
         Ok(row.into())
@@ -442,12 +442,12 @@ impl SqliteCouponRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM coupons")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         Ok(Paginated {
             items: rows.into_iter().map(|r| r.into()).collect(),
@@ -485,7 +485,7 @@ impl SqliteCouponRepository {
         .bind(coupon.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(())
     }
@@ -495,7 +495,7 @@ impl SqliteCouponRepository {
             .bind(id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 
@@ -504,7 +504,7 @@ impl SqliteCouponRepository {
             .bind(code)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -603,7 +603,7 @@ impl SqlitePromotionUsageRepository {
         .bind(format!("{:?}", usage.status))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 
@@ -618,7 +618,7 @@ impl SqlitePromotionUsageRepository {
         .bind(promotion_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -634,7 +634,7 @@ impl SqlitePromotionUsageRepository {
         .bind(promotion_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(PromotionReport {
             promotion_id,

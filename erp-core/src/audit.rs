@@ -53,6 +53,7 @@ impl AuditLog {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn log_audit(
     pool: &sqlx::SqlitePool,
     entity_type: &str,
@@ -81,7 +82,7 @@ pub async fn log_audit(
     .bind(log.created_at.to_rfc3339())
     .execute(pool)
     .await
-    .map_err(|e| crate::Error::Database(e.into()))?;
+    .map_err(crate::Error::Database)?;
     
     Ok(())
 }
@@ -106,7 +107,7 @@ pub async fn get_audit_logs(
             .bind(offset as i64)
             .fetch_all(pool)
             .await
-            .map_err(|e| crate::Error::Database(e.into()))?;
+            .map_err(crate::Error::Database)?;
             
             let total: (i64,) = sqlx::query_as(
                 "SELECT COUNT(*) FROM audit_logs WHERE entity_type = ? AND entity_id = ?"
@@ -115,7 +116,7 @@ pub async fn get_audit_logs(
             .bind(eid)
             .fetch_one(pool)
             .await
-            .map_err(|e| crate::Error::Database(e.into()))?;
+            .map_err(crate::Error::Database)?;
             
             (logs, total.0)
         } else {
@@ -127,7 +128,7 @@ pub async fn get_audit_logs(
             .bind(offset as i64)
             .fetch_all(pool)
             .await
-            .map_err(|e| crate::Error::Database(e.into()))?;
+            .map_err(crate::Error::Database)?;
             
             let total: (i64,) = sqlx::query_as(
                 "SELECT COUNT(*) FROM audit_logs WHERE entity_type = ?"
@@ -135,7 +136,7 @@ pub async fn get_audit_logs(
             .bind(et)
             .fetch_one(pool)
             .await
-            .map_err(|e| crate::Error::Database(e.into()))?;
+            .map_err(crate::Error::Database)?;
             
             (logs, total.0)
         }
@@ -147,12 +148,12 @@ pub async fn get_audit_logs(
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| crate::Error::Database(e.into()))?;
+        .map_err(crate::Error::Database)?;
         
         let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM audit_logs")
             .fetch_one(pool)
             .await
-            .map_err(|e| crate::Error::Database(e.into()))?;
+            .map_err(crate::Error::Database)?;
         
         (logs, total.0)
     };

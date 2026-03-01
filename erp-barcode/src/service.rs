@@ -64,7 +64,7 @@ impl BarcodeService {
         .bind(definition_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("BarcodeDefinition", &definition_id.to_string()))?;
         
         let next_seq = row.sequence_current + 1;
@@ -75,7 +75,7 @@ impl BarcodeService {
         .bind(definition_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let padded = format!("{:0width$}", next_seq, width = row.padding_length as usize);
         let mut result = row.prefix.unwrap_or_default();

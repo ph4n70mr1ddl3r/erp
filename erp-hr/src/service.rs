@@ -87,7 +87,7 @@ impl LeaveService {
         .bind("Active")
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(lt)
     }
@@ -98,7 +98,7 @@ impl LeaveService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -113,7 +113,7 @@ impl LeaveService {
         .bind(year)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("LeaveBalance", &format!("{}:{}:{}", employee_id, leave_type_id, year)))?;
         
         Ok(row.into())
@@ -160,7 +160,7 @@ impl LeaveService {
         .bind(req.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(req)
     }
@@ -176,7 +176,7 @@ impl LeaveService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_leave_request(pool, id).await
     }
@@ -191,7 +191,7 @@ impl LeaveService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_leave_request(pool, id).await
     }
@@ -204,7 +204,7 @@ impl LeaveService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("LeaveRequest", &id.to_string()))?;
         
         Ok(row.into())
@@ -217,7 +217,7 @@ impl LeaveService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -351,7 +351,7 @@ impl ExpenseService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         for (category_id, expense_date, desc, amount) in lines {
             let line_id = Uuid::new_v4();
@@ -367,7 +367,7 @@ impl ExpenseService {
             .bind(amount)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         }
         
         Self::get_expense_report(pool, id).await
@@ -381,7 +381,7 @@ impl ExpenseService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ExpenseReport", &id.to_string()))?;
         
         Ok(row.into())
@@ -398,7 +398,7 @@ impl ExpenseService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_expense_report(pool, id).await
     }
@@ -415,7 +415,7 @@ impl ExpenseService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_expense_report(pool, id).await
     }
@@ -432,7 +432,7 @@ impl ExpenseService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_expense_report(pool, id).await
     }
@@ -446,7 +446,7 @@ impl ExpenseService {
             .bind(eid.to_string())
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?
+            .map_err(Error::Database)?
         } else {
             sqlx::query_as::<_, ExpenseReportRow>(
                 "SELECT id, report_number, employee_id, title, description, total_amount, status, submitted_at, approved_by, approved_at, rejected_at, rejection_reason, created_at, updated_at
@@ -454,7 +454,7 @@ impl ExpenseService {
             )
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?
+            .map_err(Error::Database)?
         };
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
@@ -479,7 +479,7 @@ impl ExpenseService {
         .bind(&cat.description)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(cat)
     }
@@ -490,7 +490,7 @@ impl ExpenseService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }

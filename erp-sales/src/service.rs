@@ -162,7 +162,7 @@ impl LeadService {
         .bind(lead.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(lead)
     }
@@ -175,7 +175,7 @@ impl LeadService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Lead", &id.to_string()))?;
         
         Ok(row.into())
@@ -200,7 +200,7 @@ impl LeadService {
                 .fetch_all(pool)
                 .await
             }
-        }.map_err(|e| Error::Database(e))?;
+        }.map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -215,7 +215,7 @@ impl LeadService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, id).await
     }
@@ -231,7 +231,7 @@ impl LeadService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, id).await
     }
@@ -345,7 +345,7 @@ impl OpportunityService {
         .bind(opp.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(opp)
     }
@@ -358,7 +358,7 @@ impl OpportunityService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Opportunity", &id.to_string()))?;
         
         let activities = Self::get_activities(pool, id).await?;
@@ -373,7 +373,7 @@ impl OpportunityService {
         .bind(opportunity_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -398,7 +398,7 @@ impl OpportunityService {
         let rows = query_builder
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let mut map: std::collections::HashMap<String, Vec<OpportunityActivity>> = 
             opportunity_ids.iter().map(|id| (id.clone(), Vec::new())).collect();
@@ -432,7 +432,7 @@ impl OpportunityService {
                 .fetch_all(pool)
                 .await
             }
-        }.map_err(|e| Error::Database(e))?;
+        }.map_err(Error::Database)?;
         
         let ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
         let activities_map = Self::get_activities_batch(pool, &ids).await?;
@@ -475,7 +475,7 @@ impl OpportunityService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, id).await
     }
@@ -514,7 +514,7 @@ impl OpportunityService {
         .bind(activity.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(activity)
     }
@@ -526,7 +526,7 @@ impl OpportunityService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, ActivityRow>(
             "SELECT id, opportunity_id, activity_type, subject, description, due_date, completed, created_at
@@ -535,7 +535,7 @@ impl OpportunityService {
         .bind(id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.into())
     }
@@ -680,7 +680,7 @@ impl TerritoryService {
         .bind(territory.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(territory)
     }
@@ -721,7 +721,7 @@ impl TerritoryService {
         .bind(assignment.is_primary as i32)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(assignment)
     }
@@ -740,7 +740,7 @@ impl TerritoryService {
         .bind(territory_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Territory", &territory_id.to_string()))?;
         
         Ok(TerritoryPerformance {
@@ -812,7 +812,7 @@ impl CommissionService {
         .bind(plan.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(plan)
     }
@@ -846,7 +846,7 @@ impl CommissionService {
         .bind(tier.rate_percent)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(tier)
     }
@@ -869,7 +869,7 @@ impl CommissionService {
         .bind(period_end.to_rfc3339())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let gross_sales = sales_row.gross_sales;
         let returns = sales_row.returns;
@@ -885,7 +885,7 @@ impl CommissionService {
         .bind(net_sales)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let rate = tier_row.map(|t| t.rate_percent).unwrap_or(5.0);
         let commission_amount = (net_sales as f64 * rate / 100.0) as i64;
@@ -924,7 +924,7 @@ impl CommissionService {
         .bind(commission.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(commission)
     }
@@ -941,7 +941,7 @@ impl CommissionService {
         .bind(commission_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, CommissionRow>(
             "SELECT id, sales_rep_id, plan_id, period_start, period_end, gross_sales, returns, net_sales, commission_rate, commission_amount, status, paid_at, created_at
@@ -950,7 +950,7 @@ impl CommissionService {
         .bind(commission_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.into())
     }
@@ -1076,7 +1076,7 @@ impl ContractService {
         .bind(contract.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(contract)
     }
@@ -1120,7 +1120,7 @@ impl ContractService {
         .bind(line.next_billing_date.map(|d| d.to_rfc3339()))
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(line)
     }
@@ -1153,7 +1153,7 @@ impl ContractService {
         .bind(renewal.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE contracts SET end_date = ?, value = COALESCE(?, value), status = 'Active' WHERE id = ?"
@@ -1163,7 +1163,7 @@ impl ContractService {
         .bind(contract_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(renewal)
     }
@@ -1178,7 +1178,7 @@ impl ContractService {
         .bind(contract_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE contract_lines SET status = 'Cancelled' WHERE contract_id = ?"
@@ -1186,7 +1186,7 @@ impl ContractService {
         .bind(contract_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_contract(pool, contract_id).await
     }
@@ -1201,7 +1201,7 @@ impl ContractService {
         .bind(days.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -1214,7 +1214,7 @@ impl ContractService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Contract", &id.to_string()))?;
         
         Ok(row.into())
@@ -1337,7 +1337,7 @@ impl SubscriptionService {
         .bind(plan.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(plan)
     }
@@ -1359,7 +1359,7 @@ impl SubscriptionService {
         .bind(plan_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let period_end = now + chrono::Duration::days((plan_row.billing_interval * 30) as i64);
         let status = if plan_row.trial_days > 0 {
@@ -1404,7 +1404,7 @@ impl SubscriptionService {
         .bind(subscription.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(subscription)
     }
@@ -1445,7 +1445,7 @@ impl SubscriptionService {
         .bind(usage.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(usage)
     }
@@ -1462,7 +1462,7 @@ impl SubscriptionService {
         .bind(subscription_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let base_amount = sub_row.price_override.unwrap_or(sub_row.base_price) * sub_row.quantity as i64;
         
@@ -1474,7 +1474,7 @@ impl SubscriptionService {
         .bind(subscription_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let subtotal = base_amount + usage_row.total_usage;
         let tax_amount = (subtotal as f64 * 0.1) as i64;
@@ -1521,7 +1521,7 @@ impl SubscriptionService {
         .bind(invoice.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE subscription_usage SET invoice_id = ? WHERE subscription_id = ? AND invoice_id IS NULL"
@@ -1530,7 +1530,7 @@ impl SubscriptionService {
         .bind(subscription_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(invoice)
     }
@@ -1546,7 +1546,7 @@ impl SubscriptionService {
         .bind(subscription_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_subscription(pool, subscription_id).await
     }
@@ -1560,7 +1560,7 @@ impl SubscriptionService {
         .bind(subscription_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get_subscription(pool, subscription_id).await
     }
@@ -1573,7 +1573,7 @@ impl SubscriptionService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Subscription", &id.to_string()))?;
         
         Ok(row.into())
@@ -1712,7 +1712,7 @@ impl CampaignService {
         .bind(campaign.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(campaign)
     }
@@ -1737,7 +1737,7 @@ impl CampaignService {
         .bind(campaign_lead.lead_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(campaign_lead)
     }
@@ -1763,7 +1763,7 @@ impl CampaignService {
         .bind(lead_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let row = sqlx::query_as::<_, CampaignLeadRow>(
             "SELECT id, campaign_id, lead_id, responded_at, response_type, converted, conversion_value FROM campaign_leads WHERE campaign_id = ? AND lead_id = ?"
@@ -1772,7 +1772,7 @@ impl CampaignService {
         .bind(lead_id.to_string())
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(row.into())
     }
@@ -1792,7 +1792,7 @@ impl CampaignService {
         .bind(campaign_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Campaign", &campaign_id.to_string()))?;
         
         let spend = if row.actual_spend > 0 { row.actual_spend } else { row.budget };

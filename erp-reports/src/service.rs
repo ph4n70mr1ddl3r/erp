@@ -137,7 +137,7 @@ impl ReportGeneratorService {
         let rows = sqlx::query(query)
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let row_count = rows.len() as i64;
         
@@ -155,7 +155,7 @@ impl ReportGeneratorService {
         let rows = sqlx::query(query)
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let row_count = rows.len() as i64;
         
@@ -174,7 +174,7 @@ impl DashboardService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ReportDashboard", &id.to_string()))?;
         
         let widgets = self.get_widgets(pool, id).await?;
@@ -203,7 +203,7 @@ impl DashboardService {
         .bind(dashboard.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(dashboard)
     }
@@ -215,7 +215,7 @@ impl DashboardService {
         .bind(dashboard_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }

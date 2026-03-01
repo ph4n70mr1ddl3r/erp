@@ -24,7 +24,7 @@ impl ReturnRepository for SqliteReturnRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ReturnOrder", &id.to_string()))?;
         
         let lines = self.get_lines(pool, id).await?;
@@ -35,7 +35,7 @@ impl ReturnRepository for SqliteReturnRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM return_orders")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, ReturnOrderRow>(
@@ -45,7 +45,7 @@ impl ReturnRepository for SqliteReturnRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let mut orders = Vec::new();
         for row in rows {
@@ -80,7 +80,7 @@ impl ReturnRepository for SqliteReturnRepository {
         .bind(order.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for line in &order.lines {
             self.create_line(pool, line).await?;
@@ -104,7 +104,7 @@ impl ReturnRepository for SqliteReturnRepository {
         .bind(order.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(order)
     }
@@ -122,7 +122,7 @@ impl ReturnRepository for SqliteReturnRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -136,7 +136,7 @@ impl SqliteReturnRepository {
         .bind(return_order_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -161,7 +161,7 @@ impl SqliteReturnRepository {
         .bind(line.credit_amount.amount)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -323,7 +323,7 @@ impl CreditMemoRepository for SqliteCreditMemoRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("CreditMemo", &id.to_string()))?;
         
         Ok(row.into())
@@ -333,7 +333,7 @@ impl CreditMemoRepository for SqliteCreditMemoRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM credit_memos")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, CreditMemoRow>(
@@ -343,7 +343,7 @@ impl CreditMemoRepository for SqliteCreditMemoRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -369,7 +369,7 @@ impl CreditMemoRepository for SqliteCreditMemoRepository {
         .bind(memo.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for line in &memo.lines {
             sqlx::query(
@@ -385,7 +385,7 @@ impl CreditMemoRepository for SqliteCreditMemoRepository {
             .bind(line.line_total.amount)
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         }
         
         Ok(memo)
@@ -401,7 +401,7 @@ impl CreditMemoRepository for SqliteCreditMemoRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }

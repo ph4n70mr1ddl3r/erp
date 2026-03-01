@@ -24,7 +24,7 @@ impl BarcodeRepository for SqliteBarcodeRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Barcode", &id.to_string()))?;
         
         Ok(row.into())
@@ -37,7 +37,7 @@ impl BarcodeRepository for SqliteBarcodeRepository {
         .bind(barcode)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Barcode", barcode))?;
         
         Ok(row.into())
@@ -51,7 +51,7 @@ impl BarcodeRepository for SqliteBarcodeRepository {
         .bind(entity_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -73,7 +73,7 @@ impl BarcodeRepository for SqliteBarcodeRepository {
         .bind(barcode.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(barcode)
     }
@@ -88,7 +88,7 @@ impl BarcodeRepository for SqliteBarcodeRepository {
         .bind(barcode.entity_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE barcodes SET is_primary = 1 WHERE id = ?"
@@ -96,7 +96,7 @@ impl BarcodeRepository for SqliteBarcodeRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -186,7 +186,7 @@ impl BarcodePrintJobRepository for SqliteBarcodePrintJobRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("BarcodePrintJob", &id.to_string()))?;
         
         let items = self.get_items(pool, id).await?;
@@ -212,7 +212,7 @@ impl BarcodePrintJobRepository for SqliteBarcodePrintJobRepository {
         .bind(job.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         for item in &job.items {
             self.create_item(pool, item).await?;
@@ -234,7 +234,7 @@ impl BarcodePrintJobRepository for SqliteBarcodePrintJobRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -248,7 +248,7 @@ impl SqliteBarcodePrintJobRepository {
         .bind(job_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -270,7 +270,7 @@ impl SqliteBarcodePrintJobRepository {
         .bind(&item.error_message)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -407,7 +407,7 @@ impl ScanEventRepository for SqliteScanEventRepository {
         .bind(&event.metadata)
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(event)
     }
@@ -420,7 +420,7 @@ impl ScanEventRepository for SqliteScanEventRepository {
         .bind(limit)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }

@@ -26,7 +26,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("AutomationWorkflow", &id.to_string()))?;
 
         Ok(row.into())
@@ -36,7 +36,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM automation_workflows")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
 
         let rows = sqlx::query_as::<_, WorkflowRow>(
             "SELECT * FROM automation_workflows ORDER BY created_at DESC LIMIT ? OFFSET ?"
@@ -45,7 +45,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
         .bind(pagination.offset())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -56,7 +56,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -87,7 +87,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
         .bind(workflow.last_modified_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(workflow)
     }
@@ -107,7 +107,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
         .bind(workflow.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 
@@ -116,7 +116,7 @@ impl WorkflowRepository for SqliteWorkflowRepository {
             .bind(id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -242,7 +242,7 @@ impl WorkflowExecutionRepository for SqliteWorkflowExecutionRepository {
         .bind(execution.base.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(execution)
     }
@@ -254,7 +254,7 @@ impl WorkflowExecutionRepository for SqliteWorkflowExecutionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("WorkflowExecution", &id.to_string()))?;
 
         Ok(row.into())
@@ -268,7 +268,7 @@ impl WorkflowExecutionRepository for SqliteWorkflowExecutionRepository {
         .bind(limit)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -286,7 +286,7 @@ impl WorkflowExecutionRepository for SqliteWorkflowExecutionRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -389,7 +389,7 @@ impl ScheduledJobRepository for SqliteScheduledJobRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ScheduledJob", &id.to_string()))?;
 
         Ok(row.into())
@@ -402,7 +402,7 @@ impl ScheduledJobRepository for SqliteScheduledJobRepository {
         .bind(Utc::now().to_rfc3339())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -428,7 +428,7 @@ impl ScheduledJobRepository for SqliteScheduledJobRepository {
         .bind(job.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(job)
     }
@@ -444,7 +444,7 @@ impl ScheduledJobRepository for SqliteScheduledJobRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         Ok(())
     }
 }
@@ -539,7 +539,7 @@ impl WebhookRequestRepository for SqliteWebhookRequestRepository {
         .bind(request.received_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(request)
     }
@@ -552,7 +552,7 @@ impl WebhookRequestRepository for SqliteWebhookRequestRepository {
         .bind(limit)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }

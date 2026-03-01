@@ -15,7 +15,7 @@ impl WorkflowService {
         .bind(entity_type)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(row.map(|r| r.into()))
     }
@@ -27,7 +27,7 @@ impl WorkflowService {
         )
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -49,7 +49,7 @@ impl WorkflowService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(workflow)
     }
@@ -73,7 +73,7 @@ impl ApprovalService {
         .bind(workflow_id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("Workflow", &workflow_id.to_string()))?;
         
         let workflow: Workflow = workflow.into();
@@ -116,7 +116,7 @@ impl ApprovalService {
         .bind(request.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(request)
     }
@@ -150,7 +150,7 @@ impl ApprovalService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         let new_level = request.current_level + 1;
         let (status, completed_at) = if new_level > request.max_level {
@@ -168,7 +168,7 @@ impl ApprovalService {
         .bind(request_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_request(pool, request_id).await
     }
@@ -202,7 +202,7 @@ impl ApprovalService {
         .bind(now.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         sqlx::query(
             "UPDATE approval_requests SET status = ?, completed_at = ? WHERE id = ?"
@@ -212,7 +212,7 @@ impl ApprovalService {
         .bind(request_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Self::get_request(pool, request_id).await
     }
@@ -225,7 +225,7 @@ impl ApprovalService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ApprovalRequest", &id.to_string()))?;
         
         Ok(row.into())
@@ -235,7 +235,7 @@ impl ApprovalService {
         let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM approval_requests WHERE status = 'Pending'")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         let rows = sqlx::query_as::<_, ApprovalRequestRow>(
             "SELECT id, workflow_id, entity_type, entity_id, current_level, max_level, status, requested_by, requested_at, completed_at, created_at
@@ -245,7 +245,7 @@ impl ApprovalService {
         .bind(pagination.offset() as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(
             rows.into_iter().map(|r| r.into()).collect(),
@@ -263,7 +263,7 @@ impl ApprovalService {
         .bind(entity_id)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(row.map(|r| r.into()))
     }
@@ -276,7 +276,7 @@ impl ApprovalService {
         .bind(request_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -322,7 +322,7 @@ impl NotificationService {
         .bind(notification.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e.into()))?;
+        .map_err(Error::Database)?;
         
         Ok(notification)
     }
@@ -340,7 +340,7 @@ impl NotificationService {
             .bind(user_id.to_string())
             .fetch_all(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -350,7 +350,7 @@ impl NotificationService {
             .bind(id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 
@@ -359,7 +359,7 @@ impl NotificationService {
             .bind(user_id.to_string())
             .execute(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         Ok(())
     }
 
@@ -368,7 +368,7 @@ impl NotificationService {
             .bind(user_id.to_string())
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e.into()))?;
+            .map_err(Error::Database)?;
         Ok(count.0 as u64)
     }
 }

@@ -76,7 +76,7 @@ impl SupplierScorecardService {
         .bind(scorecard.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(scorecard)
     }
@@ -89,7 +89,7 @@ impl SupplierScorecardService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("SupplierScorecard", &id.to_string()))?;
         
         Ok(row.into())
@@ -103,7 +103,7 @@ impl SupplierScorecardService {
         .bind(vendor_id.to_string())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -155,7 +155,7 @@ impl SupplierScorecardService {
         .bind(perf.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(perf)
     }
@@ -176,7 +176,7 @@ impl SupplierScorecardService {
         .bind(&period_start)
         .fetch_one(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         let total = stats.0 as i32;
         let on_time_count = stats.1 as i32;
@@ -195,7 +195,7 @@ impl SupplierScorecardService {
         .bind(scorecard_id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, scorecard_id).await
     }

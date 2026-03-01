@@ -91,7 +91,7 @@ impl ProductionScheduleService {
         .bind(schedule.created_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(schedule)
     }
@@ -104,7 +104,7 @@ impl ProductionScheduleService {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ProductionSchedule", &id.to_string()))?;
         
         Ok(row.into())
@@ -129,7 +129,7 @@ impl ProductionScheduleService {
                 .fetch_all(pool)
                 .await
             }
-        }.map_err(|e| Error::Database(e))?;
+        }.map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -143,7 +143,7 @@ impl ProductionScheduleService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, id).await
     }
@@ -157,7 +157,7 @@ impl ProductionScheduleService {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Self::get(pool, id).await
     }

@@ -25,7 +25,7 @@ impl ReportDefinitionRepository for SqliteReportDefinitionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ReportDefinition", &id.to_string()))?;
         
         Ok(row.into())
@@ -38,7 +38,7 @@ impl ReportDefinitionRepository for SqliteReportDefinitionRepository {
         .bind(code)
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ReportDefinition", code))?;
         
         Ok(row.into())
@@ -48,7 +48,7 @@ impl ReportDefinitionRepository for SqliteReportDefinitionRepository {
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM report_definitions")
             .fetch_one(pool)
             .await
-            .map_err(|e| Error::Database(e))?;
+            .map_err(Error::Database)?;
         
         let offset = (pagination.page.saturating_sub(1)) * pagination.per_page;
         let rows = sqlx::query_as::<_, ReportDefinitionRow>(
@@ -58,7 +58,7 @@ impl ReportDefinitionRepository for SqliteReportDefinitionRepository {
         .bind(offset as i64)
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(Paginated::new(rows.into_iter().map(|r| r.into()).collect(), count as u64, pagination))
     }
@@ -87,7 +87,7 @@ impl ReportDefinitionRepository for SqliteReportDefinitionRepository {
         .bind(report.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(report)
     }
@@ -105,7 +105,7 @@ impl ReportDefinitionRepository for SqliteReportDefinitionRepository {
         .bind(report.base.id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(report)
     }
@@ -203,7 +203,7 @@ impl ReportScheduleRepository for SqliteReportScheduleRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ReportSchedule", &id.to_string()))?;
         
         Ok(row.into())
@@ -217,7 +217,7 @@ impl ReportScheduleRepository for SqliteReportScheduleRepository {
         .bind(now.to_rfc3339())
         .fetch_all(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -253,7 +253,7 @@ impl ReportScheduleRepository for SqliteReportScheduleRepository {
         .bind(schedule.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(schedule)
     }
@@ -269,7 +269,7 @@ impl ReportScheduleRepository for SqliteReportScheduleRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
@@ -382,7 +382,7 @@ impl ReportExecutionRepository for SqliteReportExecutionRepository {
         .bind(id.to_string())
         .fetch_optional(pool)
         .await
-        .map_err(|e| Error::Database(e))?
+        .map_err(Error::Database)?
         .ok_or_else(|| Error::not_found("ReportExecution", &id.to_string()))?;
         
         Ok(row.into())
@@ -413,7 +413,7 @@ impl ReportExecutionRepository for SqliteReportExecutionRepository {
         .bind(execution.base.updated_at.to_rfc3339())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(execution)
     }
@@ -434,7 +434,7 @@ impl ReportExecutionRepository for SqliteReportExecutionRepository {
         .bind(id.to_string())
         .execute(pool)
         .await
-        .map_err(|e| Error::Database(e))?;
+        .map_err(Error::Database)?;
         
         Ok(())
     }
