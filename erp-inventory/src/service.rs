@@ -145,7 +145,7 @@ impl StockService {
                                 )));
                             }
                         }
-                        Err(Error::NotFound { .. }) => {
+                        Err(Error::NotFound(_)) => {
                             return Err(Error::business_rule("No stock available at source location"));
                         }
                         Err(e) => return Err(e),

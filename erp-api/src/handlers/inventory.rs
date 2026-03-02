@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use validator::Validate;
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{BaseEntity, Status, Pagination};
+use erp_core::{BaseEntity, Status, Pagination, Address};
 use erp_inventory::{Product, ProductType, Warehouse, StockMovement, StockLevel, MovementType, 
                     ProductService, WarehouseService, StockService};
 
@@ -225,7 +225,6 @@ pub async fn create_warehouse(
     
     let service = WarehouseService::new();
     
-    use erp_core::Address;
     let warehouse = Warehouse {
         base: BaseEntity::new(),
         code: req.code,

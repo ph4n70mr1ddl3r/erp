@@ -4,6 +4,69 @@ use uuid::Uuid;
 use erp_core::Result;
 use crate::models::*;
 
+fn parse_price_rule_type(s: &str) -> PriceRuleType {
+    match s {
+        "BasePrice" => PriceRuleType::BasePrice,
+        "Markup" => PriceRuleType::Markup,
+        "Margin" => PriceRuleType::Margin,
+        "Surcharge" => PriceRuleType::Surcharge,
+        "Bundle" => PriceRuleType::Bundle,
+        "Tiered" => PriceRuleType::Tiered,
+        "Volume" => PriceRuleType::Volume,
+        _ => PriceRuleType::Discount,
+    }
+}
+
+fn parse_price_rule_scope(s: &str) -> PriceRuleScope {
+    match s {
+        "Customer" => PriceRuleScope::Customer,
+        "CustomerGroup" => PriceRuleScope::CustomerGroup,
+        "Product" => PriceRuleScope::Product,
+        "ProductCategory" => PriceRuleScope::ProductCategory,
+        "Warehouse" => PriceRuleScope::Warehouse,
+        "Region" => PriceRuleScope::Region,
+        "Channel" => PriceRuleScope::Channel,
+        _ => PriceRuleScope::Global,
+    }
+}
+
+fn parse_discount_type(s: &str) -> DiscountType {
+    match s {
+        "FixedAmount" => DiscountType::FixedAmount,
+        "BuyXGetY" => DiscountType::BuyXGetY,
+        "FreeShipping" => DiscountType::FreeShipping,
+        "FreeItem" => DiscountType::FreeItem,
+        "Tiered" => DiscountType::Tiered,
+        _ => DiscountType::Percentage,
+    }
+}
+
+fn parse_promotion_type(s: &str) -> PromotionType {
+    match s {
+        "OrderDiscount" => PromotionType::OrderDiscount,
+        "FreeGift" => PromotionType::FreeGift,
+        "BundleOffer" => PromotionType::BundleOffer,
+        "LoyaltyBonus" => PromotionType::LoyaltyBonus,
+        "ReferralBonus" => PromotionType::ReferralBonus,
+        "Flash" => PromotionType::Flash,
+        "Seasonal" => PromotionType::Seasonal,
+        "Clearance" => PromotionType::Clearance,
+        _ => PromotionType::ProductDiscount,
+    }
+}
+
+fn parse_promotion_status(s: &str) -> PromotionStatus {
+    match s {
+        "Scheduled" => PromotionStatus::Scheduled,
+        "Active" => PromotionStatus::Active,
+        "Paused" => PromotionStatus::Paused,
+        "Expired" => PromotionStatus::Expired,
+        "Completed" => PromotionStatus::Completed,
+        "Cancelled" => PromotionStatus::Cancelled,
+        _ => PromotionStatus::Draft,
+    }
+}
+
 #[async_trait]
 pub trait PricingRepository: Send + Sync {
     async fn create_price_book(&self, pool: &SqlitePool, pb: PriceBook) -> Result<PriceBook>;
@@ -217,8 +280,8 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            rule_type: PriceRuleType::Discount,
-            scope: PriceRuleScope::Global,
+            rule_type: parse_price_rule_type(row.get::<&str, _>("rule_type")),
+            scope: parse_price_rule_scope(row.get::<&str, _>("scope")),
             priority: row.get::<i32, _>("priority"),
             value: row.get::<f64, _>("value"),
             currency: row.get::<Option<&str>, _>("currency").map(|s| s.to_string()),
@@ -250,8 +313,8 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            rule_type: PriceRuleType::Discount,
-            scope: PriceRuleScope::Global,
+            rule_type: parse_price_rule_type(row.get::<&str, _>("rule_type")),
+            scope: parse_price_rule_scope(row.get::<&str, _>("scope")),
             priority: row.get::<i32, _>("priority"),
             value: row.get::<f64, _>("value"),
             currency: row.get::<Option<&str>, _>("currency").map(|s| s.to_string()),
@@ -321,7 +384,7 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            discount_type: DiscountType::Percentage,
+            discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
             value: row.get::<f64, _>("value"),
             max_discount: row.get::<Option<i64>, _>("max_discount"),
             min_order_value: row.get::<Option<i64>, _>("min_order_value"),
@@ -361,7 +424,7 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            discount_type: DiscountType::Percentage,
+            discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
             value: row.get::<f64, _>("value"),
             max_discount: row.get::<Option<i64>, _>("max_discount"),
             min_order_value: row.get::<Option<i64>, _>("min_order_value"),
@@ -400,7 +463,7 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            discount_type: DiscountType::Percentage,
+            discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
             value: row.get::<f64, _>("value"),
             max_discount: row.get::<Option<i64>, _>("max_discount"),
             min_order_value: row.get::<Option<i64>, _>("min_order_value"),
@@ -537,8 +600,8 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            promotion_type: PromotionType::ProductDiscount,
-            status: PromotionStatus::Draft,
+            promotion_type: parse_promotion_type(row.get::<&str, _>("promotion_type")),
+            status: parse_promotion_status(row.get::<&str, _>("status")),
             start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).unwrap().with_timezone(&chrono::Utc),
             end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).unwrap().with_timezone(&chrono::Utc),
             rules: row.get::<&str, _>("rules").to_string(),
@@ -571,8 +634,8 @@ impl PricingRepository for SqlitePricingRepository {
             name: row.get::<&str, _>("name").to_string(),
             code: row.get::<&str, _>("code").to_string(),
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            promotion_type: PromotionType::ProductDiscount,
-            status: PromotionStatus::Draft,
+            promotion_type: parse_promotion_type(row.get::<&str, _>("promotion_type")),
+            status: parse_promotion_status(row.get::<&str, _>("status")),
             start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).unwrap().with_timezone(&chrono::Utc),
             end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).unwrap().with_timezone(&chrono::Utc),
             rules: row.get::<&str, _>("rules").to_string(),

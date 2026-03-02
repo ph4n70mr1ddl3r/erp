@@ -10,6 +10,9 @@ pub struct RiskService;
 
 impl RiskService {
     pub async fn create(pool: &SqlitePool, req: CreateRiskRequest, user_id: Option<Uuid>) -> Result<Risk> {
+        if req.probability < 0.0 || req.probability > 1.0 {
+            return Err(anyhow::anyhow!("Probability must be between 0 and 1"));
+        }
         let now = Utc::now();
         let code = format!("RSK-{}", now.format("%Y%m%d%H%M%S"));
         let risk_score = Self::calculate_score(req.probability, &req.impact);

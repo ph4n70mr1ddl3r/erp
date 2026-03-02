@@ -30,6 +30,7 @@ pub struct Config {
     pub jwt_secret: String,
     pub jwt_expiration: i64,
     pub cors_allowed_origins: Vec<String>,
+    pub trust_proxy: bool,
 }
 
 #[derive(Debug)]
@@ -57,6 +58,7 @@ impl Default for Config {
                 "http://localhost:5173".to_string(),
                 "http://localhost:3000".to_string(),
             ],
+            trust_proxy: false,
         }
     }
 }
@@ -127,6 +129,10 @@ impl Config {
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(24),
             cors_allowed_origins,
+            trust_proxy: env::var("TRUST_PROXY")
+                .ok()
+                .and_then(|p| p.parse().ok())
+                .unwrap_or(false),
         }
     }
 }

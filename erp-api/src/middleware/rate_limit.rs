@@ -26,13 +26,20 @@ pub struct RateLimitEntry {
 #[derive(Clone, Default)]
 pub struct RateLimiter {
     pub entries: Arc<Mutex<HashMap<String, RateLimitEntry>>>,
+    pub trust_proxy: bool,
 }
 
 impl RateLimiter {
     pub fn new() -> Self {
         Self {
             entries: Arc::new(Mutex::new(HashMap::new())),
+            trust_proxy: false,
         }
+    }
+
+    pub fn with_trust_proxy(mut self, trust_proxy: bool) -> Self {
+        self.trust_proxy = trust_proxy;
+        self
     }
 
     pub async fn check(&self, key: &str, max_requests: u32) -> Result<(), StatusCode> {
@@ -79,30 +86,36 @@ impl RateLimiter {
             }
         })
     }
-}
 
-fn extract_client_ip(req: &Request<Body>) -> String {
-    if let Some(forwarded_for) = req.headers().get(&X_FORWARDED_FOR) {
-        if let Ok(forwarded_str) = forwarded_for.to_str() {
-            if let Some(first_ip) = forwarded_str.split(',').next() {
-                let trimmed = first_ip.trim();
-                if !trimmed.is_empty() {
-                    return format!("proxy:{}", trimmed);
+    fn extract_client_ip(&self, req: &Request<Body>) -> String {
+        if self.trust_proxy {
+            if let Some(forwarded_for) = req.headers().get(&X_FORWARDED_FOR) {
+                if let Ok(forwarded_str) = forwarded_for.to_str() {
+                    if let Some(first_ip) = forwarded_str.split(',').next() {
+                        let trimmed = first_ip.trim();
+                        if !trimmed.is_empty() {
+                            return format!("proxy:{}", trimmed);
+                        }
+                    }
+                }
+            }
+            
+            if let Some(real_ip) = req.headers().get(&X_REAL_IP) {
+                if let Ok(ip_str) = real_ip.to_str() {
+                    return format!("real:{}", ip_str);
                 }
             }
         }
+        
+        req.extensions()
+            .get::<ConnectInfo<SocketAddr>>()
+            .map(|addr| addr.ip().to_string())
+            .unwrap_or_else(|| "unknown".to_string())
     }
-    
-    if let Some(real_ip) = req.headers().get(&X_REAL_IP) {
-        if let Ok(ip_str) = real_ip.to_str() {
-            return format!("real:{}", ip_str);
-        }
+
+    pub fn get_client_key(&self, req: &Request<Body>) -> String {
+        self.extract_client_ip(req)
     }
-    
-    req.extensions()
-        .get::<ConnectInfo<SocketAddr>>()
-        .map(|addr| addr.ip().to_string())
-        .unwrap_or_else(|| "unknown".to_string())
 }
 
 fn is_auth_endpoint(path: &str) -> bool {
@@ -114,7 +127,7 @@ pub async fn rate_limit_middleware(
     req: Request<Body>,
     next: Next,
 ) -> Result<Response<Body>, StatusCode> {
-    let key = extract_client_ip(&req);
+    let key = rate_limiter.get_client_key(&req);
     let path = req.uri().path();
     let max_requests = if is_auth_endpoint(path) {
         AUTH_MAX_REQUESTS

@@ -53,6 +53,7 @@ fn create_test_app(pool: SqlitePool) -> AppState {
         jwt_secret: "test-secret".to_string(),
         jwt_expiration: 24,
         cors_allowed_origins: vec!["http://localhost:5173".to_string()],
+        trust_proxy: false,
     };
     let ws_manager = std::sync::Arc::new(erp_api::handlers::websocket::WebSocketManagerInner::new());
     AppState {
