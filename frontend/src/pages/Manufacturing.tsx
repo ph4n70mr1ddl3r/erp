@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
+import { useToast } from '../components/Toast';
 
 interface BOM {
   id: string;
@@ -20,6 +21,7 @@ interface WorkOrder {
 }
 
 export default function Manufacturing() {
+  const toast = useToast();
   const [boms, setBoms] = useState<BOM[]>([]);
   const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,18 +34,29 @@ export default function Manufacturing() {
     ]).then(([bomsData, woData]) => {
       setBoms(bomsData.data.items || []);
       setWorkOrders(woData.data.items || []);
+    }).catch(() => {
+      toast.error('Failed to load manufacturing data');
+    }).finally(() => {
       setLoading(false);
     });
-  }, []);
+  }, [toast]);
 
   const handleStart = async (id: string) => {
-    await api.post(`/api/v1/manufacturing/work-orders/${id}/start`);
-    window.location.reload();
+    try {
+      await api.post(`/api/v1/manufacturing/work-orders/${id}/start`);
+      window.location.reload();
+    } catch {
+      toast.error('Failed to start work order');
+    }
   };
 
   const handleComplete = async (id: string) => {
-    await api.post(`/api/v1/manufacturing/work-orders/${id}/complete`);
-    window.location.reload();
+    try {
+      await api.post(`/api/v1/manufacturing/work-orders/${id}/complete`);
+      window.location.reload();
+    } catch {
+      toast.error('Failed to complete work order');
+    }
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;

@@ -4,6 +4,7 @@ import { Package, ShoppingCart, Users, DollarSign, TrendingUp, TrendingDown, Act
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { finance, inventory, sales, purchasing, hr } from '../api/client';
 import { LoadingPage } from '../components/Spinner';
+import { useToast } from '../components/Toast';
 
 interface Stats {
   accounts: number;
@@ -33,6 +34,7 @@ interface JournalEntry {
 }
 
 export default function Dashboard() {
+  const toast = useToast();
   const [stats, setStats] = useState<Stats>({
     accounts: 0,
     products: 0,
@@ -75,8 +77,11 @@ export default function Dashboard() {
         setRecentOrders(orders.data.items || []);
         setRecentEntries(entries.data.items || []);
       })
+      .catch(() => {
+        toast.error('Failed to load dashboard data');
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [toast]);
 
   const statusData = [
     { name: 'Draft', value: recentOrders.filter(o => o.status === 'Draft').length, color: '#F59E0B' },
