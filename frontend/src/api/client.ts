@@ -183,12 +183,13 @@ export interface CreateLeaveRequestPayload {
 
 export interface CreateExpenseReportRequest {
   employee_id: string;
-  description: string;
+  title: string;
+  description?: string;
   lines: {
     category_id: string;
-    date: string;
+    expense_date: string;
     amount: number;
-    description?: string;
+    description: string;
   }[];
 }
 

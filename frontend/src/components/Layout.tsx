@@ -29,7 +29,8 @@ import {
   Wallet,
   UserCircle,
   Scale,
-  Calendar
+  Calendar,
+  Receipt
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -49,6 +50,7 @@ const navItems = [
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
   { path: '/hr', icon: UserCog, label: 'HR' },
   { path: '/leave', icon: Calendar, label: 'Leave' },
+  { path: '/expenses', icon: Receipt, label: 'Expenses' },
   { path: '/projects', icon: Folder, label: 'Projects' },
   { path: '/service', icon: Headphones, label: 'Service Desk' },
   { path: '/assets', icon: Monitor, label: 'IT Assets' },

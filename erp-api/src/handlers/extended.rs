@@ -371,6 +371,7 @@ pub struct ExpenseReportResponse {
     pub description: Option<String>,
     pub total_amount: f64,
     pub status: String,
+    pub rejection_reason: Option<String>,
     pub created_at: String,
 }
 
@@ -384,6 +385,7 @@ impl From<ExpenseReport> for ExpenseReportResponse {
             description: r.description,
             total_amount: r.total_amount as f64 / 100.0,
             status: format!("{:?}", r.status),
+            rejection_reason: r.rejection_reason,
             created_at: r.created_at.to_rfc3339(),
         }
     }
@@ -489,6 +491,26 @@ pub async fn list_expense_categories(
 ) -> ApiResult<Json<Vec<ExpenseCategoryResponse>>> {
     let categories = ExpenseService::list_expense_categories(&state.pool).await?;
     Ok(Json(categories.into_iter().map(ExpenseCategoryResponse::from).collect()))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateExpenseCategoryReq {
+    pub name: String,
+    pub code: String,
+    pub description: Option<String>,
+}
+
+pub async fn create_expense_category(
+    State(state): State<AppState>,
+    Json(req): Json<CreateExpenseCategoryReq>,
+) -> ApiResult<Json<ExpenseCategoryResponse>> {
+    let category = ExpenseService::create_expense_category(
+        &state.pool,
+        &req.name,
+        &req.code,
+        req.description.as_deref(),
+    ).await?;
+    Ok(Json(ExpenseCategoryResponse::from(category)))
 }
 
 use erp_finance::{FixedAsset, FixedAssetService, DepreciationMethod};

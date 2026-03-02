@@ -143,7 +143,8 @@ fn api_routes(state: AppState) -> Router<AppState> {
         )
         .route(
             "/expense-categories",
-            get(handlers::extended::list_expense_categories),
+            get(handlers::extended::list_expense_categories)
+                .post(handlers::extended::create_expense_category),
         )
         .route(
             "/expense-reports",

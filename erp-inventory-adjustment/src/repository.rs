@@ -95,13 +95,13 @@ impl AdjustmentRepository for SqliteAdjustmentRepository {
                         FROM inventory_adjustments WHERE 1=1".to_string();
         let mut binds: Vec<String> = Vec::new();
 
-        if warehouse_id.is_some() {
+        if let Some(wh_id) = warehouse_id {
             query.push_str(" AND warehouse_id = ?");
-            binds.push(warehouse_id.unwrap().to_string());
+            binds.push(wh_id.to_string());
         }
-        if status.is_some() {
+        if let Some(s) = status {
             query.push_str(" AND status = ?");
-            binds.push(format!("{:?}", status.unwrap()));
+            binds.push(format!("{:?}", s));
         }
         query.push_str(" ORDER BY created_at DESC");
 

@@ -34,6 +34,7 @@ async fn run_migrations(pool: &SqlitePool) {
         include_str!("../../migrations/20240101000004_manufacturing.sql"),
         include_str!("../../migrations/20240101000005_hr.sql"),
         include_str!("../../migrations/20240101000006_auth.sql"),
+        include_str!("../../migrations/20240101000011_extended_features.sql"),
         include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
     ];
     
@@ -550,4 +551,201 @@ async fn test_inventory_adjustments_workflow() {
 
     let response = app.clone().oneshot(approve_request).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_expense_report_workflow() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let state = create_test_app(pool);
+    let app = create_router(state);
+    
+    let (_, reg_body) = make_request(
+        &app,
+        Method::POST,
+        "/auth/register",
+        Some(json!({
+            "username": "expenseuser",
+            "email": "expense@example.com",
+            "password": "password123",
+            "full_name": "Expense User"
+        })),
+    ).await;
+    let token = reg_body["token"].as_str().unwrap();
+
+    let employee_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hr/employees")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_number": "EMP-001",
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+            "hire_date": "2024-01-01"
+        })).unwrap())).unwrap();
+    let employee_response = app.clone().oneshot(employee_request).await.unwrap();
+    assert_eq!(employee_response.status(), StatusCode::OK);
+    let emp_body_bytes = employee_response.into_body().collect().await.unwrap().to_bytes();
+    let employee: serde_json::Value = serde_json::from_slice(&emp_body_bytes).unwrap();
+    let employee_id = employee["id"].as_str().unwrap();
+
+    let category_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/expense-categories")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "name": "Travel",
+            "code": "TRAVEL"
+        })).unwrap())).unwrap();
+    let category_response = app.clone().oneshot(category_request).await.unwrap();
+    assert_eq!(category_response.status(), StatusCode::OK);
+    let cat_body_bytes = category_response.into_body().collect().await.unwrap().to_bytes();
+    let category: serde_json::Value = serde_json::from_slice(&cat_body_bytes).unwrap();
+    let category_id = category["id"].as_str().unwrap();
+
+    let report_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/expense-reports")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_id": employee_id,
+            "title": "Business trip to NYC",
+            "lines": [{
+                "category_id": category_id,
+                "expense_date": "2024-01-15",
+                "amount": 25000,
+                "description": "Flight tickets"
+            }, {
+                "category_id": category_id,
+                "expense_date": "2024-01-16",
+                "amount": 15000,
+                "description": "Hotel"
+            }]
+        })).unwrap())).unwrap();
+    let report_response = app.clone().oneshot(report_request).await.unwrap();
+    assert_eq!(report_response.status(), StatusCode::OK);
+    let report_body_bytes = report_response.into_body().collect().await.unwrap().to_bytes();
+    let report: serde_json::Value = serde_json::from_slice(&report_body_bytes).unwrap();
+    let report_id = report["id"].as_str().unwrap();
+    assert_eq!(report["status"], "Draft");
+
+    let submit_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/expense-reports/{}/submit", report_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let submit_response = app.clone().oneshot(submit_request).await.unwrap();
+    assert_eq!(submit_response.status(), StatusCode::OK);
+    let submit_body_bytes = submit_response.into_body().collect().await.unwrap().to_bytes();
+    let submitted: serde_json::Value = serde_json::from_slice(&submit_body_bytes).unwrap();
+    assert_eq!(submitted["status"], "Submitted");
+
+    let approve_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/expense-reports/{}/approve", report_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let approve_response = app.clone().oneshot(approve_request).await.unwrap();
+    assert_eq!(approve_response.status(), StatusCode::OK);
+    let approve_body_bytes = approve_response.into_body().collect().await.unwrap().to_bytes();
+    let approved: serde_json::Value = serde_json::from_slice(&approve_body_bytes).unwrap();
+    assert_eq!(approved["status"], "Approved");
+}
+
+#[tokio::test]
+async fn test_expense_report_rejection() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let state = create_test_app(pool);
+    let app = create_router(state);
+    
+    let (_, reg_body) = make_request(
+        &app,
+        Method::POST,
+        "/auth/register",
+        Some(json!({
+            "username": "rejectuser",
+            "email": "reject@example.com",
+            "password": "password123",
+            "full_name": "Reject User"
+        })),
+    ).await;
+    let token = reg_body["token"].as_str().unwrap();
+
+    let employee_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hr/employees")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_number": "EMP-002",
+            "first_name": "Jane",
+            "last_name": "Smith",
+            "email": "jane.smith@example.com",
+            "hire_date": "2024-01-01"
+        })).unwrap())).unwrap();
+    let employee_response = app.clone().oneshot(employee_request).await.unwrap();
+    let emp_body_bytes = employee_response.into_body().collect().await.unwrap().to_bytes();
+    let employee: serde_json::Value = serde_json::from_slice(&emp_body_bytes).unwrap();
+    let employee_id = employee["id"].as_str().unwrap();
+
+    let category_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/expense-categories")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "name": "Meals",
+            "code": "MEALS"
+        })).unwrap())).unwrap();
+    let category_response = app.clone().oneshot(category_request).await.unwrap();
+    let cat_body_bytes = category_response.into_body().collect().await.unwrap().to_bytes();
+    let category: serde_json::Value = serde_json::from_slice(&cat_body_bytes).unwrap();
+    let category_id = category["id"].as_str().unwrap();
+
+    let report_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/expense-reports")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_id": employee_id,
+            "title": "Client dinner",
+            "lines": [{
+                "category_id": category_id,
+                "expense_date": "2024-01-20",
+                "amount": 5000,
+                "description": "Restaurant"
+            }]
+        })).unwrap())).unwrap();
+    let report_response = app.clone().oneshot(report_request).await.unwrap();
+    let report_body_bytes = report_response.into_body().collect().await.unwrap().to_bytes();
+    let report: serde_json::Value = serde_json::from_slice(&report_body_bytes).unwrap();
+    let report_id = report["id"].as_str().unwrap();
+
+    let submit_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/expense-reports/{}/submit", report_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let _ = app.clone().oneshot(submit_request).await.unwrap();
+
+    let reject_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/expense-reports/{}/reject", report_id))
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "reason": "Missing receipt"
+        })).unwrap())).unwrap();
+    let reject_response = app.clone().oneshot(reject_request).await.unwrap();
+    assert_eq!(reject_response.status(), StatusCode::OK);
+    let reject_body_bytes = reject_response.into_body().collect().await.unwrap().to_bytes();
+    let rejected: serde_json::Value = serde_json::from_slice(&reject_body_bytes).unwrap();
+    assert_eq!(rejected["status"], "Rejected");
+    assert_eq!(rejected["rejection_reason"], "Missing receipt");
 }

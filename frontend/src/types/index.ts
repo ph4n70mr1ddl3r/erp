@@ -158,3 +158,36 @@ export interface LeaveRequest {
   status: string;
   created_at: string;
 }
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  status: string;
+}
+
+export interface ExpenseReport {
+  id: string;
+  report_number: string;
+  employee_id: string;
+  description: string;
+  total_amount: number;
+  currency: string;
+  status: string;
+  submitted_at?: string;
+  approved_at?: string;
+  rejected_at?: string;
+  rejection_reason?: string;
+  created_at: string;
+  lines: ExpenseLine[];
+}
+
+export interface ExpenseLine {
+  id: string;
+  category_id: string;
+  date: string;
+  amount: number;
+  description?: string;
+  status: string;
+}
