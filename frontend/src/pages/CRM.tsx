@@ -33,8 +33,7 @@ export default function CRM() {
       setLeads(leadsRes.data);
       setOpportunities(oppsRes.data);
     } catch (err: unknown) {
-      console.error('CRM load error:', err);
-      toast.error('Failed to load CRM data');
+      toast.error(getErrorMessage(err, 'Failed to load CRM data'));
     } finally {
       setLoading(false);
     }

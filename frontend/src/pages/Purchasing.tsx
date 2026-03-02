@@ -24,8 +24,7 @@ export default function Purchasing() {
       setVendors(venRes.data.items);
       setOrders(ordRes.data.items);
     } catch (err: unknown) {
-      console.error('Purchasing load error:', err);
-      toast.error('Failed to load purchasing data');
+      toast.error(getErrorMessage(err, 'Failed to load purchasing data'));
     } finally {
       setLoading(false);
     }

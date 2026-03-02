@@ -27,8 +27,7 @@ export default function HR() {
       const res = await hr.getEmployees(1, 50);
       setEmployees(res.data.items);
     } catch (err: unknown) {
-      console.error('HR load error:', err);
-      toast.error('Failed to load employee data');
+      toast.error(getErrorMessage(err, 'Failed to load employee data'));
     } finally {
       setLoading(false);
     }

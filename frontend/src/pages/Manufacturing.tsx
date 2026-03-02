@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/client';
 import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface BOM {
   id: string;
@@ -35,8 +36,7 @@ export default function Manufacturing() {
       setBoms(bomsData.data.items || []);
       setWorkOrders(woData.data.items || []);
     }).catch((err: unknown) => {
-      console.error('Manufacturing load error:', err);
-      toast.error('Failed to load manufacturing data');
+      toast.error(getErrorMessage(err, 'Failed to load manufacturing data'));
     }).finally(() => {
       setLoading(false);
     });
@@ -47,8 +47,7 @@ export default function Manufacturing() {
       await api.post(`/api/v1/manufacturing/work-orders/${id}/start`);
       window.location.reload();
     } catch (err: unknown) {
-      console.error('Start work order error:', err);
-      toast.error('Failed to start work order');
+      toast.error(getErrorMessage(err, 'Failed to start work order'));
     }
   };
 
@@ -57,8 +56,7 @@ export default function Manufacturing() {
       await api.post(`/api/v1/manufacturing/work-orders/${id}/complete`);
       window.location.reload();
     } catch (err: unknown) {
-      console.error('Complete work order error:', err);
-      toast.error('Failed to complete work order');
+      toast.error(getErrorMessage(err, 'Failed to complete work order'));
     }
   };
 

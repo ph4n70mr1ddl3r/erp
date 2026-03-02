@@ -35,8 +35,7 @@ export default function Finance() {
       setAccounts(accRes.data.items);
       setEntries(jeRes.data.items);
     } catch (err: unknown) {
-      console.error('Finance load error:', err);
-      toast.error('Failed to load finance data');
+      toast.error(getErrorMessage(err, 'Failed to load finance data'));
     } finally {
       setLoading(false);
     }

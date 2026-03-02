@@ -29,8 +29,7 @@ export default function Inventory() {
       setProducts(prodRes.data.items);
       setWarehouses(whRes.data);
     } catch (err: unknown) {
-      console.error('Inventory load error:', err);
-      toast.error('Failed to load inventory data');
+      toast.error(getErrorMessage(err, 'Failed to load inventory data'));
     } finally {
       setLoading(false);
     }

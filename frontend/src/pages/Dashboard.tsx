@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { finance, inventory, sales, purchasing, hr } from '../api/client';
 import { LoadingPage } from '../components/Spinner';
 import { useToast } from '../components/Toast';
+import { getErrorMessage } from '../utils/errors';
 
 interface Stats {
   accounts: number;
@@ -78,8 +79,7 @@ export default function Dashboard() {
         setRecentEntries(entries.data.items || []);
       })
       .catch((err: unknown) => {
-        console.error('Dashboard load error:', err);
-        toast.error('Failed to load dashboard data');
+        toast.error(getErrorMessage(err, 'Failed to load dashboard data'));
       })
       .finally(() => setLoading(false));
   }, [toast]);

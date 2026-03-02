@@ -54,8 +54,7 @@ export default function CreditManagement() {
       setOnHold(onHoldRes.data.data || []);
       setHighRisk(highRiskRes.data.data || []);
     } catch (err: unknown) {
-      console.error('Credit load error:', err);
-      toast.error('Failed to load credit data');
+      toast.error(getErrorMessage(err, 'Failed to load credit data'));
     } finally {
       setLoading(false);
     }
@@ -75,8 +74,7 @@ export default function CreditManagement() {
       setTransactions(txnsRes.data.data || []);
       setHolds(holdsRes.data.data || []);
     } catch (err: unknown) {
-      console.error('Profile detail load error:', err);
-      toast.error('Failed to load profile details');
+      toast.error(getErrorMessage(err, 'Failed to load profile details'));
     }
   };
 
