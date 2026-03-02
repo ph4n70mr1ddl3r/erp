@@ -308,16 +308,56 @@ impl BudgetService {
         .await
         .map_err(Error::Database)?;
         
-        let mut budgets = Vec::new();
-        for row in rows {
-            let lines = Self::get_budget_lines_with_variance(pool, row.id.clone()).await?;
+        let budget_ids: Vec<String> = rows.iter().map(|r| r.id.clone()).collect();
+        
+        let all_lines = if !budget_ids.is_empty() {
+            let placeholders = budget_ids.iter().map(|_| "?").collect::<Vec<_>>().join(",");
+            let query = format!(
+                "SELECT bl.id, bl.budget_id, bl.account_id, bl.period, bl.amount, bl.actual, bl.variance,
+                        a.code as account_code, a.name as account_name
+                 FROM budget_lines bl
+                 LEFT JOIN accounts a ON bl.account_id = a.id
+                 WHERE bl.budget_id IN ({})
+                 ORDER BY bl.budget_id, a.code, bl.period", placeholders
+            );
+            let mut q = sqlx::query_as::<_, BudgetLineWithBudgetId>(&query);
+            for id in &budget_ids {
+                q = q.bind(id);
+            }
+            q.fetch_all(pool).await.map_err(Error::Database)?
+        } else {
+            Vec::new()
+        };
+        
+        let mut lines_by_budget: std::collections::HashMap<String, Vec<BudgetLineWithVariance>> = std::collections::HashMap::new();
+        for line in all_lines {
+            let variance = line.amount - line.actual;
+            let variance_percent = if line.amount > 0 {
+                (variance as f64 / line.amount as f64) * 100.0
+            } else { 0.0 };
+            
+            lines_by_budget.entry(line.budget_id.clone()).or_default().push(BudgetLineWithVariance {
+                id: Uuid::parse_str(&line.id).unwrap_or_default(),
+                account_id: Uuid::parse_str(&line.account_id).unwrap_or_default(),
+                account_code: line.account_code.unwrap_or_default(),
+                account_name: line.account_name.unwrap_or_default(),
+                period: line.period as u32,
+                budget_amount: line.amount,
+                actual_amount: line.actual,
+                variance,
+                variance_percent,
+            });
+        }
+        
+        let budgets = rows.into_iter().map(|row| {
+            let lines = lines_by_budget.get(&row.id).cloned().unwrap_or_default();
             let total_actual: i64 = lines.iter().map(|l| l.actual_amount).sum();
             let total_variance: i64 = lines.iter().map(|l| l.variance).sum();
             let variance_percent = if row.total_amount > 0 {
                 (total_variance as f64 / row.total_amount as f64) * 100.0
             } else { 0.0 };
             
-            budgets.push(BudgetWithVariance {
+            BudgetWithVariance {
                 base: BaseEntity {
                     id: Uuid::parse_str(&row.id).unwrap_or_default(),
                     created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
@@ -342,44 +382,10 @@ impl BudgetService {
                     _ => Status::Draft,
                 },
                 lines,
-            });
-        }
+            }
+        }).collect();
         
         Ok(budgets)
-    }
-
-    async fn get_budget_lines_with_variance(pool: &SqlitePool, budget_id: String) -> Result<Vec<BudgetLineWithVariance>> {
-        let rows = sqlx::query_as::<_, BudgetLineRow>(
-            "SELECT bl.id, bl.account_id, bl.period, bl.amount, bl.actual, bl.variance,
-                    a.code as account_code, a.name as account_name
-             FROM budget_lines bl
-             LEFT JOIN accounts a ON bl.account_id = a.id
-             WHERE bl.budget_id = ?
-             ORDER BY a.code, bl.period"
-        )
-        .bind(&budget_id)
-        .fetch_all(pool)
-        .await
-        .map_err(Error::Database)?;
-        
-        Ok(rows.into_iter().map(|r| {
-            let variance = r.amount - r.actual;
-            let variance_percent = if r.amount > 0 {
-                (variance as f64 / r.amount as f64) * 100.0
-            } else { 0.0 };
-            
-            BudgetLineWithVariance {
-                id: Uuid::parse_str(&r.id).unwrap_or_default(),
-                account_id: Uuid::parse_str(&r.account_id).unwrap_or_default(),
-                account_code: r.account_code.unwrap_or_default(),
-                account_name: r.account_name.unwrap_or_default(),
-                period: r.period as u32,
-                budget_amount: r.amount,
-                actual_amount: r.actual,
-                variance,
-                variance_percent,
-            }
-        }).collect())
     }
 
     pub async fn create_budget(pool: &SqlitePool, name: &str, start_date: &str, end_date: &str, lines: Vec<(String, u32, i64)>) -> Result<BudgetWithVariance> {
@@ -437,14 +443,13 @@ struct BudgetRow {
 }
 
 #[derive(sqlx::FromRow)]
-struct BudgetLineRow {
+struct BudgetLineWithBudgetId {
     id: String,
+    budget_id: String,
     account_id: String,
     period: i64,
     amount: i64,
     actual: i64,
-    #[allow(dead_code)]
-    variance: i64,
     account_code: Option<String>,
     account_name: Option<String>,
 }

@@ -34,7 +34,8 @@ export default function Manufacturing() {
     ]).then(([bomsData, woData]) => {
       setBoms(bomsData.data.items || []);
       setWorkOrders(woData.data.items || []);
-    }).catch(() => {
+    }).catch((err: unknown) => {
+      console.error('Manufacturing load error:', err);
       toast.error('Failed to load manufacturing data');
     }).finally(() => {
       setLoading(false);

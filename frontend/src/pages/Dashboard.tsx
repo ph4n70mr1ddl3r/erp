@@ -77,7 +77,8 @@ export default function Dashboard() {
         setRecentOrders(orders.data.items || []);
         setRecentEntries(entries.data.items || []);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        console.error('Dashboard load error:', err);
         toast.error('Failed to load dashboard data');
       })
       .finally(() => setLoading(false));

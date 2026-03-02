@@ -167,9 +167,9 @@ impl MDMRepository for SqliteMDMRepository {
             .fetch_all(&self.pool).await?
         };
 
-        let entities = rows.into_iter().map(|row| {
-            MasterDataEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let entities: anyhow::Result<Vec<MasterDataEntity>> = rows.into_iter().map(|row| {
+            Ok(MasterDataEntity {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 entity_type: row.get("entity_type"),
                 entity_code: row.get("entity_code"),
                 entity_name: row.get("entity_name"),
@@ -191,9 +191,9 @@ impl MDMRepository for SqliteMDMRepository {
                 },
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(entities)
+        entities
     }
 
     async fn update_master_entity(&self, entity: &MasterDataEntity) -> anyhow::Result<()> {
@@ -285,9 +285,9 @@ impl MDMRepository for SqliteMDMRepository {
         .bind(entity_type)
         .fetch_all(&self.pool).await?;
 
-        let records = rows.into_iter().map(|row| {
-            GoldenRecord {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let records: anyhow::Result<Vec<GoldenRecord>> = rows.into_iter().map(|row| {
+            Ok(GoldenRecord {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 entity_type: row.get("entity_type"),
                 golden_code: row.get("golden_code"),
                 name: row.get("name"),
@@ -304,9 +304,9 @@ impl MDMRepository for SqliteMDMRepository {
                 version: row.get("version"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(records)
+        records
     }
 
     async fn update_golden_record(&self, record: &GoldenRecord) -> anyhow::Result<()> {
@@ -352,18 +352,18 @@ impl MDMRepository for SqliteMDMRepository {
         .bind(golden_record_id.to_string())
         .fetch_all(&self.pool).await?;
 
-        let sources = rows.into_iter().map(|row| {
-            GoldenRecordSource {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                golden_record_id: Uuid::parse_str(row.get::<&str, _>("golden_record_id")).unwrap(),
-                source_entity_id: Uuid::parse_str(row.get::<&str, _>("source_entity_id")).unwrap(),
+        let sources: anyhow::Result<Vec<GoldenRecordSource>> = rows.into_iter().map(|row| {
+            Ok(GoldenRecordSource {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
+                golden_record_id: Uuid::parse_str(row.get::<&str, _>("golden_record_id"))?,
+                source_entity_id: Uuid::parse_str(row.get::<&str, _>("source_entity_id"))?,
                 match_score: row.get("match_score"),
                 is_primary: row.get("is_primary"),
                 contributed_at: row.get("contributed_at"),
                 created_at: row.get("created_at"),
-            }
+            })
         }).collect();
-        Ok(sources)
+        sources
     }
 
     async fn create_quality_rule(&self, rule: &DataQualityRule) -> anyhow::Result<()> {
@@ -441,9 +441,9 @@ impl MDMRepository for SqliteMDMRepository {
             .fetch_all(&self.pool).await?
         };
 
-        let rules = rows.into_iter().map(|row| {
-            DataQualityRule {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let rules: anyhow::Result<Vec<DataQualityRule>> = rows.into_iter().map(|row| {
+            Ok(DataQualityRule {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 rule_code: row.get("rule_code"),
                 name: row.get("name"),
                 description: row.get("description"),
@@ -457,9 +457,9 @@ impl MDMRepository for SqliteMDMRepository {
                 fix_expression: row.get("fix_expression"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(rules)
+        rules
     }
 
     async fn create_quality_violation(&self, violation: &DataQualityViolation) -> anyhow::Result<()> {
@@ -495,11 +495,11 @@ impl MDMRepository for SqliteMDMRepository {
         )
         .fetch_all(&self.pool).await?;
 
-        let violations = rows.into_iter().map(|row| {
-            DataQualityViolation {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                rule_id: Uuid::parse_str(row.get::<&str, _>("rule_id")).unwrap(),
-                entity_id: Uuid::parse_str(row.get::<&str, _>("entity_id")).unwrap(),
+        let violations: anyhow::Result<Vec<DataQualityViolation>> = rows.into_iter().map(|row| {
+            Ok(DataQualityViolation {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
+                rule_id: Uuid::parse_str(row.get::<&str, _>("rule_id"))?,
+                entity_id: Uuid::parse_str(row.get::<&str, _>("entity_id"))?,
                 entity_type: row.get("entity_type"),
                 field_name: row.get("field_name"),
                 current_value: row.get("current_value"),
@@ -511,9 +511,9 @@ impl MDMRepository for SqliteMDMRepository {
                 resolved_by: row.get::<Option<&str>, _>("resolved_by").and_then(|s| Uuid::parse_str(s).ok()),
                 resolution_notes: row.get("resolution_notes"),
                 created_at: row.get("created_at"),
-            }
+            })
         }).collect();
-        Ok(violations)
+        violations
     }
 
     async fn update_quality_violation(&self, violation: &DataQualityViolation) -> anyhow::Result<()> {
@@ -561,9 +561,9 @@ impl MDMRepository for SqliteMDMRepository {
         .bind(entity_type)
         .fetch_all(&self.pool).await?;
 
-        let rules = rows.into_iter().map(|row| {
-            MatchRule {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let rules: anyhow::Result<Vec<MatchRule>> = rows.into_iter().map(|row| {
+            Ok(MatchRule {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 rule_code: row.get("rule_code"),
                 name: row.get("name"),
                 description: row.get("description"),
@@ -575,9 +575,9 @@ impl MDMRepository for SqliteMDMRepository {
                 is_active: row.get("is_active"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(rules)
+        rules
     }
 
     async fn create_match_result(&self, result: &MatchResult) -> anyhow::Result<()> {
@@ -610,12 +610,12 @@ impl MDMRepository for SqliteMDMRepository {
         .bind(rule_id.to_string())
         .fetch_all(&self.pool).await?;
 
-        let results = rows.into_iter().map(|row| {
-            MatchResult {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                rule_id: Uuid::parse_str(row.get::<&str, _>("rule_id")).unwrap(),
-                entity1_id: Uuid::parse_str(row.get::<&str, _>("entity1_id")).unwrap(),
-                entity2_id: Uuid::parse_str(row.get::<&str, _>("entity2_id")).unwrap(),
+        let results: anyhow::Result<Vec<MatchResult>> = rows.into_iter().map(|row| {
+            Ok(MatchResult {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
+                rule_id: Uuid::parse_str(row.get::<&str, _>("rule_id"))?,
+                entity1_id: Uuid::parse_str(row.get::<&str, _>("entity1_id"))?,
+                entity2_id: Uuid::parse_str(row.get::<&str, _>("entity2_id"))?,
                 match_score: row.get("match_score"),
                 status: match row.get::<&str, _>("status") {
                     "Pending" => MatchStatus::Pending,
@@ -629,9 +629,9 @@ impl MDMRepository for SqliteMDMRepository {
                 reviewed_at: row.get("reviewed_at"),
                 decision_notes: row.get("decision_notes"),
                 created_at: row.get("created_at"),
-            }
+            })
         }).collect();
-        Ok(results)
+        results
     }
 
     async fn update_match_result(&self, result: &MatchResult) -> anyhow::Result<()> {
@@ -677,9 +677,9 @@ impl MDMRepository for SqliteMDMRepository {
         )
         .fetch_all(&self.pool).await?;
 
-        let domains = rows.into_iter().map(|row| {
-            DataDomain {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let domains: anyhow::Result<Vec<DataDomain>> = rows.into_iter().map(|row| {
+            Ok(DataDomain {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 domain_code: row.get("domain_code"),
                 name: row.get("name"),
                 description: row.get("description"),
@@ -690,9 +690,9 @@ impl MDMRepository for SqliteMDMRepository {
                 retention_policy: row.get("retention_policy"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(domains)
+        domains
     }
 
     async fn create_data_attribute(&self, attr: &DataAttribute) -> anyhow::Result<()> {
@@ -731,10 +731,10 @@ impl MDMRepository for SqliteMDMRepository {
         .bind(domain_id.to_string())
         .fetch_all(&self.pool).await?;
 
-        let attrs = rows.into_iter().map(|row| {
-            DataAttribute {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                domain_id: Uuid::parse_str(row.get::<&str, _>("domain_id")).unwrap(),
+        let attrs: anyhow::Result<Vec<DataAttribute>> = rows.into_iter().map(|row| {
+            Ok(DataAttribute {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
+                domain_id: Uuid::parse_str(row.get::<&str, _>("domain_id"))?,
                 attribute_code: row.get("attribute_code"),
                 name: row.get("name"),
                 description: row.get("description"),
@@ -748,9 +748,9 @@ impl MDMRepository for SqliteMDMRepository {
                 business_rules: row.get("business_rules"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(attrs)
+        attrs
     }
 
     async fn create_data_steward(&self, steward: &DataSteward) -> anyhow::Result<()> {
@@ -777,19 +777,19 @@ impl MDMRepository for SqliteMDMRepository {
         )
         .fetch_all(&self.pool).await?;
 
-        let stewards = rows.into_iter().map(|row| {
-            DataSteward {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                user_id: Uuid::parse_str(row.get::<&str, _>("user_id")).unwrap(),
+        let stewards: anyhow::Result<Vec<DataSteward>> = rows.into_iter().map(|row| {
+            Ok(DataSteward {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
+                user_id: Uuid::parse_str(row.get::<&str, _>("user_id"))?,
                 domain_id: row.get::<Option<&str>, _>("domain_id").and_then(|s| Uuid::parse_str(s).ok()),
                 entity_types: row.get("entity_types"),
                 responsibilities: row.get("responsibilities"),
                 is_active: row.get("is_active"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(stewards)
+        stewards
     }
 
     async fn create_duplicate_record(&self, dup: &DuplicateRecord) -> anyhow::Result<()> {
@@ -820,21 +820,21 @@ impl MDMRepository for SqliteMDMRepository {
         )
         .fetch_all(&self.pool).await?;
 
-        let records = rows.into_iter().map(|row| {
-            DuplicateRecord {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let records: anyhow::Result<Vec<DuplicateRecord>> = rows.into_iter().map(|row| {
+            Ok(DuplicateRecord {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 entity_type: row.get("entity_type"),
-                primary_entity_id: Uuid::parse_str(row.get::<&str, _>("primary_entity_id")).unwrap(),
-                duplicate_entity_id: Uuid::parse_str(row.get::<&str, _>("duplicate_entity_id")).unwrap(),
+                primary_entity_id: Uuid::parse_str(row.get::<&str, _>("primary_entity_id"))?,
+                duplicate_entity_id: Uuid::parse_str(row.get::<&str, _>("duplicate_entity_id"))?,
                 similarity_score: row.get("similarity_score"),
                 matched_fields: row.get("matched_fields"),
                 status: row.get("status"),
                 merge_initiated_by: row.get::<Option<&str>, _>("merge_initiated_by").and_then(|s| Uuid::parse_str(s).ok()),
                 merge_initiated_at: row.get("merge_initiated_at"),
                 created_at: row.get("created_at"),
-            }
+            })
         }).collect();
-        Ok(records)
+        records
     }
 
     async fn update_duplicate_record(&self, dup: &DuplicateRecord) -> anyhow::Result<()> {
@@ -882,9 +882,9 @@ impl MDMRepository for SqliteMDMRepository {
         .bind(category)
         .fetch_all(&self.pool).await?;
 
-        let data = rows.into_iter().map(|row| {
-            ReferenceData {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
+        let data: anyhow::Result<Vec<ReferenceData>> = rows.into_iter().map(|row| {
+            Ok(ReferenceData {
+                id: Uuid::parse_str(row.get::<&str, _>("id"))?,
                 category: row.get("category"),
                 code: row.get("code"),
                 name: row.get("name"),
@@ -897,9 +897,9 @@ impl MDMRepository for SqliteMDMRepository {
                 attributes: row.get("attributes"),
                 created_at: row.get("created_at"),
                 updated_at: row.get("updated_at"),
-            }
+            })
         }).collect();
-        Ok(data)
+        data
     }
 
     async fn update_reference_data(&self, data: &ReferenceData) -> anyhow::Result<()> {

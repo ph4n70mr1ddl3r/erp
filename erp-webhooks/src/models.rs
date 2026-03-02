@@ -77,27 +77,27 @@ pub struct WebhookEndpoint {
 impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookEndpoint {
     fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> sqlx::Result<Self> {
         use sqlx::Row;
-        
+
         let events_json: String = row.try_get("events")?;
-        let events: Vec<WebhookEventType> = serde_json::from_str(&events_json)
-            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-        
+        let events: Vec<WebhookEventType> =
+            serde_json::from_str(&events_json).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
         let headers: Option<String> = row.try_get("headers")?;
         let headers: Option<serde_json::Value> = headers
             .map(|h| serde_json::from_str(&h))
             .transpose()
             .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-        
+
         let auth_json: Option<String> = row.try_get("authentication")?;
         let authentication: Option<WebhookAuth> = auth_json
             .map(|a| serde_json::from_str(&a))
             .transpose()
             .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-        
+
         let retry_json: String = row.try_get("retry_policy")?;
-        let retry_policy: RetryPolicy = serde_json::from_str(&retry_json)
-            .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-        
+        let retry_policy: RetryPolicy =
+            serde_json::from_str(&retry_json).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
         let base = BaseEntity {
             id: row.try_get("id")?,
             created_at: row.try_get("created_at")?,
@@ -105,7 +105,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookEndpoint {
             created_by: None,
             updated_by: None,
         };
-        
+
         Ok(Self {
             base,
             name: row.try_get("name")?,
@@ -194,19 +194,19 @@ pub struct WebhookDelivery {
 impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookDelivery {
     fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> sqlx::Result<Self> {
         use sqlx::Row;
-        
+
         let headers: Option<String> = row.try_get("headers")?;
         let headers: Option<serde_json::Value> = headers
             .map(|h| serde_json::from_str(&h))
             .transpose()
             .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-        
+
         let response_headers: Option<String> = row.try_get("response_headers")?;
         let response_headers: Option<serde_json::Value> = response_headers
             .map(|h| serde_json::from_str(&h))
             .transpose()
             .map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-        
+
         let base = BaseEntity {
             id: row.try_get("id")?,
             created_at: row.try_get("created_at")?,
@@ -214,7 +214,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookDelivery {
             created_by: None,
             updated_by: None,
         };
-        
+
         Ok(Self {
             base,
             endpoint_id: row.try_get("endpoint_id")?,
@@ -266,7 +266,7 @@ pub struct WebhookEvent {
 impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookEvent {
     fn from_row(row: &'r sqlx::sqlite::SqliteRow) -> sqlx::Result<Self> {
         use sqlx::Row;
-        
+
         let base = BaseEntity {
             id: row.try_get("id")?,
             created_at: row.try_get("created_at")?,
@@ -274,7 +274,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::sqlite::SqliteRow> for WebhookEvent {
             created_by: None,
             updated_by: None,
         };
-        
+
         Ok(Self {
             base,
             event_type: row.try_get("event_type")?,
@@ -338,7 +338,8 @@ impl WebhookSignature {
         let timestamp = Utc::now().timestamp();
         let payload_with_timestamp = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
 
-        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
+        let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
+            .expect("HMAC can take key of any size");
         mac.update(payload_with_timestamp.as_bytes());
         let result = mac.finalize();
         let signature = hex::encode(result.into_bytes());

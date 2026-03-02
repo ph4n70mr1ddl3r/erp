@@ -41,12 +41,14 @@ impl AttendanceService {
     pub fn new() -> Self { Self { repo: SqliteAttendanceRepository } }
     pub async fn check_in(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<()> {
         let today = Utc::now().format("%Y-%m-%d").to_string();
-        let date = chrono::NaiveDate::parse_from_str(&today, "%Y-%m-%d").unwrap();
+        let date = chrono::NaiveDate::parse_from_str(&today, "%Y-%m-%d")
+            .map_err(|e| Error::internal(format!("Failed to parse date: {}", e)))?;
         self.repo.record_check_in(pool, employee_id, date).await
     }
     pub async fn check_out(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<()> {
         let today = Utc::now().format("%Y-%m-%d").to_string();
-        let date = chrono::NaiveDate::parse_from_str(&today, "%Y-%m-%d").unwrap();
+        let date = chrono::NaiveDate::parse_from_str(&today, "%Y-%m-%d")
+            .map_err(|e| Error::internal(format!("Failed to parse date: {}", e)))?;
         self.repo.record_check_out(pool, employee_id, date).await
     }
 }
