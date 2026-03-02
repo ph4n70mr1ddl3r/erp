@@ -32,7 +32,8 @@ export default function CRM() {
       const [leadsRes, oppsRes] = await Promise.all([crm.getLeads(), crm.getOpportunities()]);
       setLeads(leadsRes.data);
       setOpportunities(oppsRes.data);
-    } catch {
+    } catch (err: unknown) {
+      console.error('CRM load error:', err);
       toast.error('Failed to load CRM data');
     } finally {
       setLoading(false);

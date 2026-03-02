@@ -74,9 +74,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(BusinessRule {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -110,9 +110,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(row.map(|row| BusinessRule {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -156,9 +156,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(rows.into_iter().map(|row| BusinessRule {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -240,9 +240,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(RuleSet {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -267,9 +267,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(rows.into_iter().map(|row| RuleSet {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -364,9 +364,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(rows.into_iter().map(|row| RuleVariable {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -414,9 +414,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(rows.into_iter().map(|row| RuleFunction {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -464,9 +464,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(rows.into_iter().map(|row| RuleTemplate {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },
@@ -516,9 +516,9 @@ impl RulesRepository for SqliteRulesRepository {
         
         Ok(DecisionTable {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: None,
                 updated_by: None,
             },

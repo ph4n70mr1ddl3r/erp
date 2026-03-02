@@ -35,7 +35,8 @@ export default function ApprovalWorkflowPage() {
       ]);
       setWorkflows(wfRes.data.items);
       setRequests(reqRes.data.items);
-    } catch {
+    } catch (err: unknown) {
+      console.error('Approval workflow load error:', err);
       toast.error('Failed to load approval workflow data');
     } finally {
       setLoading(false);

@@ -28,7 +28,8 @@ export default function Inventory() {
       const [prodRes, whRes] = await Promise.all([inventory.getProducts(1, 50), inventory.getWarehouses()]);
       setProducts(prodRes.data.items);
       setWarehouses(whRes.data);
-    } catch {
+    } catch (err: unknown) {
+      console.error('Inventory load error:', err);
       toast.error('Failed to load inventory data');
     } finally {
       setLoading(false);

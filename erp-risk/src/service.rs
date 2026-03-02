@@ -246,15 +246,15 @@ impl MitigationService {
             .fetch_all(pool).await?;
         
         Ok(MitigationTask {
-            id: Uuid::parse_str(rows[0].get::<String, _>("id").as_str()).unwrap(),
-            plan_id: Uuid::parse_str(rows[0].get::<String, _>("plan_id").as_str()).unwrap(),
+            id: Uuid::parse_str(rows[0].get::<String, _>("id").as_str()).unwrap_or_default(),
+            plan_id: Uuid::parse_str(rows[0].get::<String, _>("plan_id").as_str()).unwrap_or_default(),
             title: rows[0].get("title"),
             description: rows[0].get("description"),
             assigned_to: rows[0].get::<Option<String>, _>("assigned_to").and_then(|s| Uuid::parse_str(&s).ok()),
             status: rows[0].get("status"),
-            due_date: chrono::DateTime::parse_from_rfc3339(&rows[0].get::<String, _>("due_date")).unwrap().with_timezone(&chrono::Utc),
+            due_date: chrono::DateTime::parse_from_rfc3339(&rows[0].get::<String, _>("due_date")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
             completed_at: Some(now),
-            created_at: chrono::DateTime::parse_from_rfc3339(&rows[0].get::<String, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
+            created_at: chrono::DateTime::parse_from_rfc3339(&rows[0].get::<String, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
         })
     }
 }

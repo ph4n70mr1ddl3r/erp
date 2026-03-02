@@ -68,9 +68,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(PriceBook {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -95,9 +95,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(rows.iter().map(|row| PriceBook {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -149,14 +149,14 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(row.map(|row| PriceBookEntry {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
-            price_book_id: Uuid::parse_str(row.get::<&str, _>("price_book_id")).unwrap(),
-            product_id: Uuid::parse_str(row.get::<&str, _>("product_id")).unwrap(),
+            price_book_id: Uuid::parse_str(row.get::<&str, _>("price_book_id")).unwrap_or_default(),
+            product_id: Uuid::parse_str(row.get::<&str, _>("product_id")).unwrap_or_default(),
             unit_price: row.get::<i64, _>("unit_price"),
             currency: row.get::<&str, _>("currency").to_string(),
             min_quantity: row.get::<i32, _>("min_quantity"),
@@ -208,9 +208,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(PriceRule {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -241,9 +241,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(rows.iter().map(|row| PriceRule {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -312,9 +312,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(Discount {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -352,9 +352,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(row.map(|row| Discount {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -391,9 +391,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(rows.iter().map(|row| Discount {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -455,9 +455,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(row.map(|row| Coupon {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -528,9 +528,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(Promotion {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -562,9 +562,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(rows.iter().map(|row| Promotion {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -619,9 +619,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(rows.iter().map(|row| PriceTier {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },

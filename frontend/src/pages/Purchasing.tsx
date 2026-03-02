@@ -23,7 +23,8 @@ export default function Purchasing() {
       const [venRes, ordRes] = await Promise.all([purchasing.getVendors(1, 50), purchasing.getOrders(1, 20)]);
       setVendors(venRes.data.items);
       setOrders(ordRes.data.items);
-    } catch {
+    } catch (err: unknown) {
+      console.error('Purchasing load error:', err);
       toast.error('Failed to load purchasing data');
     } finally {
       setLoading(false);

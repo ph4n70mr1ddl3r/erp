@@ -78,9 +78,9 @@ impl SourcingRepository for SqliteSourcingRepository {
         
         Ok(SourcingEvent {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: None,
             },
@@ -90,8 +90,8 @@ impl SourcingRepository for SqliteSourcingRepository {
             event_type: SourcingEventType::RFQ,
             status: SourcingStatus::Draft,
             auction_type: None,
-            start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).unwrap().with_timezone(&chrono::Utc),
-            end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).unwrap().with_timezone(&chrono::Utc),
+            start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+            end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
             currency: row.get::<&str, _>("currency").to_string(),
             estimated_value: row.get::<i64, _>("estimated_value"),
             budget: row.get::<Option<i64>, _>("budget"),
@@ -121,9 +121,9 @@ impl SourcingRepository for SqliteSourcingRepository {
         
         Ok(rows.into_iter().map(|row| SourcingEvent {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: None,
             },
@@ -133,8 +133,8 @@ impl SourcingRepository for SqliteSourcingRepository {
             event_type: SourcingEventType::RFQ,
             status: SourcingStatus::Draft,
             auction_type: None,
-            start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).unwrap().with_timezone(&chrono::Utc),
-            end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).unwrap().with_timezone(&chrono::Utc),
+            start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+            end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
             currency: row.get::<&str, _>("currency").to_string(),
             estimated_value: row.get::<i64, _>("estimated_value"),
             budget: row.get::<Option<i64>, _>("budget"),
@@ -204,13 +204,13 @@ impl SourcingRepository for SqliteSourcingRepository {
         
         Ok(rows.into_iter().map(|row| SourcingItem {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
-            event_id: Uuid::parse_str(row.get::<&str, _>("event_id")).unwrap(),
+            event_id: Uuid::parse_str(row.get::<&str, _>("event_id")).unwrap_or_default(),
             product_id: row.get::<Option<&str>, _>("product_id").and_then(|s| Uuid::parse_str(s).ok()),
             sku: row.get::<Option<&str>, _>("sku").map(|s| s.to_string()),
             name: row.get::<&str, _>("name").to_string(),
@@ -267,14 +267,14 @@ impl SourcingRepository for SqliteSourcingRepository {
         
         Ok(Bid {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
-            event_id: Uuid::parse_str(row.get::<&str, _>("event_id")).unwrap(),
-            vendor_id: Uuid::parse_str(row.get::<&str, _>("vendor_id")).unwrap(),
+            event_id: Uuid::parse_str(row.get::<&str, _>("event_id")).unwrap_or_default(),
+            vendor_id: Uuid::parse_str(row.get::<&str, _>("vendor_id")).unwrap_or_default(),
             bid_number: row.get::<&str, _>("bid_number").to_string(),
             status: BidStatus::Draft,
             submitted_at: row.get::<Option<&str>, _>("submitted_at").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
@@ -301,14 +301,14 @@ impl SourcingRepository for SqliteSourcingRepository {
         
         Ok(rows.into_iter().map(|row| Bid {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).unwrap().with_timezone(&chrono::Utc),
+                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
-            event_id: Uuid::parse_str(row.get::<&str, _>("event_id")).unwrap(),
-            vendor_id: Uuid::parse_str(row.get::<&str, _>("vendor_id")).unwrap(),
+            event_id: Uuid::parse_str(row.get::<&str, _>("event_id")).unwrap_or_default(),
+            vendor_id: Uuid::parse_str(row.get::<&str, _>("vendor_id")).unwrap_or_default(),
             bid_number: row.get::<&str, _>("bid_number").to_string(),
             status: BidStatus::Draft,
             submitted_at: row.get::<Option<&str>, _>("submitted_at").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),

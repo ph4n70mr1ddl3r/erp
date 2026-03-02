@@ -46,7 +46,8 @@ export default function Manufacturing() {
     try {
       await api.post(`/api/v1/manufacturing/work-orders/${id}/start`);
       window.location.reload();
-    } catch {
+    } catch (err: unknown) {
+      console.error('Start work order error:', err);
       toast.error('Failed to start work order');
     }
   };
@@ -55,7 +56,8 @@ export default function Manufacturing() {
     try {
       await api.post(`/api/v1/manufacturing/work-orders/${id}/complete`);
       window.location.reload();
-    } catch {
+    } catch (err: unknown) {
+      console.error('Complete work order error:', err);
       toast.error('Failed to complete work order');
     }
   };
