@@ -137,3 +137,24 @@ export interface ApiError {
   error?: string;
   message?: string;
 }
+
+export interface LeaveType {
+  id: string;
+  name: string;
+  code: string;
+  days_per_year: number;
+  carry_over: boolean;
+  status: string;
+}
+
+export interface LeaveRequest {
+  id: string;
+  employee_id: string;
+  leave_type_id: string;
+  start_date: string;
+  end_date: string;
+  days: number;
+  reason?: string;
+  status: string;
+  created_at: string;
+}
