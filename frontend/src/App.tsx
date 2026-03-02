@@ -33,6 +33,7 @@ import CRM from './pages/CRM';
 import InventoryAdjustments from './pages/InventoryAdjustments';
 import LeaveManagement from './pages/LeaveManagement';
 import Expenses from './pages/Expenses';
+import Tax from './pages/Tax';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -82,6 +83,7 @@ function AppRoutes() {
       <Route path="/inventory-adjustments" element={<PrivateRoute><InventoryAdjustments /></PrivateRoute>} />
       <Route path="/leave" element={<PrivateRoute><LeaveManagement /></PrivateRoute>} />
       <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
+      <Route path="/tax" element={<PrivateRoute><Tax /></PrivateRoute>} />
     </Routes>
   );
 }

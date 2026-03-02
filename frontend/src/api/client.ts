@@ -1182,3 +1182,49 @@ export const inventoryAdjustments = {
   }) => api.post<InventoryAdjustmentLine>(`/api/v1/inventory-adjustments/${id}/lines`, data),
   getAnalytics: () => api.get<InventoryAdjustmentAnalytics>('/api/v1/inventory-adjustments/analytics'),
 };
+
+export interface TaxJurisdiction {
+  id: string;
+  code: string;
+  name: string;
+  country_code: string;
+  status: string;
+}
+
+export interface TaxRate {
+  id: string;
+  jurisdiction_id: string;
+  name: string;
+  code: string;
+  rate: number;
+  tax_type: string;
+  status: string;
+}
+
+export interface TaxExemption {
+  id: string;
+  customer_id: string;
+  exemption_type: string;
+  certificate_number: string;
+  status: string;
+}
+
+export interface TaxCalculationResult {
+  taxable_amount: number;
+  total_tax: number;
+}
+
+export const tax = {
+  getJurisdictions: (page = 1, perPage = 50) =>
+    api.get<Paginated<TaxJurisdiction>>(`/api/v1/tax/jurisdictions?page=${page}&per_page=${perPage}`),
+  createJurisdiction: (data: { code: string; name: string; country_code: string; state_code?: string; county?: string; city?: string }) =>
+    api.post<TaxJurisdiction>('/api/v1/tax/jurisdictions', data),
+  getRates: (page = 1, perPage = 50) =>
+    api.get<Paginated<TaxRate>>(`/api/v1/tax/rates?page=${page}&per_page=${perPage}`),
+  createRate: (data: { jurisdiction_id: string; name: string; code: string; rate: number; tax_type?: string; is_compound?: boolean; is_recoverable?: boolean }) =>
+    api.post<TaxRate>('/api/v1/tax/rates', data),
+  calculateTax: (data: { jurisdiction_id: string; amount: number; customer_id?: string }) =>
+    api.post<TaxCalculationResult>('/api/v1/tax/calculate', data),
+  createExemption: (data: { customer_id: string; exemption_type: string; certificate_number: string; jurisdiction_id?: string; issue_date: string; expiry_date?: string }) =>
+    api.post<TaxExemption>('/api/v1/tax/exemptions', data),
+};

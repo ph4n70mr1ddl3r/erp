@@ -30,7 +30,8 @@ import {
   UserCircle,
   Scale,
   Calendar,
-  Receipt
+  Receipt,
+  Percent
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -40,6 +41,7 @@ import GlobalSearch from './GlobalSearch';
 const navItems = [
   { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/finance', icon: Building2, label: 'Finance' },
+  { path: '/tax', icon: Percent, label: 'Tax' },
   { path: '/reports', icon: FileBarChart, label: 'Reports' },
   { path: '/audit', icon: ClipboardList, label: 'Audit Trail' },
   { path: '/inventory', icon: Package, label: 'Inventory' },
