@@ -102,8 +102,8 @@ impl POSTransactionService {
     }
     
     pub async fn get_daily_summary(&self, pool: &SqlitePool, store_id: Uuid, date: chrono::NaiveDate) -> Result<DailySummary> {
-        let start = date.and_hms_opt(0, 0, 0).unwrap();
-        let end = date.and_hms_opt(23, 59, 59).unwrap();
+        let start = date.and_hms_opt(0, 0, 0).expect("valid time values");
+        let end = date.and_hms_opt(23, 59, 59).expect("valid time values");
         
         let start_dt: chrono::DateTime<chrono::Utc> = chrono::DateTime::from_naive_utc_and_offset(start, chrono::Utc);
         let end_dt: chrono::DateTime<chrono::Utc> = chrono::DateTime::from_naive_utc_and_offset(end, chrono::Utc);

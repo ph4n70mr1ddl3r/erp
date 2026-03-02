@@ -191,13 +191,13 @@ impl BundleService {
             }
 
             let quantity_match = quantity >= rule.min_quantity && 
-                (rule.max_quantity.is_none() || quantity <= rule.max_quantity.unwrap());
+                rule.max_quantity.is_none_or(|max| quantity <= max);
 
-            let date_match = (rule.start_date.is_none() || now >= rule.start_date.unwrap()) &&
-                (rule.end_date.is_none() || now <= rule.end_date.unwrap());
+            let date_match = rule.start_date.is_none_or(|start| now >= start) &&
+                rule.end_date.is_none_or(|end| now <= end);
 
             let customer_match = rule.customer_group_id.is_none() || 
-                customer_group_id.map(|cg| Some(cg) == rule.customer_group_id).unwrap_or(false);
+                customer_group_id.is_some_and(|cg| Some(cg) == rule.customer_group_id);
 
             if quantity_match && date_match && customer_match {
                 if let Some(fixed) = rule.fixed_price {

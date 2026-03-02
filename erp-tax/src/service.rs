@@ -178,6 +178,7 @@ impl Default for TaxTransactionService {
 impl TaxTransactionService {
     pub fn new() -> Self { Self { repo: SqliteTaxTransactionRepository } }
     
+    #[allow(clippy::too_many_arguments)]
     pub async fn record(
         &self,
         pool: &SqlitePool,

@@ -16,6 +16,10 @@ pub struct SecurityService {
     oauth_service: OAuthService,
 }
 
+impl Default for SecurityService {
+    fn default() -> Self { Self::new() }
+}
+
 impl SecurityService {
     pub fn new() -> Self {
         Self {
@@ -234,6 +238,7 @@ impl SecurityService {
         Ok((user_info, connection_id))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn link_oauth_account(
         &self,
         pool: &SqlitePool,

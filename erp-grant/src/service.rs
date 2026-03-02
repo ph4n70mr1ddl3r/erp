@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use chrono::{DateTime, Utc};
 use erp_core::error::{Error, Result};
 use erp_core::models::{BaseEntity, Money, Currency};
@@ -18,6 +20,7 @@ impl GrantService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_grant(
         &self,
         _pool: &SqlitePool,

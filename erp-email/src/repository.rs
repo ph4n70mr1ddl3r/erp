@@ -104,6 +104,7 @@ impl EmailTemplateRepository for SqliteEmailTemplateRepository {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 #[async_trait]
 pub trait EmailCampaignRepository: Send + Sync {
     async fn create(&self, pool: &SqlitePool, campaign: &EmailCampaign) -> anyhow::Result<EmailCampaign>;

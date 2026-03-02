@@ -4,6 +4,7 @@ use sqlx::SqlitePool;
 #[async_trait]
 pub trait SustainabilityRepository: Send + Sync {}
 
+#[allow(dead_code)]
 pub struct SqliteSustainabilityRepository {
     pool: SqlitePool,
 }

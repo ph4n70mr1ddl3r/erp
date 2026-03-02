@@ -293,7 +293,7 @@ pub async fn get_promotion_report(
     Path(id): Path<Uuid>,
 ) -> Json<serde_json::Value> {
     match PromotionReportingService::get_report(&state.pool, id).await {
-        Ok(report) => Json(serde_json::to_value(report).unwrap()),
+        Ok(report) => Json(serde_json::to_value(report).unwrap_or_else(|_| serde_json::json!({}))),
         Err(e) => Json(serde_json::json!({ "error": e.to_string() })),
     }
 }
@@ -391,7 +391,7 @@ pub async fn validate_coupon(
         req.customer_email.as_deref(),
         req.is_first_order.unwrap_or(false),
     ).await {
-        Ok(validation) => Json(serde_json::to_value(validation).unwrap()),
+        Ok(validation) => Json(serde_json::to_value(validation).unwrap_or_else(|_| serde_json::json!({}))),
         Err(e) => Json(serde_json::json!({ "error": e.to_string() })),
     }
 }

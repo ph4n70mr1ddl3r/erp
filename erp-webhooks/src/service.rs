@@ -12,6 +12,10 @@ pub struct WebhookService {
     event_repo: SqliteWebhookEventRepository,
 }
 
+impl Default for WebhookService {
+    fn default() -> Self { Self::new() }
+}
+
 impl WebhookService {
     pub fn new() -> Self {
         Self {
@@ -21,6 +25,7 @@ impl WebhookService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_endpoint(
         &self,
         pool: &SqlitePool,

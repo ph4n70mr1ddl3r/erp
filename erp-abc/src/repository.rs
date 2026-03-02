@@ -61,6 +61,7 @@ pub struct ActivityAllocationSummary {
     pub percentage: f64,
 }
 
+#[allow(dead_code)]
 pub struct SqliteCostPoolRepository {
     pool: SqlitePool,
 }

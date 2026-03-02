@@ -1,5 +1,6 @@
 use crate::repository::SqliteGRCRepository;
 
+#[allow(dead_code)]
 pub struct GRCService {
     repo: SqliteGRCRepository,
 }

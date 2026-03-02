@@ -27,6 +27,7 @@ impl TemplateService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,
@@ -123,6 +124,7 @@ impl TemplateService {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn generate_document(
         &self,
         pool: &SqlitePool,
@@ -206,6 +208,7 @@ impl EmailTemplateService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,

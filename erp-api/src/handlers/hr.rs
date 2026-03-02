@@ -32,7 +32,7 @@ pub async fn create_employee(State(state): State<AppState>, Json(req): Json<Crea
         base: BaseEntity::new(), employee_number: req.employee_number, first_name: req.first_name, last_name: req.last_name, email: req.email.clone(),
         contact: ContactInfo { email: Some(req.email), phone: req.phone, fax: None, website: None },
         address: Address { street: String::new(), city: String::new(), state: None, postal_code: String::new(), country: String::new() },
-        birth_date: NaiveDate::from_ymd_opt(1970, 1, 1).unwrap(),
+        birth_date: NaiveDate::from_ymd_opt(1970, 1, 1).unwrap_or_else(|| chrono::Utc::now().naive_utc().date()),
         hire_date,
         termination_date: None, department_id: None, position_id: None, manager_id: None, status: Status::Active,
     };

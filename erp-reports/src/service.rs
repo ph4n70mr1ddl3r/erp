@@ -252,6 +252,7 @@ impl DashboardService {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct DashboardRow {
     id: String,
     name: String,

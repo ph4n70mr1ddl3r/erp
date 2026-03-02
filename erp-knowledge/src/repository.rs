@@ -60,6 +60,7 @@ pub trait KnowledgeCategoryRepository: Send + Sync {
     async fn update(&self, category: &KnowledgeCategoryEntity) -> Result<KnowledgeCategoryEntity>;
 }
 
+#[allow(dead_code)]
 pub struct SqliteArticleRepository {
     pool: SqlitePool,
 }

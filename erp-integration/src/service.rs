@@ -26,6 +26,7 @@ impl APIKeyService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,
@@ -105,6 +106,7 @@ impl APIKeyService {
         self.api_key_repo.update(pool, &api_key).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn record_usage(
         &self,
         pool: &SqlitePool,
@@ -186,6 +188,7 @@ impl ExternalConnectionService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,
@@ -279,6 +282,7 @@ impl IntegrationFlowService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,

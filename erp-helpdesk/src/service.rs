@@ -22,6 +22,7 @@ impl TicketService {
         format!("TKT-{}", chrono::Utc::now().format("%Y%m%d%H%M%S"))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_ticket(
         &self,
         _pool: &SqlitePool,
@@ -108,6 +109,7 @@ impl TicketService {
         self.ticket_repo.update(&ticket).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_comment(
         &self,
         _pool: &SqlitePool,
@@ -173,6 +175,7 @@ impl TicketService {
     }
 }
 
+#[allow(dead_code)]
 pub struct SLAService {
     pool: SqlitePool,
 }
@@ -271,6 +274,7 @@ pub struct SLADueDates {
     pub resolution_due: DateTime<Utc>,
 }
 
+#[allow(dead_code)]
 pub struct EscalationService {
     pool: SqlitePool,
 }
@@ -328,6 +332,7 @@ impl EscalationService {
     }
 }
 
+#[allow(dead_code)]
 pub struct AssignmentService {
     pool: SqlitePool,
 }
@@ -380,6 +385,7 @@ impl AssignmentService {
     }
 }
 
+#[allow(dead_code)]
 pub struct TeamService {
     pool: SqlitePool,
 }
@@ -420,6 +426,7 @@ impl TeamService {
     }
 }
 
+#[allow(dead_code)]
 pub struct SurveyService {
     pool: SqlitePool,
 }
@@ -468,6 +475,7 @@ impl SurveyService {
     }
 }
 
+#[allow(dead_code)]
 pub struct CannedResponseService {
     pool: SqlitePool,
 }
@@ -520,6 +528,7 @@ impl CannedResponseService {
     }
 }
 
+#[allow(dead_code)]
 pub struct HelpdeskAnalyticsService {
     pool: SqlitePool,
 }

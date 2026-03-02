@@ -85,7 +85,7 @@ async fn list_alerts(
         _ => None,
     });
     let alerts = service.list_alerts(status, severity, query.limit).await?;
-    Ok(Json(alerts.into_iter().map(|a| serde_json::to_value(a).unwrap()).collect()))
+    Ok(Json(alerts.into_iter().map(|a| serde_json::to_value(a).unwrap_or_default()).collect()))
 }
 
 #[derive(Deserialize)]
@@ -160,7 +160,7 @@ async fn list_rules(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = FraudService::new();
     let rules = service.list_rules(false).await?;
-    Ok(Json(rules.into_iter().map(|r| serde_json::to_value(r).unwrap()).collect()))
+    Ok(Json(rules.into_iter().map(|r| serde_json::to_value(r).unwrap_or_default()).collect()))
 }
 
 async fn delete_rule(
@@ -183,7 +183,7 @@ async fn evaluate_transaction(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = FraudService::new();
     let alerts = service.evaluate_transaction(&body.entity_type, body.entity_id, body.data).await?;
-    Ok(Json(alerts.into_iter().map(|a| serde_json::to_value(a).unwrap()).collect()))
+    Ok(Json(alerts.into_iter().map(|a| serde_json::to_value(a).unwrap_or_default()).collect()))
 }
 
 #[derive(Deserialize)]
@@ -232,7 +232,7 @@ async fn list_cases(
         _ => None,
     });
     let cases = service.list_cases(status, query.limit).await?;
-    Ok(Json(cases.into_iter().map(|c| serde_json::to_value(c).unwrap()).collect()))
+    Ok(Json(cases.into_iter().map(|c| serde_json::to_value(c).unwrap_or_default()).collect()))
 }
 
 #[derive(Deserialize)]

@@ -75,7 +75,7 @@ async fn list_processes(
         _ => None,
     });
     let processes = service.list_processes(category, status).await?;
-    Ok(Json(processes.into_iter().map(|p| serde_json::to_value(p).unwrap()).collect()))
+    Ok(Json(processes.into_iter().map(|p| serde_json::to_value(p).unwrap_or_default()).collect()))
 }
 
 async fn delete_process(
@@ -157,7 +157,7 @@ async fn import_events(
         process_id: body.process_id,
         events,
     }).await?;
-    Ok(Json(instances.into_iter().map(|i| serde_json::to_value(i).unwrap()).collect()))
+    Ok(Json(instances.into_iter().map(|i| serde_json::to_value(i).unwrap_or_default()).collect()))
 }
 
 #[derive(Deserialize)]

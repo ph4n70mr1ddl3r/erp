@@ -117,7 +117,8 @@ impl SubscriptionService {
         let sub = SubscriptionRepository::row_to_sub(&rows[0])?;
         
         let plans = SubscriptionPlanRepository::list_active(pool).await?;
-        let plan = plans.iter().find(|p| p.id == sub.plan_id).unwrap();
+        let plan = plans.iter().find(|p| p.id == sub.plan_id)
+            .ok_or_else(|| anyhow::anyhow!("Plan not found for subscription"))?;
         
         let new_start = sub.current_period_end;
         let new_end = Self::calculate_period_end(&new_start, &plan.billing_interval, plan.interval_count);

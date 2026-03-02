@@ -264,6 +264,7 @@ impl<R: TMSRepository> TMSService<R> {
         Ok(invoice)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn record_fuel_purchase(&self, vehicle_id: Uuid, driver_id: Option<Uuid>,
         vendor: String, location: String, fuel_type: String, quantity: f64, unit: String,
         price_per_unit: i64, currency: String, odometer: f64, receipt: Option<String>) -> anyhow::Result<FuelPurchase> {

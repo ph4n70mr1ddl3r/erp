@@ -4,6 +4,7 @@ use sqlx::SqlitePool;
 #[async_trait]
 pub trait GRCRepository: Send + Sync {}
 
+#[allow(dead_code)]
 pub struct SqliteGRCRepository {
     pool: SqlitePool,
 }

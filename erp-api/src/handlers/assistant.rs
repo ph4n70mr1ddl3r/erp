@@ -58,7 +58,7 @@ async fn list_conversations(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = AssistantService::new();
     let conversations = service.list_conversations(user_id, 50).await?;
-    Ok(Json(conversations.into_iter().map(|c| serde_json::to_value(c).unwrap()).collect()))
+    Ok(Json(conversations.into_iter().map(|c| serde_json::to_value(c).unwrap_or_default()).collect()))
 }
 
 async fn archive_conversation(
@@ -130,7 +130,7 @@ async fn list_intents(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = AssistantService::new();
     let intents = service.list_intents().await?;
-    Ok(Json(intents.into_iter().map(|i| serde_json::to_value(i).unwrap()).collect()))
+    Ok(Json(intents.into_iter().map(|i| serde_json::to_value(i).unwrap_or_default()).collect()))
 }
 
 async fn get_intent(
@@ -159,7 +159,7 @@ async fn list_skills(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = AssistantService::new();
     let skills = service.list_skills(false).await?;
-    Ok(Json(skills.into_iter().map(|s| serde_json::to_value(s).unwrap()).collect()))
+    Ok(Json(skills.into_iter().map(|s| serde_json::to_value(s).unwrap_or_default()).collect()))
 }
 
 async fn get_skill(
@@ -188,7 +188,7 @@ async fn list_quick_actions(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = AssistantService::new();
     let actions = service.list_quick_actions().await?;
-    Ok(Json(actions.into_iter().map(|a| serde_json::to_value(a).unwrap()).collect()))
+    Ok(Json(actions.into_iter().map(|a| serde_json::to_value(a).unwrap_or_default()).collect()))
 }
 
 async fn delete_quick_action(

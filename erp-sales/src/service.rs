@@ -136,6 +136,7 @@ impl Default for LeadService {
 impl LeadService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         pool: &SqlitePool,
         company_name: &str,
@@ -327,6 +328,7 @@ impl Default for OpportunityService {
 impl OpportunityService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         pool: &SqlitePool,
         name: &str,
@@ -674,6 +676,7 @@ impl Default for TerritoryService {
 impl TerritoryService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_territory(
         pool: &SqlitePool,
         code: &str,
@@ -721,6 +724,7 @@ impl TerritoryService {
         Ok(territory)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn assign_territory(
         pool: &SqlitePool,
         territory_id: Uuid,
@@ -1069,6 +1073,7 @@ impl Default for ContractService {
 impl ContractService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_contract(
         pool: &SqlitePool,
         title: &str,
@@ -1129,6 +1134,7 @@ impl ContractService {
         Ok(contract)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_line(
         pool: &SqlitePool,
         contract_id: Uuid,
@@ -1346,6 +1352,7 @@ impl Default for SubscriptionService {
 impl SubscriptionService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_plan(
         pool: &SqlitePool,
         plan_code: &str,
@@ -1723,6 +1730,7 @@ impl Default for CampaignService {
 impl CampaignService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_campaign(
         pool: &SqlitePool,
         name: &str,

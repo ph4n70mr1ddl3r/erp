@@ -1,5 +1,6 @@
 use crate::repository::SqliteLearningRepository;
 
+#[allow(dead_code)]
 pub struct LearningService {
     repo: SqliteLearningRepository,
 }

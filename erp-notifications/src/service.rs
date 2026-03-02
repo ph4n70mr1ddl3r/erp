@@ -7,6 +7,7 @@ use crate::repository::*;
 
 pub struct NotificationService {
     notification_repo: SqliteNotificationRepository,
+    #[allow(dead_code)]
     preference_repo: SqliteNotificationPreferenceRepository,
     template_repo: SqliteNotificationTemplateRepository,
 }
@@ -21,11 +22,13 @@ impl NotificationService {
     pub fn new() -> Self {
         Self {
             notification_repo: SqliteNotificationRepository,
-            preference_repo: SqliteNotificationPreferenceRepository,
+            #[allow(dead_code)]
+    preference_repo: SqliteNotificationPreferenceRepository,
             template_repo: SqliteNotificationTemplateRepository,
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn send(
         &self,
         pool: &SqlitePool,
@@ -129,6 +132,7 @@ impl NotificationService {
         self.notification_repo.count_unread(pool, user_id).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn schedule(
         &self,
         pool: &SqlitePool,
@@ -217,6 +221,7 @@ fn render_template(template: &str, variables: &serde_json::Value) -> anyhow::Res
 }
 
 pub struct NotificationPreferenceService {
+    #[allow(dead_code)]
     preference_repo: SqliteNotificationPreferenceRepository,
 }
 
@@ -229,7 +234,8 @@ impl Default for NotificationPreferenceService {
 impl NotificationPreferenceService {
     pub fn new() -> Self {
         Self {
-            preference_repo: SqliteNotificationPreferenceRepository,
+            #[allow(dead_code)]
+    preference_repo: SqliteNotificationPreferenceRepository,
         }
     }
 
@@ -300,6 +306,7 @@ impl NotificationTemplateService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,

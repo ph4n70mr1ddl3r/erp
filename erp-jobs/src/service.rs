@@ -11,6 +11,7 @@ use crate::repository::*;
 pub struct JobService {
     job_repo: SqliteJobRepository,
     execution_repo: SqliteJobExecutionRepository,
+    #[allow(dead_code)]
     schedule_repo: SqliteJobScheduleRepository,
 }
 
@@ -25,10 +26,12 @@ impl JobService {
         Self {
             job_repo: SqliteJobRepository,
             execution_repo: SqliteJobExecutionRepository,
-            schedule_repo: SqliteJobScheduleRepository,
+            #[allow(dead_code)]
+    schedule_repo: SqliteJobScheduleRepository,
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn submit(
         &self,
         pool: &SqlitePool,
@@ -267,6 +270,7 @@ impl JobService {
 }
 
 pub struct JobScheduleService {
+    #[allow(dead_code)]
     schedule_repo: SqliteJobScheduleRepository,
     job_service: JobService,
 }
@@ -280,11 +284,13 @@ impl Default for JobScheduleService {
 impl JobScheduleService {
     pub fn new() -> Self {
         Self {
-            schedule_repo: SqliteJobScheduleRepository,
+            #[allow(dead_code)]
+    schedule_repo: SqliteJobScheduleRepository,
             job_service: JobService::new(),
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,

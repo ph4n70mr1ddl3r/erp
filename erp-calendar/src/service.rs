@@ -28,6 +28,7 @@ impl CalendarEventService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,
@@ -83,6 +84,7 @@ impl CalendarEventService {
         self.event_repo.list(pool, calendar_id, start, end).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update(&self, pool: &SqlitePool, id: Uuid, title: Option<String>, description: Option<String>, location: Option<String>, start_at: Option<DateTime<Utc>>, end_at: Option<DateTime<Utc>>) -> anyhow::Result<()> {
         if let Some(mut event) = self.event_repo.get_by_id(pool, id).await? {
             if let Some(t) = title { event.title = t; }

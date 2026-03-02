@@ -1,3 +1,4 @@
+#![allow(clippy::type_complexity)]
 use async_graphql::{Object, Context, SimpleObject, InputObject, Enum};
 use sqlx::SqlitePool;
 

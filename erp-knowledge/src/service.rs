@@ -27,6 +27,7 @@ impl ArticleService {
             .to_string()
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_article(
         &self,
         _pool: &SqlitePool,
@@ -118,6 +119,7 @@ impl ArticleService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ArticleVersionService {
     pool: SqlitePool,
 }
@@ -185,6 +187,7 @@ impl ArticleVersionService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ArticleFeedbackService {
     pool: SqlitePool,
 }
@@ -240,6 +243,7 @@ impl ArticleFeedbackService {
     }
 }
 
+#[allow(dead_code)]
 pub struct KnowledgeSearchService {
     pool: SqlitePool,
 }
@@ -317,6 +321,7 @@ pub struct SearchFacets {
     pub authors: std::collections::HashMap<Uuid, i32>,
 }
 
+#[allow(dead_code)]
 pub struct KnowledgeCategoryService {
     pool: SqlitePool,
 }
@@ -361,6 +366,7 @@ pub struct CategoryNode {
     pub children: Vec<CategoryNode>,
 }
 
+#[allow(dead_code)]
 pub struct ArticleWorkflowService {
     pool: SqlitePool,
 }
@@ -422,6 +428,7 @@ impl ArticleWorkflowService {
     }
 }
 
+#[allow(dead_code)]
 pub struct KnowledgeAnalyticsService {
     pool: SqlitePool,
 }
@@ -476,6 +483,7 @@ pub struct KnowledgeHealthScore {
     pub engagement_score: f64,
 }
 
+#[allow(dead_code)]
 pub struct ArticleTranslationService {
     pool: SqlitePool,
 }
@@ -527,6 +535,7 @@ impl ArticleTranslationService {
     }
 }
 
+#[allow(dead_code)]
 pub struct KnowledgeTemplateService {
     pool: SqlitePool,
 }

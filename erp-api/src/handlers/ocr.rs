@@ -97,7 +97,7 @@ async fn list_documents(
         _ => None,
     });
     let docs = service.list_documents(status, query.limit, query.offset).await?;
-    Ok(Json(docs.into_iter().map(|d| serde_json::to_value(d).unwrap()).collect()))
+    Ok(Json(docs.into_iter().map(|d| serde_json::to_value(d).unwrap_or_default()).collect()))
 }
 
 async fn delete_document(
@@ -151,7 +151,7 @@ async fn list_templates(
 ) -> ApiResult<Json<Vec<serde_json::Value>>> {
     let service = OcrService::new();
     let templates = service.list_templates(None).await?;
-    Ok(Json(templates.into_iter().map(|t| serde_json::to_value(t).unwrap()).collect()))
+    Ok(Json(templates.into_iter().map(|t| serde_json::to_value(t).unwrap_or_default()).collect()))
 }
 
 async fn delete_template(

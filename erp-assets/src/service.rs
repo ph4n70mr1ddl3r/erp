@@ -22,6 +22,7 @@ impl ITAssetService {
         Self { repo: SqliteITAssetRepository, assignment_repo: SqliteAssetAssignmentRepository }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(&self, pool: &SqlitePool, asset_tag: String, name: String, asset_type: ITAssetType, purchase_cost: i64, currency: String, description: Option<String>, model: Option<String>, manufacturer: Option<String>, serial_number: Option<String>, purchase_date: Option<chrono::NaiveDate>, warranty_expiry: Option<chrono::NaiveDate>, location_id: Option<Uuid>) -> Result<ITAsset> {
         let existing = self.repo.find_by_tag(pool, &asset_tag).await?;
         if existing.is_some() {
@@ -151,6 +152,7 @@ impl SoftwareLicenseService {
         Self { repo: SqliteSoftwareLicenseRepository }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(&self, pool: &SqlitePool, license_key: String, product_name: String, vendor: String, license_type: LicenseType, seats_purchased: i32, purchase_cost: i64, currency: String, purchase_date: chrono::NaiveDate, start_date: chrono::NaiveDate, expiry_date: Option<chrono::NaiveDate>) -> Result<SoftwareLicense> {
         let now = Utc::now();
         let license = SoftwareLicense {

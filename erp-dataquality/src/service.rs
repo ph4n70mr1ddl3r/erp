@@ -18,6 +18,7 @@ impl DataQualityRuleService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_rule(
         &self,
         _pool: &SqlitePool,
@@ -133,6 +134,7 @@ impl DataQualityRuleService {
     }
 }
 
+#[allow(dead_code)]
 pub struct DataProfilingService {
     pool: SqlitePool,
 }
@@ -221,6 +223,7 @@ impl DataProfilingService {
     }
 }
 
+#[allow(dead_code)]
 pub struct DataCleansingService {
     pool: SqlitePool,
 }
@@ -324,6 +327,7 @@ impl DataCleansingService {
     }
 }
 
+#[allow(dead_code)]
 pub struct DataMatchingService {
     pool: SqlitePool,
 }
@@ -487,6 +491,7 @@ impl DataMatchingService {
     }
 }
 
+#[allow(dead_code)]
 pub struct DataQualityDashboardService {
     pool: SqlitePool,
 }
@@ -526,6 +531,7 @@ impl DataQualityDashboardService {
     }
 }
 
+#[allow(dead_code)]
 pub struct DataQualityReportService {
     pool: SqlitePool,
 }

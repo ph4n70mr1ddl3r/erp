@@ -6,6 +6,9 @@ use crate::models::*;
 use crate::repository::*;
 
 pub struct BarcodeService { repo: SqliteBarcodeRepository }
+impl Default for BarcodeService {
+    fn default() -> Self { Self::new() }
+}
 impl BarcodeService {
     pub fn new() -> Self { Self { repo: SqliteBarcodeRepository } }
     
@@ -105,6 +108,7 @@ impl BarcodeService {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct BarcodeDefinitionRow {
     id: String,
     prefix: Option<String>,
@@ -114,6 +118,9 @@ struct BarcodeDefinitionRow {
 }
 
 pub struct BarcodePrintService { repo: SqliteBarcodePrintJobRepository }
+impl Default for BarcodePrintService {
+    fn default() -> Self { Self::new() }
+}
 impl BarcodePrintService {
     pub fn new() -> Self { Self { repo: SqliteBarcodePrintJobRepository } }
     
@@ -178,9 +185,13 @@ impl BarcodePrintService {
 }
 
 pub struct ScanService { repo: SqliteScanEventRepository }
+impl Default for ScanService {
+    fn default() -> Self { Self::new() }
+}
 impl ScanService {
     pub fn new() -> Self { Self { repo: SqliteScanEventRepository } }
     
+    #[allow(clippy::too_many_arguments)]
     pub async fn scan(
         &self,
         pool: &SqlitePool,
@@ -223,6 +234,9 @@ impl ScanService {
 }
 
 pub struct BarcodeValidationService;
+impl Default for BarcodeValidationService {
+    fn default() -> Self { Self::new() }
+}
 impl BarcodeValidationService {
     pub fn new() -> Self { Self }
     

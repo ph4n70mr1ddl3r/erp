@@ -21,6 +21,7 @@ impl ServiceTicketService {
         Self { repo: SqliteServiceTicketRepository }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(&self, pool: &SqlitePool, subject: String, description: String, customer_id: Option<Uuid>, priority: TicketPriority, ticket_type: TicketType, source: TicketSource) -> Result<ServiceTicket> {
         let ticket_number = format!("TKT-{}", Utc::now().format("%Y%m%d%H%M%S"));
         let _now = Utc::now();
@@ -138,6 +139,7 @@ impl KnowledgeArticleService {
         Self { repo: SqliteKnowledgeArticleRepository }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(&self, pool: &SqlitePool, title: String, content: String, author_id: Uuid, article_type: ArticleType, category_id: Option<Uuid>, summary: Option<String>, tags: Vec<String>) -> Result<KnowledgeArticle> {
         let now = Utc::now();
         let article = KnowledgeArticle {
@@ -229,6 +231,7 @@ impl SLAService {
         Self { repo: SqliteSLARepository }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(&self, pool: &SqlitePool, name: String, description: Option<String>, response_time_hours: i32, resolution_time_hours: i32, business_hours_only: bool, timezone: String) -> Result<SLA> {
         let now = Utc::now();
         let sla = SLA {

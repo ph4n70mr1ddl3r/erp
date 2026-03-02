@@ -37,6 +37,7 @@ pub trait CleansingJobRepository: Send + Sync {
     async fn update(&self, job: &DataCleansingJob) -> Result<DataCleansingJob>;
 }
 
+#[allow(dead_code)]
 pub struct SqliteQualityRuleRepository {
     pool: SqlitePool,
 }

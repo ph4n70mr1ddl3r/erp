@@ -24,6 +24,7 @@ impl EmailTemplateService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,
@@ -100,6 +101,7 @@ impl EmailTemplateService {
     }
 }
 
+#[allow(dead_code)]
 pub struct EmailCampaignService {
     campaign_repo: SqliteEmailCampaignRepository,
     template_repo: SqliteEmailTemplateRepository,
@@ -121,6 +123,7 @@ impl EmailCampaignService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         &self,
         pool: &SqlitePool,

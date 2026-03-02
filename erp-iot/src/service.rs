@@ -97,6 +97,7 @@ impl Default for TelemetryService {
 impl TelemetryService {
     pub fn new() -> Self { Self { repo: SqliteTelemetryRepository } }
     
+    #[allow(clippy::too_many_arguments)]
     pub async fn ingest(&self, pool: &SqlitePool, device_id: Uuid, metric_name: String, metric_type: MetricType, value_numeric: Option<f64>, value_string: Option<String>, value_boolean: Option<bool>, unit: Option<String>) -> Result<TelemetryData> {
         let data = TelemetryData {
             id: Uuid::new_v4(),

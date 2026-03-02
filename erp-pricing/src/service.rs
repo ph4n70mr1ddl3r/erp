@@ -67,7 +67,7 @@ impl PricingService {
         if let Some(entry) = self.repo.get_product_price(pool, price_book_id, product_id).await? {
             let tiers = self.repo.get_price_tiers(pool, product_id).await?;
             for tier in tiers {
-                if quantity >= tier.min_quantity && (tier.max_quantity.is_none() || quantity <= tier.max_quantity.unwrap()) {
+                if quantity >= tier.min_quantity && tier.max_quantity.is_none_or(|max| quantity <= max) {
                     return Ok(tier.unit_price * quantity as i64);
                 }
             }

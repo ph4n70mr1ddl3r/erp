@@ -1,5 +1,6 @@
 use crate::repository::SqliteTreasuryRepository;
 
+#[allow(dead_code)]
 pub struct TreasuryService {
     repo: SqliteTreasuryRepository,
 }

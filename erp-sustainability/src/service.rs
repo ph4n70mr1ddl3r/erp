@@ -1,5 +1,6 @@
 use crate::repository::SqliteSustainabilityRepository;
 
+#[allow(dead_code)]
 pub struct SustainabilityService {
     repo: SqliteSustainabilityRepository,
 }

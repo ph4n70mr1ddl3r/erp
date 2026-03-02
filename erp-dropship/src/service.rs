@@ -11,6 +11,10 @@ pub struct DropShipOrderService {
     shipment_repo: SqliteDropShipShipmentRepository,
 }
 
+impl Default for DropShipOrderService {
+    fn default() -> Self { Self::new() }
+}
+
 impl DropShipOrderService {
     pub fn new() -> Self {
         Self {
@@ -20,6 +24,7 @@ impl DropShipOrderService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_order(
         &self,
         pool: &SqlitePool,
@@ -165,6 +170,7 @@ impl DropShipOrderService {
         self.order_repo.update(pool, order).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn ship_order(
         &self,
         pool: &SqlitePool,
@@ -339,6 +345,10 @@ pub struct VendorDropShipSettingsService {
     repo: SqliteVendorDropShipSettingsRepository,
 }
 
+impl Default for VendorDropShipSettingsService {
+    fn default() -> Self { Self::new() }
+}
+
 impl VendorDropShipSettingsService {
     pub fn new() -> Self {
         Self {
@@ -354,6 +364,7 @@ impl VendorDropShipSettingsService {
         self.repo.find_all_enabled(pool).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn enable_drop_shipping(
         &self,
         pool: &SqlitePool,
@@ -411,6 +422,10 @@ impl VendorDropShipSettingsService {
 
 pub struct DropShipShipmentService {
     repo: SqliteDropShipShipmentRepository,
+}
+
+impl Default for DropShipShipmentService {
+    fn default() -> Self { Self::new() }
 }
 
 impl DropShipShipmentService {

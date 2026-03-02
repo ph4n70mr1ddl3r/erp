@@ -275,6 +275,7 @@ impl<R: FSMRepository> FSMService<R> {
         Ok(part)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_time_entry(&self, order_id: Uuid, technician_id: Uuid, date: chrono::DateTime<Utc>,
         start_time: String, end_time: String, hours: f64, work_type: String, rate: i64) -> anyhow::Result<ServiceTimeEntry> {
         let entry = ServiceTimeEntry {

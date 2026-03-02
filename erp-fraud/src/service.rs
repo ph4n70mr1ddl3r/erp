@@ -9,6 +9,10 @@ pub struct FraudService {
     repo: SqliteFraudRepository,
 }
 
+impl Default for FraudService {
+    fn default() -> Self { Self::new() }
+}
+
 impl FraudService {
     pub fn new() -> Self {
         Self {

@@ -39,6 +39,7 @@ pub trait SLATrackerRepository: Send + Sync {
     async fn find_breaching(&self) -> Result<Vec<SLATracker>>;
 }
 
+#[allow(dead_code)]
 pub struct SqliteTicketRepository {
     pool: SqlitePool,
 }

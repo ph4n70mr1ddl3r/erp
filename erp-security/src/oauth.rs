@@ -18,6 +18,7 @@ struct TokenRequest {
 #[derive(Debug, Deserialize)]
 struct TokenResponse {
     access_token: String,
+    #[allow(dead_code)]
     token_type: String,
     expires_in: Option<i64>,
     refresh_token: Option<String>,
@@ -35,9 +36,14 @@ struct GenericUserInfo {
     avatar_url: Option<String>,
 }
 
+#[allow(clippy::type_complexity)]
 pub struct OAuthService {
     client: Client,
     state_store: std::sync::Arc<tokio::sync::RwLock<HashMap<String, (String, DateTime<Utc>)>>>,
+}
+
+impl Default for OAuthService {
+    fn default() -> Self { Self::new() }
 }
 
 impl OAuthService {

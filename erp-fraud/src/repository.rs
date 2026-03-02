@@ -34,6 +34,10 @@ pub trait FraudRepository: Send + Sync {
 
 pub struct SqliteFraudRepository;
 
+impl Default for SqliteFraudRepository {
+    fn default() -> Self { Self::new() }
+}
+
 impl SqliteFraudRepository {
     pub fn new() -> Self {
         Self

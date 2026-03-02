@@ -294,6 +294,7 @@ impl Default for LotService {
 impl LotService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_lot(
         pool: &SqlitePool,
         lot_number: &str,
@@ -933,6 +934,7 @@ impl Default for DemandForecastService {
 impl DemandForecastService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_forecast(
         pool: &SqlitePool,
         product_id: Uuid,
@@ -1046,6 +1048,7 @@ impl Default for SafetyStockService {
 impl SafetyStockService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_or_update(
         pool: &SqlitePool,
         product_id: Uuid,
@@ -1301,6 +1304,7 @@ impl WMSService {
         Ok(zone)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_bin(
         pool: &SqlitePool,
         zone_id: Uuid,
@@ -1552,6 +1556,7 @@ impl WMSService {
         Ok(row.into())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_shipment(
         pool: &SqlitePool,
         warehouse_id: Uuid,
@@ -1800,6 +1805,7 @@ impl Default for ShippingService {
 impl ShippingService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_carrier(
         pool: &SqlitePool,
         code: &str,
@@ -1876,6 +1882,7 @@ impl ShippingService {
         Ok(service)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_rate_card(
         pool: &SqlitePool,
         carrier_id: Uuid,
@@ -1985,6 +1992,7 @@ impl Default for EDIService {
 impl EDIService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_partner(
         pool: &SqlitePool,
         partner_code: &str,

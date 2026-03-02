@@ -54,6 +54,7 @@ pub trait GrantReportRepository: Send + Sync {
     async fn find_due_soon(&self, days: i32) -> Result<Vec<GrantReport>>;
 }
 
+#[allow(dead_code)]
 pub struct SqliteGrantRepository {
     pool: SqlitePool,
 }

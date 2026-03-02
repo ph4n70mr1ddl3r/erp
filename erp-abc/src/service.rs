@@ -18,6 +18,7 @@ impl CostPoolService {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_cost_pool(
         &self,
         _pool: &SqlitePool,
@@ -57,6 +58,7 @@ impl CostPoolService {
     }
 }
 
+#[allow(dead_code)]
 pub struct ActivityService {
     pool: SqlitePool,
 }
@@ -66,14 +68,16 @@ impl ActivityService {
         Self { pool }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_activity(
         &self,
         name: String,
         code: String,
-        activity_type: ActivityType,
+        description: Option<String>,
         cost_pool_id: Uuid,
+        activity_type: ActivityType,
         total_cost: i64,
-        cost_driver_id: Option<Uuid>,
+        cost_driver_id: Uuid,
         driver_quantity: f64,
     ) -> Result<Activity> {
         if driver_quantity <= 0.0 {
@@ -88,11 +92,11 @@ impl ActivityService {
             base: BaseEntity::new(),
             name,
             code,
-            description: None,
+            description,
             activity_type,
             cost_pool_id,
             total_cost: Money::new(total_cost, Currency::USD),
-            cost_driver_id,
+            cost_driver_id: Some(cost_driver_id),
             driver_quantity,
             cost_per_driver,
             department_id: None,
@@ -143,6 +147,7 @@ pub struct ActivityClassification {
     pub facility_level: Vec<Uuid>,
 }
 
+#[allow(dead_code)]
 pub struct CostDriverService {
     pool: SqlitePool,
 }
@@ -201,6 +206,7 @@ impl CostDriverService {
     }
 }
 
+#[allow(dead_code)]
 pub struct CostObjectService {
     pool: SqlitePool,
 }
@@ -250,6 +256,7 @@ impl CostObjectService {
     }
 }
 
+#[allow(dead_code)]
 pub struct AllocationService {
     pool: SqlitePool,
 }
@@ -311,6 +318,7 @@ pub struct AllocationResult {
     pub allocations_by_object: std::collections::HashMap<Uuid, Money>,
 }
 
+#[allow(dead_code)]
 pub struct ProcessService {
     pool: SqlitePool,
 }
@@ -387,6 +395,7 @@ impl ProcessService {
     }
 }
 
+#[allow(dead_code)]
 pub struct CostSimulationService {
     pool: SqlitePool,
 }
@@ -476,6 +485,7 @@ pub struct VariableImpact {
     pub sensitivity_score: f64,
 }
 
+#[allow(dead_code)]
 pub struct CostAnalysisService {
     pool: SqlitePool,
 }
@@ -568,6 +578,7 @@ pub struct ProfitabilityAnalysis {
     pub net_margin_percent: f64,
 }
 
+#[allow(dead_code)]
 pub struct BillOfActivitiesService {
     pool: SqlitePool,
 }

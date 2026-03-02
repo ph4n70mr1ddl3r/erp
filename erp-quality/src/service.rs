@@ -1,5 +1,6 @@
 use crate::repository::SqliteQualityRepository;
 
+#[allow(dead_code)]
 pub struct QualityService {
     repo: SqliteQualityRepository,
 }

@@ -95,6 +95,7 @@ impl CustomerRepository for SqliteCustomerRepository {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct SalesOrderRow {
     id: String,
     order_number: String,
@@ -261,6 +262,7 @@ pub trait SalesOrderRepository: Send + Sync {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct QuotationRow {
     id: String,
     quote_number: String,
@@ -277,6 +279,7 @@ struct QuotationRow {
 }
 
 #[derive(sqlx::FromRow)]
+#[allow(dead_code)]
 struct QuotationLineRow {
     id: String,
     quotation_id: String,

@@ -4,6 +4,7 @@ use sqlx::SqlitePool;
 #[async_trait]
 pub trait LearningRepository: Send + Sync {}
 
+#[allow(dead_code)]
 pub struct SqliteLearningRepository {
     pool: SqlitePool,
 }
