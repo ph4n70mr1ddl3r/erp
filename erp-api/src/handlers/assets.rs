@@ -1,11 +1,12 @@
 use axum::{extract::{Path, Query, State}, Json};
-use uuid::Uuid;
 use chrono::NaiveDate;
+use erp_assets::{ITAsset, ITAssetService, ITAssetStatus, ITAssetType, LicenseType, SoftwareLicense, SoftwareLicenseService};
+use erp_core::Pagination;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::Pagination;
-use erp_assets::{ITAsset, SoftwareLicense, ITAssetService, SoftwareLicenseService, ITAssetType, ITAssetStatus, LicenseType};
 
 #[derive(Deserialize)]
 pub struct CreateAssetRequest {
@@ -206,8 +207,10 @@ pub async fn create_license(State(state): State<AppState>, Json(req): Json<Creat
         Some("Trial") => LicenseType::Trial,
         _ => LicenseType::Perpetual,
     };
-    let purchase_date = NaiveDate::parse_from_str(&req.purchase_date, "%Y-%m-%d").unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
-    let start_date = NaiveDate::parse_from_str(&req.start_date, "%Y-%m-%d").unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap());
+    let purchase_date = NaiveDate::parse_from_str(&req.purchase_date, "%Y-%m-%d")
+        .map_err(|e| erp_core::Error::validation(format!("Invalid purchase_date format: {}", e)))?;
+    let start_date = NaiveDate::parse_from_str(&req.start_date, "%Y-%m-%d")
+        .map_err(|e| erp_core::Error::validation(format!("Invalid start_date format: {}", e)))?;
     let expiry_date = req.expiry_date.and_then(|d| NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok());
     let license = svc.create(&state.pool, req.license_key, req.product_name, req.vendor, license_type, req.seats_purchased, req.purchase_cost, req.currency.unwrap_or_else(|| "USD".to_string()), purchase_date, start_date, expiry_date).await?;
     Ok(Json(LicenseResponse::from(license)))

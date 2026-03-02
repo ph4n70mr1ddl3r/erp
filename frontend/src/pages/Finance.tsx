@@ -5,7 +5,7 @@ import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
 import type { Account, JournalEntry } from '../types';
 import type { CreateAccountRequest } from '../api/client';
-import { getErrorMessage } from '../types';
+import { getErrorMessage } from '../utils/errors';
 
 export default function Finance() {
   const toast = useToast();

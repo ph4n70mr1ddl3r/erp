@@ -18,13 +18,21 @@ pub struct StripeConfig {
 }
 
 impl StripeConfig {
-    pub fn from_env() -> Self {
-        Self {
-            secret_key: std::env::var("STRIPE_SECRET_KEY").unwrap_or_else(|_| "sk_test_".to_string()),
-            webhook_secret: std::env::var("STRIPE_WEBHOOK_SECRET").unwrap_or_else(|_| "whsec_".to_string()),
-            publishable_key: std::env::var("STRIPE_PUBLISHABLE_KEY").unwrap_or_else(|_| "pk_test_".to_string()),
-            is_live: std::env::var("STRIPE_LIVE").unwrap_or_else(|_| "false".to_string()) == "true",
-        }
+    pub fn from_env() -> Result<Self> {
+        let secret_key = std::env::var("STRIPE_SECRET_KEY")
+            .context("STRIPE_SECRET_KEY environment variable must be set")?;
+        let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET")
+            .context("STRIPE_WEBHOOK_SECRET environment variable must be set")?;
+        let publishable_key = std::env::var("STRIPE_PUBLISHABLE_KEY")
+            .context("STRIPE_PUBLISHABLE_KEY environment variable must be set")?;
+        let is_live = std::env::var("STRIPE_LIVE").unwrap_or_else(|_| "false".to_string()) == "true";
+        
+        Ok(Self {
+            secret_key,
+            webhook_secret,
+            publishable_key,
+            is_live,
+        })
     }
     
     pub fn api_base_url(&self) -> &str {
@@ -47,7 +55,7 @@ impl StripeService {
     }
     
     pub fn from_env() -> Result<Self> {
-        Self::new(StripeConfig::from_env())
+        Self::new(StripeConfig::from_env()?)
     }
     
     pub async fn create_payment_intent(

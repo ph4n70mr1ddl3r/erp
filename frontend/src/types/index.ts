@@ -137,14 +137,3 @@ export interface ApiError {
   error?: string;
   message?: string;
 }
-
-export function getErrorMessage(err: unknown): string {
-  if (err && typeof err === 'object' && 'response' in err) {
-    const axiosErr = err as { response?: { data?: ApiError } };
-    return axiosErr.response?.data?.error || axiosErr.response?.data?.message || 'An error occurred';
-  }
-  if (err instanceof Error) {
-    return err.message;
-  }
-  return 'An error occurred';
-}

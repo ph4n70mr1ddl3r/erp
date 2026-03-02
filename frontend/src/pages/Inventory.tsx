@@ -6,7 +6,7 @@ import { LoadingPage } from '../components/Spinner';
 import { SearchInput } from '../components/SearchInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import type { Product, Warehouse } from '../types';
-import { getErrorMessage } from '../types';
+import { getErrorMessage } from '../utils/errors';
 
 export default function Inventory() {
   const toast = useToast();

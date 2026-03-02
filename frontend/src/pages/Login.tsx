@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { getErrorMessage } from '../types';
+import { getErrorMessage } from '../utils/errors';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
