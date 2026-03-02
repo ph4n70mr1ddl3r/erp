@@ -44,6 +44,7 @@ pub mod import_export;
 pub mod integration;
 pub mod intercompany;
 pub mod inventory;
+pub mod inventory_adjustment;
 pub mod iot;
 pub mod jobs;
 pub mod kanban;

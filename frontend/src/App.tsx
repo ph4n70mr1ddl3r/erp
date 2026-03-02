@@ -30,6 +30,7 @@ import ApprovalWorkflow from './pages/ApprovalWorkflow';
 import CreditManagement from './pages/CreditManagement';
 import StripePayments from './pages/StripePayments';
 import CRM from './pages/CRM';
+import InventoryAdjustments from './pages/InventoryAdjustments';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -76,6 +77,7 @@ function AppRoutes() {
       <Route path="/credit" element={<PrivateRoute><CreditManagement /></PrivateRoute>} />
       <Route path="/payments" element={<PrivateRoute><StripePayments /></PrivateRoute>} />
       <Route path="/crm" element={<PrivateRoute><CRM /></PrivateRoute>} />
+      <Route path="/inventory-adjustments" element={<PrivateRoute><InventoryAdjustments /></PrivateRoute>} />
     </Routes>
   );
 }

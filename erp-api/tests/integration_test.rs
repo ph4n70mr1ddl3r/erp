@@ -14,6 +14,7 @@ static INIT: Once = Once::new();
 
 fn init_test_env() {
     INIT.call_once(|| {
+        let _ = tracing_subscriber::fmt::try_init();
         init_jwt_secret("test-secret-key-for-integration-tests").expect("Failed to init JWT secret");
     });
 }
@@ -33,6 +34,7 @@ async fn run_migrations(pool: &SqlitePool) {
         include_str!("../../migrations/20240101000004_manufacturing.sql"),
         include_str!("../../migrations/20240101000005_hr.sql"),
         include_str!("../../migrations/20240101000006_auth.sql"),
+        include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
     ];
     
     for migration in migration_queries {
@@ -371,5 +373,181 @@ async fn test_create_customer_with_auth() {
         })).unwrap())).unwrap();
     
     let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_inventory_adjustments() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let state = create_test_app(pool);
+    let app = create_router(state);
+
+    let (_, reg_body) = make_request(
+        &app,
+        Method::POST,
+        "/auth/register",
+        Some(json!({
+            "username": "adjustmentuser",
+            "email": "adjustment@example.com",
+            "password": "password123",
+            "full_name": "Adjustment User"
+        })),
+    ).await;
+    let token = reg_body["token"].as_str().unwrap();
+
+    let warehouse_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/inventory/warehouses")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "code": "WH-001",
+            "name": "Test Warehouse"
+        })).unwrap())).unwrap();
+    let warehouse_response = app.clone().oneshot(warehouse_request).await.unwrap();
+    let wh_body_bytes = warehouse_response.into_body().collect().await.unwrap().to_bytes();
+    let warehouse: serde_json::Value = serde_json::from_slice(&wh_body_bytes).unwrap();
+    let warehouse_id = warehouse["id"].as_str().unwrap();
+
+    let product_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/inventory/products")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "sku": "PROD-001",
+            "name": "Test Product",
+            "product_type": "Goods",
+            "unit_of_measure": "EA"
+        })).unwrap())).unwrap();
+    let product_response = app.clone().oneshot(product_request).await.unwrap();
+    let prod_body_bytes = product_response.into_body().collect().await.unwrap().to_bytes();
+    let product: serde_json::Value = serde_json::from_slice(&prod_body_bytes).unwrap();
+    let product_id = product["id"].as_str().unwrap();
+
+    let location_id = warehouse_id;
+
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/inventory-adjustments")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "warehouse_id": warehouse_id,
+            "adjustment_type": "CountVariance",
+            "reason": "Annual stock count",
+            "lines": [{
+                "product_id": product_id,
+                "location_id": location_id,
+                "system_quantity": 100,
+                "counted_quantity": 95,
+                "unit_cost": 1000
+            }]
+        })).unwrap())).unwrap();
+
+    let response = app.clone().oneshot(request).await.unwrap();
+    let status = response.status();
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let body_text = String::from_utf8_lossy(&body_bytes);
+    if status != StatusCode::OK {
+        eprintln!("Error response: {} - {}", status, body_text);
+    }
+    assert_eq!(status, StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_inventory_adjustments_workflow() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let state = create_test_app(pool);
+    let app = create_router(state);
+
+    let (_, reg_body) = make_request(
+        &app,
+        Method::POST,
+        "/auth/register",
+        Some(json!({
+            "username": "wfuser",
+            "email": "wf@example.com",
+            "password": "password123",
+            "full_name": "Workflow User"
+        })),
+    ).await;
+    let token = reg_body["token"].as_str().unwrap();
+
+    let warehouse_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/inventory/warehouses")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "code": "WH-002",
+            "name": "Test Warehouse 2"
+        })).unwrap())).unwrap();
+    let warehouse_response = app.clone().oneshot(warehouse_request).await.unwrap();
+    let wh_body_bytes = warehouse_response.into_body().collect().await.unwrap().to_bytes();
+    let warehouse: serde_json::Value = serde_json::from_slice(&wh_body_bytes).unwrap();
+    let warehouse_id = warehouse["id"].as_str().unwrap();
+
+    let product_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/inventory/products")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "sku": "PROD-002",
+            "name": "Test Product 2",
+            "product_type": "Goods",
+            "unit_of_measure": "EA"
+        })).unwrap())).unwrap();
+    let product_response = app.clone().oneshot(product_request).await.unwrap();
+    let prod_body_bytes = product_response.into_body().collect().await.unwrap().to_bytes();
+    let product: serde_json::Value = serde_json::from_slice(&prod_body_bytes).unwrap();
+    let product_id = product["id"].as_str().unwrap();
+
+    let location_id = warehouse_id;
+
+    let create_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/inventory-adjustments")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "warehouse_id": warehouse_id,
+            "adjustment_type": "Damage",
+            "reason": "Damaged goods",
+            "lines": [{
+                "product_id": product_id,
+                "location_id": location_id,
+                "system_quantity": 50,
+                "counted_quantity": 45,
+                "unit_cost": 2000
+            }]
+        })).unwrap())).unwrap();
+
+    let response = app.clone().oneshot(create_request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let adj: serde_json::Value = serde_json::from_slice(&body_bytes).unwrap();
+    let adj_id = adj["id"].as_str().unwrap();
+
+    let submit_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/inventory-adjustments/{}/submit", adj_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+
+    let response = app.clone().oneshot(submit_request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let approve_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/inventory-adjustments/{}/approve", adj_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+
+    let response = app.clone().oneshot(approve_request).await.unwrap();
     assert_eq!(response.status(), StatusCode::OK);
 }

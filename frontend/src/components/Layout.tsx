@@ -27,7 +27,8 @@ import {
   CheckSquare,
   AlertCircle,
   Wallet,
-  UserCircle
+  UserCircle,
+  Scale
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -40,6 +41,7 @@ const navItems = [
   { path: '/reports', icon: FileBarChart, label: 'Reports' },
   { path: '/audit', icon: ClipboardList, label: 'Audit Trail' },
   { path: '/inventory', icon: Package, label: 'Inventory' },
+  { path: '/inventory-adjustments', icon: Scale, label: 'Adjustments' },
   { path: '/sales', icon: ShoppingCart, label: 'Sales' },
   { path: '/crm', icon: UserCircle, label: 'CRM' },
   { path: '/purchasing', icon: Users, label: 'Purchasing' },

@@ -758,6 +758,7 @@ dependencies = [
  "erp-integration",
  "erp-intercompany",
  "erp-inventory",
+ "erp-inventory-adjustment",
  "erp-iot",
  "erp-jobs",
  "erp-kanban",
@@ -1577,6 +1578,22 @@ dependencies = [
  "tracing",
  "uuid 1.21.0",
  "validator",
+]
+
+[[package]]
+name = "erp-inventory-adjustment"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tokio",
+ "tracing",
+ "uuid 1.21.0",
 ]
 
 [[package]]

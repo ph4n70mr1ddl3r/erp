@@ -1089,3 +1089,94 @@ export const crm = {
   createOpportunity: (data: CreateOpportunityRequest) => api.post<Opportunity>('/api/v1/opportunities', { ...data, amount: Math.round(data.amount * 100) }),
   updateOpportunityStage: (id: string, stage: string) => api.post<Opportunity>(`/api/v1/opportunities/${id}/stage`, { stage }),
 };
+
+export interface InventoryAdjustment {
+  id: string;
+  adjustment_number: string;
+  warehouse_id: string;
+  adjustment_type: string;
+  reason: string;
+  status: string;
+  total_value_change: number;
+  approved_by: string | null;
+  approved_at: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+  lines?: InventoryAdjustmentLine[];
+}
+
+export interface InventoryAdjustmentLine {
+  id: string;
+  adjustment_id: string;
+  product_id: string;
+  location_id: string;
+  system_quantity: number;
+  counted_quantity: number;
+  adjustment_quantity: number;
+  unit_cost: number;
+  total_value_change: number;
+  lot_number: string | null;
+  serial_number: string | null;
+  reason_code: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface InventoryAdjustmentAnalytics {
+  total_adjustments: number;
+  pending_adjustments: number;
+  completed_adjustments: number;
+  total_value_increase: number;
+  total_value_decrease: number;
+  adjustments_by_type: Record<string, number>;
+  adjustments_by_month: Record<string, number>;
+}
+
+export const inventoryAdjustments = {
+  list: (warehouseId?: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (warehouseId) params.append('warehouse_id', warehouseId);
+    if (status) params.append('status', status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get<ApiResponse<InventoryAdjustment[]>>(`/api/v1/inventory-adjustments${query}`);
+  },
+  get: (id: string) => api.get<InventoryAdjustment>(`/api/v1/inventory-adjustments/${id}`),
+  create: (data: {
+    warehouse_id: string;
+    adjustment_type: string;
+    reason: string;
+    notes?: string;
+    lines: {
+      product_id: string;
+      location_id: string;
+      system_quantity: number;
+      counted_quantity: number;
+      unit_cost: number;
+      lot_number?: string;
+      serial_number?: string;
+      reason_code?: string;
+      notes?: string;
+    }[];
+  }) => api.post<InventoryAdjustment>('/api/v1/inventory-adjustments', data),
+  submit: (id: string) => api.post<InventoryAdjustment>(`/api/v1/inventory-adjustments/${id}/submit`),
+  approve: (id: string) => api.post<InventoryAdjustment>(`/api/v1/inventory-adjustments/${id}/approve`),
+  reject: (id: string, reason: string) => api.post<InventoryAdjustment>(`/api/v1/inventory-adjustments/${id}/reject`, { reason }),
+  complete: (id: string) => api.post<InventoryAdjustment>(`/api/v1/inventory-adjustments/${id}/complete`),
+  cancel: (id: string) => api.post<InventoryAdjustment>(`/api/v1/inventory-adjustments/${id}/cancel`),
+  delete: (id: string) => api.delete(`/api/v1/inventory-adjustments/${id}`),
+  getLines: (id: string) => api.get<ApiResponse<InventoryAdjustmentLine[]>>(`/api/v1/inventory-adjustments/${id}/lines`),
+  addLine: (id: string, data: {
+    product_id: string;
+    location_id: string;
+    system_quantity: number;
+    counted_quantity: number;
+    unit_cost: number;
+    lot_number?: string;
+    serial_number?: string;
+    reason_code?: string;
+    notes?: string;
+  }) => api.post<InventoryAdjustmentLine>(`/api/v1/inventory-adjustments/${id}/lines`, data),
+  getAnalytics: () => api.get<InventoryAdjustmentAnalytics>('/api/v1/inventory-adjustments/analytics'),
+};

@@ -1,15 +1,13 @@
 use crate::db::AppState;
 use crate::handlers;
 use crate::middleware::{rate_limit_middleware, RateLimiter};
+use axum::http::{header, HeaderValue, Method};
 use axum::{
     middleware,
     routing::{delete, get, post, put},
     Extension, Router,
 };
-use axum::http::{header, HeaderValue, Method};
 use tower_http::cors::{AllowOrigin, CorsLayer};
-
-
 
 pub fn create_router(state: AppState) -> Router {
     let rate_limiter = RateLimiter::new();
@@ -275,6 +273,10 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/credit", credit_routes())
         .nest("/kanban", kanban_routes())
         .nest("/warranty", handlers::warranty::routes())
+        .nest(
+            "/inventory-adjustments",
+            handlers::inventory_adjustment::routes(),
+        )
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

@@ -79,8 +79,8 @@ async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
         include_str!("../../migrations/20240227000000_kanban.sql"),
         include_str!("../../migrations/20240306000000_bundles.sql"),
         include_str!("../../migrations/20240307000000_warranty.sql"),
-        include_str!("../../migrations/20250228160000_fix_work_orders.sql"),
         include_str!("../../migrations/20240308000000_eam.sql"),
+        include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
     ];
     
     for migration in migration_queries {
