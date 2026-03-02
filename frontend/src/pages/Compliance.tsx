@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { Shield, Users, FileCheck, AlertTriangle, Clock, Building2, Plus, X } from 'lucide-react';
 import { compliance, type ComplianceStats, type DataSubject, type ConsentRecord, type DSARRequest, type DataBreach } from '../api/client';
 import { useToast } from '../components/Toast';
@@ -17,11 +17,7 @@ export default function Compliance() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [statsRes, subjectsRes, consentsRes, dsarsRes, breachesRes] = await Promise.all([
         compliance.getStats(),
@@ -40,7 +36,11 @@ export default function Compliance() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateSubject = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

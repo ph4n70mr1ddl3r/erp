@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { hr } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -21,9 +21,7 @@ export default function HR() {
     hire_date: new Date().toISOString().split('T')[0]
   });
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const res = await hr.getEmployees(1, 50);
@@ -33,7 +31,9 @@ export default function HR() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

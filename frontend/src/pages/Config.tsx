@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { config } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -33,7 +33,7 @@ const ConfigPage: React.FC = () => {
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [configsRes, companyRes, auditRes] = await Promise.all([
         config.listConfigs(),
@@ -46,11 +46,11 @@ const ConfigPage: React.FC = () => {
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load config'));
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   const handleSetConfig = async (e: React.FormEvent) => {
     e.preventDefault();

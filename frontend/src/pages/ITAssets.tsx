@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { assets, type ITAsset, type SoftwareLicense, type CreateITAssetRequest, type CreateLicenseRequest } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -46,11 +46,7 @@ export default function ITAssets() {
     start_date: new Date().toISOString().split('T')[0],
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [assetsRes, licensesRes, statsRes] = await Promise.all([
@@ -66,7 +62,11 @@ export default function ITAssets() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAssetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

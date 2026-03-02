@@ -443,6 +443,7 @@ struct BudgetLineRow {
     period: i64,
     amount: i64,
     actual: i64,
+    #[allow(dead_code)]
     variance: i64,
     account_code: Option<String>,
     account_name: Option<String>,
@@ -459,6 +460,7 @@ impl Default for FixedAssetService {
 impl FixedAssetService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_asset(
         pool: &SqlitePool,
         asset_code: &str,
@@ -684,7 +686,9 @@ impl From<AssetRow> for FixedAsset {
 }
 
 pub struct FinancialReportingService {
+    #[allow(dead_code)]
     account_repo: SqliteAccountRepository,
+    #[allow(dead_code)]
     journal_repo: SqliteJournalEntryRepository,
 }
 
@@ -744,6 +748,7 @@ impl FinancialReportingService {
         Ok(balances)
     }
 
+    #[allow(dead_code)]
     async fn calculate_account_balance(&self, pool: &SqlitePool, account_id: Uuid) -> Result<i64> {
         let balance: (i64, i64) = sqlx::query_as(
             "SELECT COALESCE(SUM(debit), 0), COALESCE(SUM(credit), 0)
@@ -1176,14 +1181,23 @@ impl From<BankTransactionRow> for BankTransaction {
 
 #[derive(sqlx::FromRow)]
 struct ReconciliationRuleRow {
+    #[allow(dead_code)]
     id: String,
+    #[allow(dead_code)]
     bank_account_id: String,
+    #[allow(dead_code)]
     rule_type: String,
+    #[allow(dead_code)]
     match_field: String,
+    #[allow(dead_code)]
     match_pattern: Option<String>,
+    #[allow(dead_code)]
     tolerance_days: i64,
+    #[allow(dead_code)]
     tolerance_amount: i64,
+    #[allow(dead_code)]
     auto_match: i64,
+    #[allow(dead_code)]
     created_at: String,
 }
 
@@ -1254,6 +1268,7 @@ impl CashFlowService {
         Ok(row.into())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_cash_flow_item(
         pool: &SqlitePool,
         forecast_id: Uuid,
@@ -1561,6 +1576,7 @@ impl CostAccountingService {
         Ok(element)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_cost_pool(
         pool: &SqlitePool,
         name: &str,
@@ -1616,6 +1632,7 @@ impl CostAccountingService {
     ) -> Result<CostAllocation> {
         #[derive(sqlx::FromRow)]
         struct CostPoolInfo {
+            #[allow(dead_code)]
             total_cost: i64,
             allocation_rate: f64,
         }
@@ -1724,6 +1741,7 @@ impl Default for IntercompanyService {
 impl IntercompanyService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_company(
         pool: &SqlitePool,
         code: &str,
@@ -1796,6 +1814,7 @@ impl IntercompanyService {
         Ok(row.into())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_transaction(
         pool: &SqlitePool,
         from_company_id: Uuid,
@@ -2360,23 +2379,37 @@ impl ConsolidationService {
 
 #[derive(sqlx::FromRow)]
 struct EliminationRuleRow {
+    #[allow(dead_code)]
     id: String,
+    #[allow(dead_code)]
     name: String,
+    #[allow(dead_code)]
     from_account_pattern: String,
+    #[allow(dead_code)]
     to_account_pattern: String,
+    #[allow(dead_code)]
     elimination_account_id: String,
+    #[allow(dead_code)]
     description: Option<String>,
+    #[allow(dead_code)]
     status: String,
 }
 
 #[derive(sqlx::FromRow)]
 struct ConsolidationCompanyRow {
+    #[allow(dead_code)]
     id: String,
+    #[allow(dead_code)]
     consolidation_id: String,
+    #[allow(dead_code)]
     company_id: String,
+    #[allow(dead_code)]
     ownership_percent: f64,
+    #[allow(dead_code)]
     consolidation_method: String,
+    #[allow(dead_code)]
     exchange_rate: f64,
+    #[allow(dead_code)]
     translation_method: String,
 }
 
@@ -2446,6 +2479,7 @@ impl DunningService {
         Ok(policy)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_level(
         pool: &SqlitePool,
         policy_id: Uuid,
@@ -2686,6 +2720,7 @@ impl DunningService {
         Ok(case)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_collection_activity(
         pool: &SqlitePool,
         case_id: Uuid,
@@ -2766,10 +2801,15 @@ impl DunningService {
 
 #[derive(sqlx::FromRow)]
 struct OverdueInvoiceRow {
+    #[allow(dead_code)]
     invoice_id: String,
+    #[allow(dead_code)]
     customer_id: String,
+    #[allow(dead_code)]
     total: i64,
+    #[allow(dead_code)]
     due_date: String,
+    #[allow(dead_code)]
     days_overdue: i64,
 }
 
@@ -3114,6 +3154,7 @@ impl Default for RecurringJournalService {
 impl RecurringJournalService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create(
         pool: &SqlitePool,
         name: &str,
@@ -3539,6 +3580,7 @@ impl CurrencyRevaluationService {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_revaluation(
         pool: &SqlitePool,
         revaluation_date: DateTime<Utc>,

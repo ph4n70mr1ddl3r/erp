@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { sourcing } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -36,33 +36,33 @@ const Sourcing: React.FC = () => {
     estimated_value: 0,
   });
 
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       const res = await sourcing.listEvents();
       setEvents(res.data);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load events'));
     }
-  };
+  }, [toast]);
 
-  const loadBids = async (eventId: string) => {
+  const loadBids = useCallback(async (eventId: string) => {
     try {
       const res = await sourcing.listBids(eventId);
       setBids(res.data);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load bids'));
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void loadEvents();
-  }, []);
+  }, [loadEvents]);
 
   useEffect(() => {
     if (selectedEvent) {
       void loadBids(selectedEvent);
     }
-  }, [selectedEvent]);
+  }, [selectedEvent, loadBids]);
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { pricing } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -41,7 +41,7 @@ const Pricing: React.FC = () => {
   const [newDiscount, setNewDiscount] = useState({ name: '', code: '', discount_type: 'Percentage', value: 0 });
   const [newPromotion, setNewPromotion] = useState({ name: '', code: '', start_date: '', end_date: '', rules: '{}', rewards: '{}' });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [pbRes, discRes, promoRes] = await Promise.all([
         pricing.listPriceBooks(),
@@ -54,11 +54,11 @@ const Pricing: React.FC = () => {
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load pricing data'));
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   const handleCreatePriceBook = async (e: React.FormEvent) => {
     e.preventDefault();

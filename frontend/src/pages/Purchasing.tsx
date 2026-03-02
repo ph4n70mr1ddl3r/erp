@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { purchasing } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -17,9 +17,7 @@ export default function Purchasing() {
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [newVendor, setNewVendor] = useState({ code: '', name: '', email: '' });
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [venRes, ordRes] = await Promise.all([purchasing.getVendors(1, 50), purchasing.getOrders(1, 20)]);
@@ -30,7 +28,9 @@ export default function Purchasing() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreateVendor = async (e: React.FormEvent) => {
     e.preventDefault();

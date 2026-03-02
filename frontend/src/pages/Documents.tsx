@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { documents as documentsApi } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -28,28 +28,28 @@ const Documents: React.FC = () => {
   const [showUpload, setShowUpload] = useState(false);
   const [newDoc, setNewDoc] = useState({ title: '', file_name: '' });
 
-  const loadFolders = async () => {
+  const loadFolders = useCallback(async () => {
     try {
       const res = await documentsApi.listFolders(selectedFolder);
       setFolders(res.data);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load folders'));
     }
-  };
+  }, [selectedFolder, toast]);
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     try {
       const res = await documentsApi.listDocuments(selectedFolder);
       setDocuments(res.data);
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load documents'));
     }
-  };
+  }, [selectedFolder, toast]);
 
   useEffect(() => {
     void loadFolders();
     void loadDocuments();
-  }, [selectedFolder]);
+  }, [loadFolders, loadDocuments]);
 
   const handleCreateFolder = async (e: React.FormEvent) => {
     e.preventDefault();

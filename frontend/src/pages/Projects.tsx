@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Folder, ListTodo, Flag, Clock, Plus, X, Check, Play, Pause, CheckCircle } from 'lucide-react';
 import { projects, type Project, type ProjectTask, type ProjectMilestone, type Timesheet } from '../api/client';
 import { useToast } from '../components/Toast';
@@ -17,11 +17,7 @@ export default function Projects() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [projectsRes, timesheetsRes] = await Promise.all([
         projects.getProjects(),
@@ -34,7 +30,11 @@ export default function Projects() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const loadProjectDetails = async (project: Project) => {
     try {

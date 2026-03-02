@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { inventory } from '../api/client';
 import type { CreateProductRequest } from '../api/client';
 import { useToast } from '../components/Toast';
@@ -22,9 +22,7 @@ export default function Inventory() {
   const [newProduct, setNewProduct] = useState<CreateProductRequest>({ sku: '', name: '', product_type: 'Goods', unit_of_measure: 'PCS' });
   const [newWarehouse, setNewWarehouse] = useState({ code: '', name: '' });
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [prodRes, whRes] = await Promise.all([inventory.getProducts(1, 50), inventory.getWarehouses()]);
@@ -35,7 +33,9 @@ export default function Inventory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();

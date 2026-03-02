@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { finance } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -25,11 +25,7 @@ export default function Finance() {
     lines: [{ account_id: '', debit: 0, credit: 0 }] 
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [accRes, jeRes] = await Promise.all([
@@ -43,7 +39,11 @@ export default function Finance() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();

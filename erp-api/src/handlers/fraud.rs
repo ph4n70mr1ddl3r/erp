@@ -89,6 +89,7 @@ async fn list_alerts(
 }
 
 #[derive(Deserialize)]
+#[allow(dead_code)]
 struct ReviewAlertBody {
     status: String,
     resolution_type: Option<String>,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { crm, type CreateLeadRequest, type CreateOpportunityRequest } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -26,9 +26,7 @@ export default function CRM() {
   const [newLead, setNewLead] = useState<CreateLeadRequest>({ company_name: '', contact_name: '', email: '', phone: '', source: '', industry: '', estimated_value: 0 });
   const [newOpp, setNewOpp] = useState<CreateOpportunityRequest>({ name: '', amount: 0, expected_close_date: '', description: '' });
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [leadsRes, oppsRes] = await Promise.all([crm.getLeads(), crm.getOpportunities()]);
@@ -39,7 +37,9 @@ export default function CRM() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreateLead = async (e: React.FormEvent) => {
     e.preventDefault();

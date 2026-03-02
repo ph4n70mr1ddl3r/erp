@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { rules } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -50,7 +50,7 @@ const RulesPage: React.FC = () => {
     context: '{}',
   });
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [rulesRes, rulesetsRes] = await Promise.all([
         rules.listRules(),
@@ -61,11 +61,11 @@ const RulesPage: React.FC = () => {
     } catch (error: unknown) {
       toast.error(getErrorMessage(error, 'Failed to load rules'));
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void loadData();
-  }, []);
+  }, [loadData]);
 
   const handleCreateRule = async (e: React.FormEvent) => {
     e.preventDefault();

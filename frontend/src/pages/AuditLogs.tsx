@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { audit } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -25,9 +25,7 @@ export default function AuditLogs() {
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [entityTypeFilter, setEntityTypeFilter] = useState('');
 
-  useEffect(() => { loadLogs(); }, [entityTypeFilter]);
-
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     try {
       setLoading(true);
       const params: { per_page: number; entity_type?: string } = { per_page: 100 };
@@ -39,7 +37,9 @@ export default function AuditLogs() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [entityTypeFilter, toast]);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
 
   const filteredLogs = logs.filter(l =>
     l.entity_type.toLowerCase().includes(search.toLowerCase()) ||

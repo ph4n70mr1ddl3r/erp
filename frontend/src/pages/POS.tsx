@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CreditCard, Store, Ticket, TrendingUp } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../components/Toast';
@@ -38,11 +38,7 @@ export default function POS() {
     country: 'USA',
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [storesRes, txRes] = await Promise.all([
@@ -56,7 +52,11 @@ export default function POS() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleStoreSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

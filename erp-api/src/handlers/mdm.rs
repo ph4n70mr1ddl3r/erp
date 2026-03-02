@@ -9,6 +9,7 @@ use crate::error::ApiResult;
 use crate::db::AppState;
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ListQuery {
     page: Option<i32>,
     page_size: Option<i32>,

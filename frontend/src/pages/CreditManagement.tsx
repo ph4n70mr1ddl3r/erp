@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { credit } from '../api/client';
 import type { CreditProfile, CreditSummary, CreditTransaction, CreditHold } from '../api/client';
 import { useToast } from '../components/Toast';
@@ -40,11 +40,7 @@ export default function CreditManagement() {
   const [releaseReason, setReleaseReason] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [summaryRes, profilesRes, onHoldRes, highRiskRes] = await Promise.all([
@@ -62,7 +58,11 @@ export default function CreditManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const loadProfileDetails = async (profile: CreditProfile) => {
     try {

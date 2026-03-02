@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { sales } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -17,9 +17,7 @@ export default function Sales() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ code: '', name: '', email: '' });
 
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [custRes, ordRes] = await Promise.all([sales.getCustomers(1, 50), sales.getOrders(1, 20)]);
@@ -30,7 +28,9 @@ export default function Sales() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();

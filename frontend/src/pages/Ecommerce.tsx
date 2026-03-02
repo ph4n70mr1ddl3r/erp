@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ShoppingBag, Link, Package, Truck, RefreshCw } from 'lucide-react';
 import api from '../api/client';
 import { useToast } from '../components/Toast';
@@ -37,11 +37,7 @@ export default function Ecommerce() {
     store_id: '',
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [platformsRes, ordersRes] = await Promise.all([
@@ -55,7 +51,11 @@ export default function Ecommerce() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handlePlatformSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

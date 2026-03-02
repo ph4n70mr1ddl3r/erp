@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { approvalWorkflow, type ApprovalWorkflow as ApprovalWorkflowType, type ApprovalRequest } from '../api/client';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
@@ -26,11 +26,7 @@ export default function ApprovalWorkflowPage() {
     levels: [{ name: 'Level 1', approver_type: 'SpecificUser', approver_ids: [] as string[], min_approvers: 1 }],
   });
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [wfRes, reqRes] = await Promise.all([
@@ -44,7 +40,11 @@ export default function ApprovalWorkflowPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleCreateWorkflow = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { service, type Ticket, type CreateTicketRequest, type KnowledgeArticle } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
@@ -34,12 +34,7 @@ export default function ServiceDesk() {
     ticket_type: 'Incident',
   });
 
-  useEffect(() => {
-    loadTickets();
-    loadStats();
-  }, []);
-
-  const loadTickets = async () => {
+  const loadTickets = useCallback(async () => {
     try {
       setLoading(true);
       const res = await service.getTickets();
@@ -49,16 +44,21 @@ export default function ServiceDesk() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const res = await service.getTicketStats();
       setStats(res.data.by_status || {});
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to load stats'));
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadTickets();
+    loadStats();
+  }, [loadTickets, loadStats]);
 
   const searchKnowledge = async () => {
     if (!searchQuery.trim()) return;

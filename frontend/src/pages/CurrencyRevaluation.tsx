@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import { LoadingPage } from '../components/Spinner';
 import api from '../api/client';
@@ -60,11 +60,7 @@ export default function CurrencyRevaluation() {
     base_currency: 'USD',
   });
 
-  useEffect(() => {
-    loadRevaluations();
-  }, []);
-
-  const loadRevaluations = async () => {
+  const loadRevaluations = useCallback(async () => {
     try {
       setLoading(true);
       const res = await api.get('/api/v1/finance/currency-revaluations');
@@ -74,7 +70,11 @@ export default function CurrencyRevaluation() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    loadRevaluations();
+  }, [loadRevaluations]);
 
   const handlePreview = async () => {
     try {
