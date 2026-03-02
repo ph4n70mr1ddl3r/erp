@@ -31,6 +31,7 @@ import CreditManagement from './pages/CreditManagement';
 import StripePayments from './pages/StripePayments';
 import CRM from './pages/CRM';
 import InventoryAdjustments from './pages/InventoryAdjustments';
+import StockTransfers from './pages/StockTransfers';
 import LeaveManagement from './pages/LeaveManagement';
 import Expenses from './pages/Expenses';
 import Tax from './pages/Tax';
@@ -81,6 +82,7 @@ function AppRoutes() {
       <Route path="/payments" element={<PrivateRoute><StripePayments /></PrivateRoute>} />
       <Route path="/crm" element={<PrivateRoute><CRM /></PrivateRoute>} />
       <Route path="/inventory-adjustments" element={<PrivateRoute><InventoryAdjustments /></PrivateRoute>} />
+      <Route path="/stock-transfers" element={<PrivateRoute><StockTransfers /></PrivateRoute>} />
       <Route path="/leave" element={<PrivateRoute><LeaveManagement /></PrivateRoute>} />
       <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
       <Route path="/tax" element={<PrivateRoute><Tax /></PrivateRoute>} />

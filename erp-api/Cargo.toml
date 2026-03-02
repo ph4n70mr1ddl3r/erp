@@ -113,6 +113,7 @@ erp-kanban.workspace = true
 erp-bundles.workspace = true
 erp-warranty.workspace = true
 erp-inventory-adjustment.workspace = true
+erp-stock-transfer.workspace = true
 async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"

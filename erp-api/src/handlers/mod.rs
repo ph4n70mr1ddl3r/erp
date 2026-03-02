@@ -86,6 +86,7 @@ pub mod shipping;
 pub mod signing;
 pub mod sourcing;
 pub mod spend_analytics;
+pub mod stock_transfer;
 pub mod subscription;
 pub mod tax;
 pub mod templates;

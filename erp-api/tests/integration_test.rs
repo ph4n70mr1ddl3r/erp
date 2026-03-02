@@ -36,6 +36,7 @@ async fn run_migrations(pool: &SqlitePool) {
         include_str!("../../migrations/20240101000006_auth.sql"),
         include_str!("../../migrations/20240101000011_extended_features.sql"),
         include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
+        include_str!("../../migrations/20260302100000_stock_transfers.sql"),
     ];
     
     for migration in migration_queries {
@@ -748,4 +749,119 @@ async fn test_expense_report_rejection() {
     let rejected: serde_json::Value = serde_json::from_slice(&reject_body_bytes).unwrap();
     assert_eq!(rejected["status"], "Rejected");
     assert_eq!(rejected["rejection_reason"], "Missing receipt");
+}
+
+#[tokio::test]
+async fn test_stock_transfer_workflow() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let app = create_router(create_test_app(pool));
+
+    let register_request = Request::builder()
+        .method(Method::POST)
+        .uri("/auth/register")
+        .header("Content-Type", "application/json")
+        .body(Body::from(serde_json::to_string(&json!({
+            "username": "transferuser",
+            "email": "transfer@test.com",
+            "password": "password123",
+            "full_name": "Transfer User"
+        })).unwrap())).unwrap();
+    let register_response = app.clone().oneshot(register_request).await.unwrap();
+    assert_eq!(register_response.status(), StatusCode::OK);
+
+    let login_request = Request::builder()
+        .method(Method::POST)
+        .uri("/auth/login")
+        .header("Content-Type", "application/json")
+        .body(Body::from(serde_json::to_string(&json!({
+            "username": "transferuser",
+            "password": "password123"
+        })).unwrap())).unwrap();
+    let login_response = app.clone().oneshot(login_request).await.unwrap();
+    let login_body_bytes = login_response.into_body().collect().await.unwrap().to_bytes();
+    let login: serde_json::Value = serde_json::from_slice(&login_body_bytes).unwrap();
+    let token = login["token"].as_str().unwrap();
+
+    let warehouse1_id = uuid::Uuid::new_v4().to_string();
+    let warehouse2_id = uuid::Uuid::new_v4().to_string();
+    let product_id = uuid::Uuid::new_v4().to_string();
+
+    let create_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/stock-transfers")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "from_warehouse_id": warehouse1_id,
+            "to_warehouse_id": warehouse2_id,
+            "priority": "Normal",
+            "lines": [{
+                "product_id": product_id,
+                "requested_quantity": 100,
+                "unit_cost": 1000
+            }]
+        })).unwrap())).unwrap();
+    let create_response = app.clone().oneshot(create_request).await.unwrap();
+    assert_eq!(create_response.status(), StatusCode::OK);
+    let create_body_bytes = create_response.into_body().collect().await.unwrap().to_bytes();
+    let transfer: serde_json::Value = serde_json::from_slice(&create_body_bytes).unwrap();
+    assert_eq!(transfer["status"], "Draft");
+    let transfer_id = transfer["id"].as_str().unwrap();
+
+    let submit_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/stock-transfers/{}/submit", transfer_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let submit_response = app.clone().oneshot(submit_request).await.unwrap();
+    assert_eq!(submit_response.status(), StatusCode::OK);
+    let submit_body_bytes = submit_response.into_body().collect().await.unwrap().to_bytes();
+    let submitted: serde_json::Value = serde_json::from_slice(&submit_body_bytes).unwrap();
+    assert_eq!(submitted["status"], "Pending");
+
+    let approve_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/stock-transfers/{}/approve", transfer_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let approve_response = app.clone().oneshot(approve_request).await.unwrap();
+    assert_eq!(approve_response.status(), StatusCode::OK);
+    let approve_body_bytes = approve_response.into_body().collect().await.unwrap().to_bytes();
+    let approved: serde_json::Value = serde_json::from_slice(&approve_body_bytes).unwrap();
+    assert_eq!(approved["status"], "Approved");
+
+    let ship_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/stock-transfers/{}/ship", transfer_id))
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "lines": [{
+                "product_id": product_id,
+                "shipped_quantity": 100
+            }]
+        })).unwrap())).unwrap();
+    let ship_response = app.clone().oneshot(ship_request).await.unwrap();
+    assert_eq!(ship_response.status(), StatusCode::OK);
+    let ship_body_bytes = ship_response.into_body().collect().await.unwrap().to_bytes();
+    let shipped: serde_json::Value = serde_json::from_slice(&ship_body_bytes).unwrap();
+    assert_eq!(shipped["status"], "InTransit");
+
+    let receive_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/stock-transfers/{}/receive", transfer_id))
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "lines": [{
+                "product_id": product_id,
+                "received_quantity": 100
+            }]
+        })).unwrap())).unwrap();
+    let receive_response = app.clone().oneshot(receive_request).await.unwrap();
+    assert_eq!(receive_response.status(), StatusCode::OK);
+    let receive_body_bytes = receive_response.into_body().collect().await.unwrap().to_bytes();
+    let received: serde_json::Value = serde_json::from_slice(&receive_body_bytes).unwrap();
+    assert_eq!(received["status"], "Received");
 }

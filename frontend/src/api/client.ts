@@ -1183,6 +1183,92 @@ export const inventoryAdjustments = {
   getAnalytics: () => api.get<InventoryAdjustmentAnalytics>('/api/v1/inventory-adjustments/analytics'),
 };
 
+export interface StockTransfer {
+  id: string;
+  transfer_number: string;
+  from_warehouse_id: string;
+  to_warehouse_id: string;
+  status: string;
+  priority: string;
+  requested_date: string | null;
+  expected_date: string | null;
+  shipped_date: string | null;
+  received_date: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  shipped_by: string | null;
+  received_by: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  lines?: StockTransferLine[];
+}
+
+export interface StockTransferLine {
+  id: string;
+  transfer_id: string;
+  product_id: string;
+  requested_quantity: number;
+  shipped_quantity: number;
+  received_quantity: number;
+  unit_cost: number;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface StockTransferAnalytics {
+  total_transfers: number;
+  pending_transfers: number;
+  in_transit: number;
+  completed_transfers: number;
+  total_value_in_transit: number;
+  transfers_by_status: Record<string, number>;
+  average_transfer_time_hours: number;
+}
+
+export const stockTransfers = {
+  list: (fromWarehouseId?: string, toWarehouseId?: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (fromWarehouseId) params.append('from_warehouse_id', fromWarehouseId);
+    if (toWarehouseId) params.append('to_warehouse_id', toWarehouseId);
+    if (status) params.append('status', status);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get<ApiResponse<StockTransfer[]>>(`/api/v1/stock-transfers${query}`);
+  },
+  get: (id: string) => api.get<StockTransfer>(`/api/v1/stock-transfers/${id}`),
+  create: (data: {
+    from_warehouse_id: string;
+    to_warehouse_id: string;
+    priority: string;
+    requested_date?: string;
+    expected_date?: string;
+    notes?: string;
+    lines: {
+      product_id: string;
+      requested_quantity: number;
+      unit_cost: number;
+      notes?: string;
+    }[];
+  }) => api.post<StockTransfer>('/api/v1/stock-transfers', data),
+  submit: (id: string) => api.post<StockTransfer>(`/api/v1/stock-transfers/${id}/submit`),
+  approve: (id: string) => api.post<StockTransfer>(`/api/v1/stock-transfers/${id}/approve`),
+  reject: (id: string, reason: string) => api.post<StockTransfer>(`/api/v1/stock-transfers/${id}/reject`, { reason }),
+  ship: (id: string, lines: { product_id: string; shipped_quantity: number }[]) =>
+    api.post<StockTransfer>(`/api/v1/stock-transfers/${id}/ship`, { lines }),
+  receive: (id: string, lines: { product_id: string; received_quantity: number }[]) =>
+    api.post<StockTransfer>(`/api/v1/stock-transfers/${id}/receive`, { lines }),
+  cancel: (id: string) => api.post<StockTransfer>(`/api/v1/stock-transfers/${id}/cancel`),
+  delete: (id: string) => api.delete(`/api/v1/stock-transfers/${id}`),
+  getLines: (id: string) => api.get<ApiResponse<StockTransferLine[]>>(`/api/v1/stock-transfers/${id}/lines`),
+  addLine: (id: string, data: {
+    product_id: string;
+    requested_quantity: number;
+    unit_cost: number;
+    notes?: string;
+  }) => api.post<StockTransferLine>(`/api/v1/stock-transfers/${id}/lines`, data),
+  getAnalytics: () => api.get<StockTransferAnalytics>('/api/v1/stock-transfers/analytics'),
+};
+
 export interface TaxJurisdiction {
   id: string;
   code: string;

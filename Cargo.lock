@@ -798,6 +798,7 @@ dependencies = [
  "erp-signing",
  "erp-sourcing",
  "erp-spend-analytics",
+ "erp-stock-transfer",
  "erp-subscription",
  "erp-tax",
  "erp-templates",
@@ -2306,6 +2307,21 @@ dependencies = [
  "tokio",
  "uuid 1.21.0",
  "validator",
+]
+
+[[package]]
+name = "erp-stock-transfer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tracing",
+ "uuid 1.21.0",
 ]
 
 [[package]]

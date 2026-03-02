@@ -278,6 +278,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
             "/inventory-adjustments",
             handlers::inventory_adjustment::routes(),
         )
+        .nest("/stock-transfers", handlers::stock_transfer::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 

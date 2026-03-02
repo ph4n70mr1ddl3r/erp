@@ -31,7 +31,8 @@ import {
   Scale,
   Calendar,
   Receipt,
-  Percent
+  Percent,
+  ArrowLeftRight
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -46,6 +47,7 @@ const navItems = [
   { path: '/audit', icon: ClipboardList, label: 'Audit Trail' },
   { path: '/inventory', icon: Package, label: 'Inventory' },
   { path: '/inventory-adjustments', icon: Scale, label: 'Adjustments' },
+  { path: '/stock-transfers', icon: ArrowLeftRight, label: 'Transfers' },
   { path: '/sales', icon: ShoppingCart, label: 'Sales' },
   { path: '/crm', icon: UserCircle, label: 'CRM' },
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
