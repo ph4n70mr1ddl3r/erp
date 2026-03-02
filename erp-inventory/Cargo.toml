@@ -14,4 +14,5 @@ chrono.workspace = true
 uuid.workspace = true
 async-trait.workspace = true
 validator.workspace = true
+tracing.workspace = true
 erp-core.workspace = true

@@ -1,6 +1,17 @@
 use std::env;
 
 const MIN_JWT_SECRET_LENGTH: usize = 32;
+const PLACEHOLDER_PATTERNS: [&str; 4] = [
+    "change-in-production",
+    "your-secret",
+    "example",
+    "placeholder",
+];
+
+fn is_placeholder_secret(secret: &str) -> bool {
+    let lower = secret.to_lowercase();
+    PLACEHOLDER_PATTERNS.iter().any(|p| lower.contains(p))
+}
 
 fn generate_dev_secret() -> String {
     use rand::Rng;
@@ -79,6 +90,18 @@ impl Config {
             eprintln!(
                 "WARNING: JWT_SECRET is shorter than {} characters. This is insecure for production.",
                 MIN_JWT_SECRET_LENGTH
+            );
+        }
+
+        if is_placeholder_secret(&jwt_secret) {
+            if production_mode {
+                eprintln!(
+                    "ERROR: JWT_SECRET appears to be a placeholder value. Use a secure random secret in production."
+                );
+                std::process::exit(1);
+            }
+            eprintln!(
+                "WARNING: JWT_SECRET appears to be a placeholder value. This is insecure for production."
             );
         }
 

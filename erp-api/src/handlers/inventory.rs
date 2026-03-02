@@ -4,19 +4,24 @@ use axum::{
 };
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{BaseEntity, Status, Pagination};
 use erp_inventory::{Product, ProductType, Warehouse, StockMovement, StockLevel, MovementType, 
                     ProductService, WarehouseService, StockService};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateProductRequest {
+    #[validate(length(min = 1, max = 50, message = "SKU must be between 1 and 50 characters"))]
     pub sku: String,
+    #[validate(length(min = 1, max = 200, message = "Name must be between 1 and 200 characters"))]
     pub name: String,
+    #[validate(length(max = 1000, message = "Description must not exceed 1000 characters"))]
     pub description: Option<String>,
     pub product_type: Option<String>,
     pub category_id: Option<Uuid>,
+    #[validate(length(min = 1, max = 20, message = "Unit of measure must be between 1 and 20 characters"))]
     pub unit_of_measure: String,
 }
 
@@ -78,6 +83,10 @@ pub async fn create_product(
     State(state): State<AppState>,
     Json(req): Json<CreateProductRequest>,
 ) -> ApiResult<Json<ProductResponse>> {
+    req.validate().map_err(|e| {
+        erp_core::Error::validation(format!("Validation failed: {}", e))
+    })?;
+    
     let service = ProductService::new();
     
     let product = Product {
@@ -104,6 +113,10 @@ pub async fn update_product(
     Path(id): Path<Uuid>,
     Json(req): Json<CreateProductRequest>,
 ) -> ApiResult<Json<ProductResponse>> {
+    req.validate().map_err(|e| {
+        erp_core::Error::validation(format!("Validation failed: {}", e))
+    })?;
+    
     let service = ProductService::new();
     
     let mut product = service.get_product(&state.pool, id).await?;
@@ -131,14 +144,21 @@ pub async fn delete_product(
     Ok(Json(()))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateWarehouseRequest {
+    #[validate(length(min = 1, max = 20, message = "Code must be between 1 and 20 characters"))]
     pub code: String,
+    #[validate(length(min = 1, max = 100, message = "Name must be between 1 and 100 characters"))]
     pub name: String,
+    #[validate(length(max = 200, message = "Street must not exceed 200 characters"))]
     pub street: Option<String>,
+    #[validate(length(max = 100, message = "City must not exceed 100 characters"))]
     pub city: Option<String>,
+    #[validate(length(max = 100, message = "State must not exceed 100 characters"))]
     pub state: Option<String>,
+    #[validate(length(max = 20, message = "Postal code must not exceed 20 characters"))]
     pub postal_code: Option<String>,
+    #[validate(length(max = 100, message = "Country must not exceed 100 characters"))]
     pub country: Option<String>,
 }
 
@@ -199,6 +219,10 @@ pub async fn create_warehouse(
     State(state): State<AppState>,
     Json(req): Json<CreateWarehouseRequest>,
 ) -> ApiResult<Json<WarehouseResponse>> {
+    req.validate().map_err(|e| {
+        erp_core::Error::validation(format!("Validation failed: {}", e))
+    })?;
+    
     let service = WarehouseService::new();
     
     use erp_core::Address;
@@ -220,13 +244,16 @@ pub async fn create_warehouse(
     Ok(Json(WarehouseResponse::from(created)))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Validate)]
 pub struct CreateStockMovementRequest {
     pub product_id: Uuid,
     pub to_location_id: Uuid,
     pub from_location_id: Option<Uuid>,
+    #[validate(range(min = 1, message = "Quantity must be at least 1"))]
     pub quantity: i64,
+    #[validate(length(min = 1, max = 50, message = "Movement type must be between 1 and 50 characters"))]
     pub movement_type: String,
+    #[validate(length(max = 100, message = "Reference must not exceed 100 characters"))]
     pub reference: Option<String>,
 }
 
@@ -247,6 +274,10 @@ pub async fn create_stock_movement(
     State(state): State<AppState>,
     Json(req): Json<CreateStockMovementRequest>,
 ) -> ApiResult<Json<StockMovementResponse>> {
+    req.validate().map_err(|e| {
+        erp_core::Error::validation(format!("Validation failed: {}", e))
+    })?;
+    
     let service = StockService::new();
     
     let movement = StockMovement {

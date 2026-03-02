@@ -4,6 +4,7 @@ use chrono::Utc;
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 use crate::repository::*;
+use tracing::warn;
 
 pub struct ProductService {
     repo: SqliteProductRepository,
@@ -440,10 +441,18 @@ struct LotRow {
 
 impl From<LotRow> for Lot {
     fn from(r: LotRow) -> Self {
+        let id = Uuid::parse_str(&r.id).unwrap_or_else(|e| {
+            warn!("Invalid UUID for lot id '{}': {}", r.id, e);
+            Uuid::nil()
+        });
+        let product_id = Uuid::parse_str(&r.product_id).unwrap_or_else(|e| {
+            warn!("Invalid UUID for lot product_id '{}': {}", r.product_id, e);
+            Uuid::nil()
+        });
         Self {
-            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            id,
             lot_number: r.lot_number,
-            product_id: Uuid::parse_str(&r.product_id).unwrap_or_default(),
+            product_id,
             serial_number: r.serial_number,
             manufacture_date: r.manufacture_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok())
                 .map(|d| d.with_timezone(&chrono::Utc)),

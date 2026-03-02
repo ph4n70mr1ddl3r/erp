@@ -23,8 +23,8 @@ export default function Sales() {
       const [custRes, ordRes] = await Promise.all([sales.getCustomers(1, 50), sales.getOrders(1, 20)]);
       setCustomers(custRes.data.items);
       setOrders(ordRes.data.items);
-    } catch {
-      toast.error('Failed to load sales data');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err, 'Failed to load sales data'));
     } finally {
       setLoading(false);
     }

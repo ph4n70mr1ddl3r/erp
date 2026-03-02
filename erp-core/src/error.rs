@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tracing::warn;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -40,7 +41,7 @@ impl Error {
     }
 
     pub fn unauthorized(msg: &str) -> Self {
-        let _ = msg;
+        warn!("Unauthorized access attempt: {}", msg);
         Error::Unauthorized
     }
 
