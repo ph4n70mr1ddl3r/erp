@@ -59,6 +59,7 @@ pub mod mrp;
 pub mod notifications;
 pub mod ocr;
 pub mod partner;
+pub mod payment_terms;
 pub mod payments;
 pub mod pcard;
 pub mod plm;

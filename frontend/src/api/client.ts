@@ -1314,3 +1314,61 @@ export const tax = {
   createExemption: (data: { customer_id: string; exemption_type: string; certificate_number: string; jurisdiction_id?: string; issue_date: string; expiry_date?: string }) =>
     api.post<TaxExemption>('/api/v1/tax/exemptions', data),
 };
+
+export interface PaymentTerm {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  due_days: number;
+  discount_days: number | null;
+  discount_percent: number | null;
+  is_default: boolean;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaymentTermCalculation {
+  term_id: string;
+  invoice_date: string;
+  due_date: string;
+  discount_date: string | null;
+  discount_amount: number | null;
+}
+
+export const paymentTerms = {
+  list: (page = 1, perPage = 50) =>
+    api.get<Paginated<PaymentTerm>>(`/api/v1/payment-terms?page=${page}&per_page=${perPage}`),
+  get: (id: string) =>
+    api.get<PaymentTerm>(`/api/v1/payment-terms/${id}`),
+  getByCode: (code: string) =>
+    api.get<PaymentTerm>(`/api/v1/payment-terms/code/${code}`),
+  getDefault: () =>
+    api.get<PaymentTerm | null>('/api/v1/payment-terms/default'),
+  create: (data: {
+    code: string;
+    name: string;
+    description?: string;
+    due_days: number;
+    discount_days?: number;
+    discount_percent?: number;
+    is_default?: boolean;
+  }) => api.post<PaymentTerm>('/api/v1/payment-terms', data),
+  update: (id: string, data: {
+    code: string;
+    name: string;
+    description?: string;
+    due_days: number;
+    discount_days?: number;
+    discount_percent?: number;
+    is_default?: boolean;
+    status?: string;
+  }) => api.put<PaymentTerm>(`/api/v1/payment-terms/${id}`, data),
+  delete: (id: string) =>
+    api.delete(`/api/v1/payment-terms/${id}`),
+  setDefault: (id: string) =>
+    api.post<{ status: string }>(`/api/v1/payment-terms/${id}/set-default`),
+  calculate: (id: string, data: { invoice_date: string; amount: number }) =>
+    api.post<PaymentTermCalculation>(`/api/v1/payment-terms/${id}/calculate`, data),
+};

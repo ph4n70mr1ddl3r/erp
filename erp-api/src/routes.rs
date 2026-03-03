@@ -227,6 +227,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/subscription", handlers::subscription::routes())
         .nest("/shipping", handlers::shipping::routes())
         .nest("/payments", handlers::payments::routes())
+        .nest("/payment-terms", handlers::payment_terms::routes())
         .nest("/risk", handlers::risk::routes())
         .nest("/security", security_routes())
         .nest("/search", search_routes())

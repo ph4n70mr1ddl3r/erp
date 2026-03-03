@@ -32,7 +32,8 @@ import {
   Calendar,
   Receipt,
   Percent,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Clock
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -70,6 +71,7 @@ const navItems = [
   { path: '/currency-revaluation', icon: RefreshCw, label: 'FX Revaluation' },
   { path: '/credit', icon: AlertCircle, label: 'Credit Mgmt' },
   { path: '/payments', icon: Wallet, label: 'Payments' },
+  { path: '/payment-terms', icon: Clock, label: 'Payment Terms' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

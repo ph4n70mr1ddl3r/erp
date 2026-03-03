@@ -773,6 +773,7 @@ dependencies = [
  "erp-notifications",
  "erp-ocr",
  "erp-partner",
+ "erp-payment-terms",
  "erp-payments",
  "erp-pcard",
  "erp-plm",
@@ -1852,6 +1853,23 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
+ "uuid 1.21.0",
+]
+
+[[package]]
+name = "erp-payment-terms"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
  "uuid 1.21.0",
 ]
 

@@ -106,6 +106,7 @@ members = [
     "erp-warranty",
     "erp-inventory-adjustment",
     "erp-stock-transfer",
+    "erp-payment-terms",
 ]
 resolver = "2"
 
@@ -245,6 +246,7 @@ erp-bundles = { path = "erp-bundles" }
 erp-warranty = { path = "erp-warranty" }
 erp-inventory-adjustment = { path = "erp-inventory-adjustment" }
 erp-stock-transfer = { path = "erp-stock-transfer" }
+erp-payment-terms = { path = "erp-payment-terms" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
