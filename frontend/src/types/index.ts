@@ -191,3 +191,27 @@ export interface ExpenseLine {
   description?: string;
   status: string;
 }
+
+export interface BudgetLine {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  period: number;
+  budget_amount: number;
+  actual_amount: number;
+  variance: number;
+  variance_percent: number;
+}
+
+export interface Budget {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  total_amount: number;
+  total_actual: number;
+  total_variance: number;
+  variance_percent: number;
+  status: string;
+  lines: BudgetLine[];
+}

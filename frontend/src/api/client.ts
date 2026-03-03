@@ -164,7 +164,8 @@ export interface CreateQuotationRequest {
 
 export interface CreateBudgetRequest {
   name: string;
-  fiscal_year_id: string;
+  start_date: string;
+  end_date: string;
   lines: {
     account_id: string;
     period: number;

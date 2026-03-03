@@ -5,6 +5,7 @@ use axum::http::{Request, StatusCode, Method};
 use serde_json::json;
 use sqlx::SqlitePool;
 use std::sync::Once;
+use chrono::Datelike;
 use erp_api::db::AppState;
 use erp_api::routes::create_router;
 use erp_api::Config;
@@ -960,4 +961,89 @@ async fn test_vendor_bills_crud() {
     let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
     let list: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
     assert!(list["items"].as_array().unwrap().len() > 0);
+}
+
+#[tokio::test]
+async fn test_budgets_crud() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let app = create_router(create_test_app(pool));
+
+    let (_, register_body) = make_request(&app, Method::POST, "/auth/register", Some(json!({
+        "username": "budgetuser",
+        "email": "budget@example.com",
+        "password": "password123",
+        "full_name": "Budget User"
+    }))).await;
+    let token = register_body["token"].as_str().unwrap();
+
+    let account_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/finance/accounts")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "code": "EXP001",
+            "name": "Operating Expenses",
+            "account_type": "Expense"
+        })).unwrap())).unwrap();
+    let account_response = app.clone().oneshot(account_request).await.unwrap();
+    assert_eq!(account_response.status(), StatusCode::OK);
+    let account_body_bytes = account_response.into_body().collect().await.unwrap().to_bytes();
+    let account_body: serde_json::Value = serde_json::from_slice(&account_body_bytes).unwrap();
+    let account_id = account_body["id"].as_str().unwrap();
+
+    let now = chrono::Utc::now();
+    let start_of_year = chrono::DateTime::parse_from_rfc3339(&format!("{}-01-01T00:00:00Z", now.year()))
+        .unwrap()
+        .with_timezone(&chrono::Utc);
+    let end_of_year = chrono::DateTime::parse_from_rfc3339(&format!("{}-12-31T23:59:59Z", now.year()))
+        .unwrap()
+        .with_timezone(&chrono::Utc);
+
+    let create_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/budgets")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "name": format!("FY {} Operating Budget", now.year()),
+            "start_date": start_of_year.to_rfc3339(),
+            "end_date": end_of_year.to_rfc3339(),
+            "lines": [
+                {
+                    "account_id": account_id,
+                    "period": 1,
+                    "amount": 500000
+                },
+                {
+                    "account_id": account_id,
+                    "period": 2,
+                    "amount": 600000
+                }
+            ]
+        })).unwrap())).unwrap();
+    let create_response = app.clone().oneshot(create_request).await.unwrap();
+    assert_eq!(create_response.status(), StatusCode::OK);
+    let create_body_bytes = create_response.into_body().collect().await.unwrap().to_bytes();
+    let budget: serde_json::Value = serde_json::from_slice(&create_body_bytes).unwrap();
+    assert_eq!(budget["name"], format!("FY {} Operating Budget", now.year()));
+    assert_eq!(budget["status"], "Draft");
+    assert_eq!(budget["total_amount"], 11000.0);
+    assert!(budget["lines"].as_array().unwrap().len() == 2);
+
+    let list_request = Request::builder()
+        .method(Method::GET)
+        .uri("/api/v1/budgets")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let list_response = app.clone().oneshot(list_request).await.unwrap();
+    assert_eq!(list_response.status(), StatusCode::OK);
+    let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
+    let budgets: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
+    assert!(budgets.as_array().unwrap().len() > 0);
+    
+    let first_budget = &budgets.as_array().unwrap()[0];
+    assert_eq!(first_budget["name"], format!("FY {} Operating Budget", now.year()));
+    assert!(first_budget["lines"].as_array().unwrap().len() == 2);
 }
