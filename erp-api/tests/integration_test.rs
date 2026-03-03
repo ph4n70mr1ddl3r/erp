@@ -44,7 +44,9 @@ async fn run_migrations(pool: &SqlitePool) {
         for statement in migration.split(';') {
             let statement = statement.trim();
             if !statement.is_empty() {
-                let _ = sqlx::query(statement).execute(pool).await;
+                if let Err(e) = sqlx::query(statement).execute(pool).await {
+                    eprintln!("Migration error: {}", e);
+                }
             }
         }
     }
@@ -881,12 +883,21 @@ async fn test_vendor_bills_crud() {
     }))).await;
     let token = register_body["token"].as_str().unwrap();
 
-    let (_, vendor_body) = make_request(&app, Method::POST, "/api/v1/purchasing/vendors", Some(json!({
-        "code": "V001",
-        "name": "Test Vendor",
-        "email": "vendor@example.com",
-        "phone": "555-0001"
-    }))).await;
+    let vendor_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/purchasing/vendors")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "code": "V001",
+            "name": "Test Vendor",
+            "email": "vendor@example.com",
+            "phone": "555-0001"
+        })).unwrap())).unwrap();
+    let vendor_response = app.clone().oneshot(vendor_request).await.unwrap();
+    assert_eq!(vendor_response.status(), StatusCode::OK);
+    let vendor_body_bytes = vendor_response.into_body().collect().await.unwrap().to_bytes();
+    let vendor_body: serde_json::Value = serde_json::from_slice(&vendor_body_bytes).unwrap();
     let vendor_id = vendor_body["id"].as_str().unwrap();
 
     let now = chrono::Utc::now();
@@ -948,5 +959,5 @@ async fn test_vendor_bills_crud() {
     assert_eq!(list_response.status(), StatusCode::OK);
     let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
     let list: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
-    assert!(list["data"].as_array().unwrap().len() > 0);
+    assert!(list["items"].as_array().unwrap().len() > 0);
 }

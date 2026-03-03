@@ -71,7 +71,7 @@ impl TransferRepository for SqliteTransferRepository {
         .bind(id.to_string())
         .fetch_optional(&self.pool)
         .await?;
-        Ok(row.as_ref().map(|r| row_to_transfer(r)))
+        Ok(row.as_ref().map(row_to_transfer))
     }
     async fn list(&self, from_warehouse_id: Option<Uuid>, to_warehouse_id: Option<Uuid>, status: Option<TransferStatus>) -> anyhow::Result<Vec<StockTransfer>> {
         let mut query = "SELECT id, transfer_number, from_warehouse_id, to_warehouse_id, status, priority,
@@ -97,7 +97,7 @@ impl TransferRepository for SqliteTransferRepository {
             sql_query = sql_query.bind(bind);
         }
         let rows = sql_query.fetch_all(&self.pool).await?;
-        Ok(rows.iter().map(|r| row_to_transfer(&r)).collect())
+        Ok(rows.iter().map(row_to_transfer).collect())
     }
     async fn update(&self, transfer: &StockTransfer) -> anyhow::Result<StockTransfer> {
         let now = Utc::now().to_rfc3339();
@@ -162,7 +162,7 @@ impl TransferRepository for SqliteTransferRepository {
         .bind(transfer_id.to_string())
         .fetch_all(&self.pool)
         .await?;
-        Ok(rows.iter().map(|r| row_to_line(&r)).collect())
+        Ok(rows.iter().map(row_to_line).collect())
     }
     async fn update_line(&self, line: &StockTransferLine) -> anyhow::Result<StockTransferLine> {
         sqlx::query(

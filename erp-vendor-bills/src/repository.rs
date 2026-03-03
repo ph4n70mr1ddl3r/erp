@@ -106,8 +106,8 @@ impl VendorBillRepository {
         .bind(bill.tax_amount.amount)
         .bind(bill.total.amount)
         .bind(bill.amount_paid.amount)
-        .bind(serde_json::to_string(&bill.status)?)
-        .bind(serde_json::to_string(&bill.match_status)?)
+        .bind(format!("{:?}", bill.status))
+        .bind(format!("{:?}", bill.match_status))
         .bind(&bill.notes)
         .bind(bill.base.created_at.to_rfc3339())
         .bind(bill.base.updated_at.to_rfc3339())
@@ -137,7 +137,7 @@ impl VendorBillRepository {
         .bind(line.tax_rate)
         .bind(line.line_total.amount)
         .bind(line.match_quantity)
-        .bind(serde_json::to_string(&line.match_status)?)
+        .bind(format!("{:?}", line.match_status))
         .execute(pool)
         .await?;
 
@@ -146,7 +146,7 @@ impl VendorBillRepository {
 
     pub async fn update_status(pool: &SqlitePool, id: Uuid, status: VendorBillStatus) -> Result<()> {
         sqlx::query("UPDATE vendor_bills SET status = ?, updated_at = ? WHERE id = ?")
-            .bind(serde_json::to_string(&status)?)
+            .bind(format!("{:?}", status))
             .bind(Utc::now().to_rfc3339())
             .bind(id.to_string())
             .execute(pool)
@@ -156,7 +156,7 @@ impl VendorBillRepository {
 
     pub async fn update_match_status(pool: &SqlitePool, id: Uuid, status: MatchStatus) -> Result<()> {
         sqlx::query("UPDATE vendor_bills SET match_status = ?, updated_at = ? WHERE id = ?")
-            .bind(serde_json::to_string(&status)?)
+            .bind(format!("{:?}", status))
             .bind(Utc::now().to_rfc3339())
             .bind(id.to_string())
             .execute(pool)

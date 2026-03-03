@@ -54,7 +54,7 @@ impl VendorBillService {
             return Err(Error::validation("Due date cannot be before bill date"));
         }
 
-        let bill_id = Uuid::new_v4();
+        let base = BaseEntity::new();
         let bill_number = format!("VB-{}", Utc::now().format("%Y%m%d%H%M%S"));
 
         let lines: Vec<VendorBillLine> = line_requests
@@ -66,7 +66,7 @@ impl VendorBillService {
                 );
                 VendorBillLine {
                     id: Uuid::new_v4(),
-                    bill_id,
+                    bill_id: base.id,
                     po_line_id: req.po_line_id,
                     product_id: req.product_id,
                     description: req.description,
@@ -87,7 +87,7 @@ impl VendorBillService {
             .sum();
 
         let bill = VendorBill {
-            base: BaseEntity::new(),
+            base,
             bill_number,
             vendor_invoice_number,
             vendor_id,
