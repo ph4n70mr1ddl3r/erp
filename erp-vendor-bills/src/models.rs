@@ -3,8 +3,9 @@ use erp_core::{BaseEntity, Money};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum VendorBillStatus {
+    #[default]
     Draft,
     Pending,
     Approved,
@@ -13,24 +14,13 @@ pub enum VendorBillStatus {
     Void,
 }
 
-impl Default for VendorBillStatus {
-    fn default() -> Self {
-        Self::Draft
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub enum MatchStatus {
+    #[default]
     Unmatched,
     PartiallyMatched,
     FullyMatched,
     Exception,
-}
-
-impl Default for MatchStatus {
-    fn default() -> Self {
-        Self::Unmatched
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

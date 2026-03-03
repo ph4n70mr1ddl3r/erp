@@ -261,7 +261,7 @@ async fn test_create_product_with_auth() {
     ).await;
     let token = reg_body["token"].as_str().unwrap();
     
-    let mut req = Request::builder()
+    let req = Request::builder()
         .method(Method::POST)
         .uri("/api/v1/inventory/products")
         .header("Content-Type", "application/json")
@@ -878,7 +878,7 @@ async fn test_vendor_bills_crud() {
         "email": "vb@example.com",
         "password": "password123",
         "full_name": "VB User"
-    })));
+    }))).await;
     let token = register_body["token"].as_str().unwrap();
 
     let (_, vendor_body) = make_request(&app, Method::POST, "/api/v1/purchasing/vendors", Some(json!({
@@ -886,7 +886,7 @@ async fn test_vendor_bills_crud() {
         "name": "Test Vendor",
         "email": "vendor@example.com",
         "phone": "555-0001"
-    })));
+    }))).await;
     let vendor_id = vendor_body["id"].as_str().unwrap();
 
     let now = chrono::Utc::now();

@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { vendorBills, type VendorBill, type ThreeWayMatchResult } from '../api/client';
 import { useToast } from '../components/Toast';
 import { getErrorMessage } from '../utils/errors';
 import { LoadingPage } from '../components/Spinner';
 
-const VendorBillsPage: React.FC = () => {
+export default function VendorBillsPage() {
   const toast = useToast();
   const [bills, setBills] = useState<VendorBill[]>([]);
   const [loading, setLoading] = useState(true);
@@ -533,6 +533,4 @@ const VendorBillsPage: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default VendorBillsPage;
+}
