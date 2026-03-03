@@ -33,7 +33,8 @@ import {
   Receipt,
   Percent,
   ArrowLeftRight,
-  Clock
+  Clock,
+  FileInput
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -72,6 +73,7 @@ const navItems = [
   { path: '/credit', icon: AlertCircle, label: 'Credit Mgmt' },
   { path: '/payments', icon: Wallet, label: 'Payments' },
   { path: '/payment-terms', icon: Clock, label: 'Payment Terms' },
+  { path: '/vendor-bills', icon: FileInput, label: 'Vendor Bills' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

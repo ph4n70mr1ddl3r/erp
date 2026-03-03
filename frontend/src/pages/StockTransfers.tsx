@@ -223,10 +223,6 @@ export default function StockTransfersPage() {
     return <span className={classes[priority] || ''}>{priority}</span>;
   };
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount / 100);
-  };
-
   if (loading) return <LoadingPage />;
 
   return (

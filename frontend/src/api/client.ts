@@ -1372,3 +1372,90 @@ export const paymentTerms = {
   calculate: (id: string, data: { invoice_date: string; amount: number }) =>
     api.post<PaymentTermCalculation>(`/api/v1/payment-terms/${id}/calculate`, data),
 };
+
+export interface VendorBill {
+  id: string;
+  bill_number: string;
+  vendor_invoice_number: string;
+  vendor_id: string;
+  purchase_order_id: string | null;
+  bill_date: string;
+  due_date: string;
+  lines: VendorBillLine[];
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  amount_paid: number;
+  status: string;
+  match_status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VendorBillLine {
+  id: string;
+  bill_id: string;
+  po_line_id: string | null;
+  product_id: string | null;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  line_total: number;
+  match_quantity: number;
+  match_status: string;
+}
+
+export interface ThreeWayMatchResult {
+  bill_id: string;
+  po_id: string | null;
+  total_matched_lines: number;
+  total_unmatched_lines: number;
+  total_exceptions: number;
+  match_status: string;
+  exceptions: {
+    bill_line_id: string;
+    exception_type: string;
+    expected_value: string;
+    actual_value: string;
+    message: string;
+  }[];
+}
+
+export const vendorBills = {
+  list: (page = 1, perPage = 50) =>
+    api.get<Paginated<VendorBill>>(`/api/v1/vendor-bills?page=${page}&per_page=${perPage}`),
+  get: (id: string) =>
+    api.get<VendorBill>(`/api/v1/vendor-bills/${id}`),
+  listByVendor: (vendorId: string) =>
+    api.get<VendorBill[]>(`/api/v1/vendor-bills/vendor/${vendorId}`),
+  create: (data: {
+    vendor_invoice_number: string;
+    vendor_id: string;
+    purchase_order_id?: string;
+    bill_date: string;
+    due_date: string;
+    lines: {
+      po_line_id?: string;
+      product_id?: string;
+      description: string;
+      quantity: number;
+      unit_price: number;
+      tax_rate: number;
+    }[];
+    notes?: string;
+  }) => api.post<VendorBill>('/api/v1/vendor-bills', data),
+  submit: (id: string) =>
+    api.post<{ status: string }>(`/api/v1/vendor-bills/${id}/submit`),
+  approve: (id: string) =>
+    api.post<{ status: string }>(`/api/v1/vendor-bills/${id}/approve`),
+  void: (id: string) =>
+    api.post<{ status: string }>(`/api/v1/vendor-bills/${id}/void`),
+  recordPayment: (id: string, data: { payment_id: string; amount: number }) =>
+    api.post<{ status: string }>(`/api/v1/vendor-bills/${id}/payment`, data),
+  performThreeWayMatch: (id: string) =>
+    api.post<ThreeWayMatchResult>(`/api/v1/vendor-bills/${id}/match`),
+  delete: (id: string) =>
+    api.delete(`/api/v1/vendor-bills/${id}`),
+};

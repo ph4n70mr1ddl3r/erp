@@ -95,6 +95,7 @@ pub mod tenant;
 pub mod territory;
 pub mod tms;
 pub mod tpm;
+pub mod vendor_bills;
 pub mod warranty;
 pub mod webhooks;
 pub mod websocket;

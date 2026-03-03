@@ -37,6 +37,7 @@ async fn run_migrations(pool: &SqlitePool) {
         include_str!("../../migrations/20240101000011_extended_features.sql"),
         include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
         include_str!("../../migrations/20260302100000_stock_transfers.sql"),
+        include_str!("../../migrations/20240309000000_vendor_bills.sql"),
     ];
     
     for migration in migration_queries {
@@ -864,4 +865,88 @@ async fn test_stock_transfer_workflow() {
     let receive_body_bytes = receive_response.into_body().collect().await.unwrap().to_bytes();
     let received: serde_json::Value = serde_json::from_slice(&receive_body_bytes).unwrap();
     assert_eq!(received["status"], "Received");
+}
+
+#[tokio::test]
+async fn test_vendor_bills_crud() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let app = create_router(create_test_app(pool));
+
+    let (_, register_body) = make_request(&app, Method::POST, "/auth/register", Some(json!({
+        "username": "vbuser",
+        "email": "vb@example.com",
+        "password": "password123",
+        "full_name": "VB User"
+    })));
+    let token = register_body["token"].as_str().unwrap();
+
+    let (_, vendor_body) = make_request(&app, Method::POST, "/api/v1/purchasing/vendors", Some(json!({
+        "code": "V001",
+        "name": "Test Vendor",
+        "email": "vendor@example.com",
+        "phone": "555-0001"
+    })));
+    let vendor_id = vendor_body["id"].as_str().unwrap();
+
+    let now = chrono::Utc::now();
+    let due = now + chrono::Duration::days(30);
+
+    let create_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/vendor-bills")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "vendor_invoice_number": "INV-2024-001",
+            "vendor_id": vendor_id,
+            "bill_date": now.to_rfc3339(),
+            "due_date": due.to_rfc3339(),
+            "lines": [{
+                "description": "Office Supplies",
+                "quantity": 10,
+                "unit_price": 2500,
+                "tax_rate": 10.0
+            }]
+        })).unwrap())).unwrap();
+    let create_response = app.clone().oneshot(create_request).await.unwrap();
+    assert_eq!(create_response.status(), StatusCode::OK);
+    let create_body_bytes = create_response.into_body().collect().await.unwrap().to_bytes();
+    let bill: serde_json::Value = serde_json::from_slice(&create_body_bytes).unwrap();
+    assert_eq!(bill["status"], "Draft");
+    assert_eq!(bill["vendor_invoice_number"], "INV-2024-001");
+    let bill_id = bill["id"].as_str().unwrap();
+
+    let submit_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/vendor-bills/{}/submit", bill_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let submit_response = app.clone().oneshot(submit_request).await.unwrap();
+    assert_eq!(submit_response.status(), StatusCode::OK);
+    let submit_body_bytes = submit_response.into_body().collect().await.unwrap().to_bytes();
+    let submitted: serde_json::Value = serde_json::from_slice(&submit_body_bytes).unwrap();
+    assert_eq!(submitted["status"], "submitted");
+
+    let approve_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/vendor-bills/{}/approve", bill_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let approve_response = app.clone().oneshot(approve_request).await.unwrap();
+    assert_eq!(approve_response.status(), StatusCode::OK);
+    let approve_body_bytes = approve_response.into_body().collect().await.unwrap().to_bytes();
+    let approved: serde_json::Value = serde_json::from_slice(&approve_body_bytes).unwrap();
+    assert_eq!(approved["status"], "approved");
+
+    let list_request = Request::builder()
+        .method(Method::GET)
+        .uri("/api/v1/vendor-bills?page=1&per_page=10")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let list_response = app.clone().oneshot(list_request).await.unwrap();
+    assert_eq!(list_response.status(), StatusCode::OK);
+    let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
+    let list: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
+    assert!(list["data"].as_array().unwrap().len() > 0);
 }

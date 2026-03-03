@@ -36,6 +36,7 @@ import LeaveManagement from './pages/LeaveManagement';
 import Expenses from './pages/Expenses';
 import Tax from './pages/Tax';
 import PaymentTerms from './pages/PaymentTerms';
+import VendorBills from './pages/VendorBills';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -88,6 +89,7 @@ function AppRoutes() {
       <Route path="/expenses" element={<PrivateRoute><Expenses /></PrivateRoute>} />
       <Route path="/tax" element={<PrivateRoute><Tax /></PrivateRoute>} />
       <Route path="/payment-terms" element={<PrivateRoute><PaymentTerms /></PrivateRoute>} />
+      <Route path="/vendor-bills" element={<PrivateRoute><VendorBills /></PrivateRoute>} />
     </Routes>
   );
 }
