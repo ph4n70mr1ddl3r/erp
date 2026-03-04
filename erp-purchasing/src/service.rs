@@ -86,7 +86,7 @@ impl SupplierScorecardService {
         
         sqlx::query(
             "INSERT INTO supplier_scorecards (id, vendor_id, period, on_time_delivery, quality_score, price_competitiveness, responsiveness, overall_score, total_orders, total_value, created_at)
-             VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, ?)"
+             VALUES (?, ?, ?, 0, 0, 0, 0, 0, 0, 0, ?)"
         )
         .bind(scorecard.id.to_string())
         .bind(scorecard.vendor_id.to_string())

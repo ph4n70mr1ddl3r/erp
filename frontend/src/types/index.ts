@@ -339,3 +339,29 @@ export interface Budget {
   status: string;
   lines: BudgetLine[];
 }
+
+export interface SupplierScorecard {
+  id: string;
+  vendor_id: string;
+  period: string;
+  on_time_delivery: number;
+  quality_score: number;
+  price_competitiveness: number;
+  responsiveness: number;
+  overall_score: number;
+  total_orders: number;
+  total_value: number;
+  created_at: string;
+}
+
+export interface VendorPerformance {
+  id: string;
+  vendor_id: string;
+  order_id: string;
+  delivery_date?: string;
+  expected_date?: string;
+  on_time: boolean;
+  quality_rating: number;
+  notes?: string;
+  created_at: string;
+}

@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { 
   AuthResponse, User, Paginated, Account, JournalEntry, Product, 
   Warehouse, Customer, SalesOrder, Vendor, PurchaseOrder, Employee,
-  Lead, Opportunity
+  Lead, Opportunity, SupplierScorecard
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -254,6 +254,12 @@ export const purchasing = {
   getOrders: (page = 1, perPage = 20) => api.get<Paginated<PurchaseOrder>>(`/api/v1/purchasing/orders?page=${page}&per_page=${perPage}`),
   createOrder: (data: CreatePurchaseOrderRequest) => api.post<PurchaseOrder>('/api/v1/purchasing/orders', data),
   approveOrder: (id: string) => api.post(`/api/v1/purchasing/orders/${id}/approve`),
+};
+
+// Vendor Scorecards
+export const scorecards = {
+  create: (vendorId: string, period: string) => api.post<SupplierScorecard>('/api/v1/scorecards', { vendor_id: vendorId, period }),
+  list: (vendorId: string) => api.get<SupplierScorecard[]>(`/api/v1/scorecards/${vendorId}`),
 };
 
 // HR

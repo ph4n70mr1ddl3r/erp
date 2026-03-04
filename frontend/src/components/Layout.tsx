@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard, 
   Building2, 
   Package, 
@@ -35,7 +35,8 @@ import {
   ArrowLeftRight,
   Clock,
   FileInput,
-  PiggyBank
+  PiggyBank,
+  Star
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -55,6 +56,7 @@ const navItems = [
   { path: '/sales', icon: ShoppingCart, label: 'Sales' },
   { path: '/crm', icon: UserCircle, label: 'CRM' },
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
+  { path: '/vendor-scorecards', icon: Star, label: 'Vendor Ratings' },
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
   { path: '/hr', icon: UserCog, label: 'HR' },
   { path: '/payroll', icon: DollarSign, label: 'Payroll' },

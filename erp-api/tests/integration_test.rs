@@ -36,6 +36,7 @@ async fn run_migrations(pool: &SqlitePool) {
         include_str!("../../migrations/20240101000005_hr.sql"),
         include_str!("../../migrations/20240101000006_auth.sql"),
         include_str!("../../migrations/20240101000011_extended_features.sql"),
+        include_str!("../../migrations/20240101000012_advanced_features.sql"),
         include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
         include_str!("../../migrations/20260302100000_stock_transfers.sql"),
         include_str!("../../migrations/20240309000000_vendor_bills.sql"),
@@ -1046,4 +1047,67 @@ async fn test_budgets_crud() {
     let first_budget = &budgets.as_array().unwrap()[0];
     assert_eq!(first_budget["name"], format!("FY {} Operating Budget", now.year()));
     assert!(first_budget["lines"].as_array().unwrap().len() == 2);
+}
+
+#[tokio::test]
+async fn test_vendor_scorecards() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let app = create_router(create_test_app(pool));
+
+    let (_, register_body) = make_request(&app, Method::POST, "/auth/register", Some(json!({
+        "username": "scorecarduser",
+        "email": "scorecard@example.com",
+        "password": "password123",
+        "full_name": "Scorecard User"
+    }))).await;
+    let token = register_body["token"].as_str().unwrap();
+
+    let vendor_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/purchasing/vendors")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "code": "VENDOR001",
+            "name": "Test Vendor Inc",
+            "email": "vendor@test.com"
+        })).unwrap())).unwrap();
+    let vendor_response = app.clone().oneshot(vendor_request).await.unwrap();
+    assert_eq!(vendor_response.status(), StatusCode::OK);
+    let vendor_body_bytes = vendor_response.into_body().collect().await.unwrap().to_bytes();
+    let vendor: serde_json::Value = serde_json::from_slice(&vendor_body_bytes).unwrap();
+    let vendor_id = vendor["id"].as_str().unwrap();
+
+    let scorecard_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/scorecards")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "vendor_id": vendor_id,
+            "period": "2024-01"
+        })).unwrap())).unwrap();
+    let scorecard_response = app.clone().oneshot(scorecard_request).await.unwrap();
+    assert_eq!(scorecard_response.status(), StatusCode::OK);
+    let scorecard_body_bytes = scorecard_response.into_body().collect().await.unwrap().to_bytes();
+    let scorecard: serde_json::Value = serde_json::from_slice(&scorecard_body_bytes).unwrap();
+    assert_eq!(scorecard["vendor_id"], vendor_id);
+    assert_eq!(scorecard["period"], "2024-01");
+    assert_eq!(scorecard["on_time_delivery"], 0);
+    assert_eq!(scorecard["quality_score"], 0);
+    assert_eq!(scorecard["overall_score"], 0);
+
+    let list_request = Request::builder()
+        .method(Method::GET)
+        .uri(&format!("/api/v1/scorecards/{}", vendor_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let list_response = app.clone().oneshot(list_request).await.unwrap();
+    assert_eq!(list_response.status(), StatusCode::OK);
+    let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
+    let scorecards: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
+    assert!(scorecards.as_array().unwrap().len() == 1);
+    assert_eq!(scorecards[0]["period"], "2024-01");
+    assert_eq!(scorecards[0]["vendor_id"], vendor_id);
 }
