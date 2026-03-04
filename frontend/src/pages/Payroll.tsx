@@ -1,41 +1,15 @@
 import { useEffect, useState, useCallback } from 'react';
-import { payroll, hr } from '../api/client';
-import { useToast } from '../components/Toast';
-import { LoadingPage } from '../components/Spinner';
-import type { PayrollRun, PayrollEntry, Employee } from '../types';
-import { getErrorMessage } from '../utils/errors';
-import { DollarSign } from 'lucide-react';
-
-import { useState } from 'react';
-
-import { useToast } from '../components/Toast';
-import { LoadingPage } from '../components/Spinner';
-import { payroll, hr } from '../api/client';
-import type { PayrollRun, PayrollEntry, Employee } from '../types';
-import { getErrorMessage } from '../utils/errors';
-import { DollarSign } from 'lucide-react';
-
-import { useState, useCallback, useEffect } from 'react';
-import { useToast } from '../components/Toast';
-import { LoadingPage } from '../components/Spinner';
 import { payroll } from '../api/client';
+import { useToast } from '../components/Toast';
+import { LoadingPage } from '../components/Spinner';
 import type { PayrollRun, PayrollEntry } from '../types';
 import { getErrorMessage } from '../utils/errors';
 import { DollarSign } from 'lucide-react';
-
-import { useState, useCallback, useEffect } from 'react';
-import { payroll } from '../api/client';
-import type { PayrollRun, PayrollEntry, Employee } from '../types';
-import { getErrorMessage } from '../utils/errors';
-import { DollarSign } from 'lucide-react';
-import { useToast } from '../components/Toast';
-import { LoadingPage } from '../components/Spinner';
 
 export default function PayrollManagement() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [runs, setRuns] = useState<PayrollRun[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [selectedRun, setSelectedRun] = useState<PayrollRun | null>(null);
   const [entries, setEntries] = useState<PayrollEntry[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -50,12 +24,8 @@ export default function PayrollManagement() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [runsRes, empRes] = await Promise.all([
-        payroll.listRuns(),
-        hr.getEmployees(1, 100),
-      ]);
+      const runsRes = await payroll.listRuns();
       setRuns(runsRes.data);
-      setEmployees(empRes.data.items);
     } catch (err: unknown) {
       toast.error(getErrorMessage(err, 'Failed to load payroll data'));
     } finally {
@@ -134,13 +104,11 @@ export default function PayrollManagement() {
     }
   };
   const getStatusBadge = (status: string) => {
-        const styles: Record<string, string> = {
-            Draft: 'bg-gray-100 text-gray-800',
-            Processing: 'bg-blue-100 text-blue-800',
-            Approved: 'bg-green-100 text-green-800',
-            Paid: 'bg-green-100 text-green-800',
-        };
-        return styles[status] || 'bg-gray-100 text-gray-800';
+    const styles: Record<string, string> = {
+      Draft: 'bg-gray-100 text-gray-800',
+      Processing: 'bg-blue-100 text-blue-800',
+      Approved: 'bg-green-100 text-green-800',
+      Paid: 'bg-green-100 text-green-800',
     };
     return styles[status] || 'bg-gray-100 text-gray-800';
   };

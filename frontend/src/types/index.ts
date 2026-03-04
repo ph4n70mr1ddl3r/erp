@@ -339,23 +339,3 @@ export interface Budget {
   status: string;
   lines: BudgetLine[];
 }
-export interface BudgetLine {
-  account_id: string;
-  period: number;
-  amount: number;
-  actual?: number;
-  variance?: number;
-}
-
-export interface Budget {
-  id: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  total_amount: number;
-  total_actual: number;
-  total_variance: number;
-  variance_percent: number;
-  status: string;
-  lines: BudgetLine[];
-}

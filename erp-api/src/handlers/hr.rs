@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use axum::{extract::{Path, Query, State}, Json};
 use chrono::{NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -6,6 +8,18 @@ use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::{BaseEntity, Status, Pagination, ContactInfo, Address};
 use erp_hr::{Employee, Payroll, PayrollRun, EmployeeService, AttendanceService, FullPayrollService};
+
+type PayrollRunRow = (
+    String, String, String, String, String,
+    i64, i64, i64,
+    String, Option<String>, Option<String>, String,
+);
+
+type PayrollEntryRow = (
+    String, String, String,
+    i64, i64, i64,
+    String, String,
+);
 
 #[derive(Deserialize)]
 pub struct CreateEmployeeRequest {
@@ -224,7 +238,7 @@ pub struct PayrollEntryResponse {
 }
 
 pub async fn list_payroll_runs(State(state): State<AppState>) -> ApiResult<Json<Vec<PayrollRunResponse>>> {
-    let rows: Vec<(String, String, String, String, String, i64, i64, i64, String, Option<String>, Option<String>, String)> = sqlx::query_as(
+    let rows: Vec<PayrollRunRow> = sqlx::query_as(
         "SELECT id, run_number, pay_period_start, pay_period_end, pay_date, total_gross, total_deductions, total_net, status, processed_at, approved_at, created_at FROM payroll_runs ORDER BY created_at DESC"
     )
     .fetch_all(&state.pool)
@@ -302,7 +316,7 @@ pub async fn list_payroll_entries(
     State(state): State<AppState>,
     Path(run_id): Path<Uuid>,
 ) -> ApiResult<Json<Vec<PayrollEntryResponse>>> {
-    let rows: Vec<(String, String, String, i64, i64, i64, String, String)> = sqlx::query_as(
+    let rows: Vec<PayrollEntryRow> = sqlx::query_as(
         "SELECT pe.id, pe.payroll_run_id, pe.employee_id, pe.gross_pay, pe.total_deductions, pe.net_pay, pe.payment_method, pe.status FROM payroll_entries pe WHERE pe.payroll_run_id = ?"
     )
     .bind(run_id.to_string())
@@ -326,17 +340,25 @@ pub async fn list_payroll_entries(
 }
 
 async fn get_employee_names(pool: &sqlx::SqlitePool, employee_ids: &[String]) -> ApiResult<HashMap<String, String>> {
-    let mut names = HashMap::new();
+    if employee_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+    
+    let placeholders: Vec<&str> = employee_ids.iter().map(|_| "?").collect();
+    let sql = format!(
+        "SELECT id, first_name, last_name FROM employees WHERE id IN ({})",
+        placeholders.join(",")
+    );
+    
+    let mut query = sqlx::query_as::<_, (String, String, String)>(&sql);
     for id in employee_ids {
-        let row: Option<(String, String)> = sqlx::query_as(
-            "SELECT first_name, last_name FROM employees WHERE id = ?"
-        )
-        .bind(id)
-        .fetch_optional(pool)
-        .await?;
-        if let Some((first, last)) = row {
-            names.insert(id.clone(), format!("{} {}", first, last));
-        }
+        query = query.bind(id);
+    }
+    
+    let rows = query.fetch_all(pool).await?;
+    let mut names = HashMap::new();
+    for (id, first, last) in rows {
+        names.insert(id, format!("{} {}", first, last));
     }
     Ok(names)
 }
