@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{BaseEntity, Status, Pagination, Money, Currency, ContactInfo, Address};
+use erp_core::{BaseEntity, Status, Pagination, ContactInfo, Address};
 use erp_hr::{Employee, Payroll, PayrollRun, EmployeeService, AttendanceService, FullPayrollService};
 
 #[derive(Deserialize)]
@@ -310,7 +310,7 @@ pub async fn list_payroll_entries(
     .await?;
     
     let employee_ids: Vec<String> = rows.iter().map(|r| r.2.clone()).collect();
-    let employee_names = get_employee_names(&state.pool, &employee_ids).await?;
+    let employee_names: HashMap<String, String> = get_employee_names(&state.pool, &employee_ids).await?;
     
     Ok(Json(rows.into_iter().map(|r| PayrollEntryResponse {
         id: Uuid::parse_str(&r.0).unwrap_or_default(),

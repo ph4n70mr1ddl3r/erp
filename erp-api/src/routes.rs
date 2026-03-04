@@ -592,14 +592,6 @@ fn hr_routes(state: AppState) -> Router<AppState> {
         .route("/attendance/check-in", post(handlers::hr::check_in))
         .route("/attendance/check-out", post(handlers::hr::check_out))
         .route(
-            "/payroll",
-            get(handlers::hr::list_payroll).post(handlers::hr::create_payroll),
-        )
-        .route(
-            "/leave-requests",
-            get(handlers::hr::list_leave_requests).post(handlers::hr::create_leave_request),
-        )
-        .route(
             "/payroll-runs",
             get(handlers::hr::list_payroll_runs).post(handlers::hr::create_payroll_run),
         )
