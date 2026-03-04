@@ -1424,6 +1424,113 @@ export interface ThreeWayMatchResult {
   }[];
 }
 
+
+export interface CreateBankAccountRequest {
+  connection_id: string;
+ 
+  account_number: string;
+  account_name: string;
+  account_type: string;
+  currency: string;
+  gl_account_id?: string;
+  company_id: string;
+  bank_branch?: string;
+  iban?: string;
+  routing_number?: string;
+}
+
+export interface ReconcileTransactionRequest {
+  matched_entity_type?: string;
+  matched_entity_id?: string;
+  journal_entry_id?: string;
+}
+
+export interface StartReconciliationRequest {
+  bank_account_id: string;
+  period_start: string;
+  period_end: string;
+  opening_balance: number;
+  closing_balance: number;
+}
+
+export interface ImportStatementRequest {
+  bank_account_id: string;
+  statement_date: string;
+  currency: string;
+  opening_balance: number;
+  closing_balance: number;
+  transactions: {
+    transaction_date: string;
+    value_date?: string;
+    transaction_type: string;
+    amount: number;
+    reference_number?: string;
+    description: string;
+    payee_name?: string;
+  }[];
+}
+
+export interface AutoMatchResult {
+  matched_count: number;
+  matches: ReconciliationMatch[];
+}
+
+export const bank = {
+  listAccounts: () =>
+    api.get<BankAccount[]>('/api/v1/bank/accounts'),
+  
+  getAccount: (id: string) =>
+    api.get<BankAccount>(`/api/v1/bank/accounts/${id}`),
+  
+  createAccount: (data: CreateBankAccountRequest) =>
+    api.post<BankAccount>(`/api/v1/bank/accounts`, data),
+  
+  listStatements: (params?: { account_id?: string }) =>
+    api.get<BankStatement[]>('/api/v1/bank/statements', { params }),
+  
+  getStatement: (id: string) =>
+    api.get<BankStatement>(`/api/v1/bank/statements/${id}`),
+  
+  listStatementTransactions: (id: string) =>
+    api.get<BankTransaction[]>(`/api/v1/bank/statements/${id}/transactions`),
+  
+  importStatement: (data: ImportStatementRequest) =>
+    api.post<BankStatement>('/api/v1/bank/statements', data),
+  
+  listTransactions: (params?: { account_id?: string }) =>
+    api.get<BankTransaction[]>(`/api/v1/bank/transactions`, { params }),
+  
+  reconcileTransaction: (id: string, data: ReconcileTransactionRequest) =>
+    api.post<BankTransaction>(`/api/v1/bank/transactions/${id}/reconcile`, data),
+  
+  unreconcileTransaction: (id: string) =>
+    api.post<BankTransaction>(`/api/v1/bank/transactions/${id}/unreconcile`),
+  
+  listReconciliations: (params?: { account_id?: string }) =>
+    api.get<ReconciliationSession[]>('/api/v1/bank/reconciliations', { params }),
+  
+  getReconciliation: (id: string) =>
+    api.get<ReconciliationSession>(`/api/v1/bank/reconciliations/${id}`),
+  
+  startReconciliation: (data: StartReconciliationRequest) =>
+    api.post<ReconciliationSession>(`/api/v1/bank/reconciliations`, data),
+  
+  completeReconciliation: (id: string) =>
+    api.post<void>(`/api/v1/bank/reconciliations/${id}/complete`),
+  
+  getReconciliationMatches: (id: string) =>
+    api.get<ReconciliationMatch[]>(`/api/v1/bank/reconciliations/${id}/matches`),
+  
+  autoMatchTransactions: (id: string) =>
+    api.post<AutoMatchResult>(`/api/v1/bank/reconciliations/${id}/auto-match`),
+  
+  listUnreconciled: (params?: { account_id?: string }) =>
+    api.get<BankTransaction[]>(`/api/v1/bank/unreconciled`, { params }),
+  
+  getSummary: (accountId: string) =>
+    api.get<ReconciliationSummary>(`/api/v1/bank/summary/${accountId}`),
+};
+
 export const vendorBills = {
   list: (page = 1, perPage = 50) =>
     api.get<Paginated<VendorBill>>(`/api/v1/vendor-bills?page=${page}&per_page=${perPage}`),

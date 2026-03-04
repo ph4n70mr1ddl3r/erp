@@ -192,15 +192,110 @@ export interface ExpenseLine {
   status: string;
 }
 
+export interface BankAccount {
+  id: string;
+  connection_id: string;
+  account_number: string;
+  masked_account_number: string;
+  account_name: string;
+  account_type: string;
+  currency: string;
+  gl_account_id?: string;
+  company_id: string;
+  bank_branch?: string;
+  iban?: string;
+  routing_number?: string;
+  auto_reconcile: boolean;
+  status: string;
+}
+
+export interface BankStatement {
+  id: string;
+  statement_number: string;
+  bank_account_id: string;
+  statement_date: string;
+  currency: string;
+  opening_balance: number;
+  closing_balance: number;
+  total_credits: number;
+  total_debits: number;
+  credit_count: number;
+  debit_count: number;
+  status: string;
+}
+
+export interface BankTransaction {
+  id: string;
+  statement_id: string;
+  bank_account_id: string;
+  transaction_date: string;
+  value_date?: string;
+  transaction_type: string;
+  amount: number;
+  currency: string;
+  reference_number?: string;
+  description: string;
+  payee_name?: string;
+  reconciliation_status: string;
+  matched_entity_type?: string;
+  matched_entity_id?: string;
+  match_confidence?: number;
+}
+
+export interface ReconciliationSession {
+  id: string;
+  session_number: string;
+  bank_account_id: string;
+  period_start: string;
+  period_end: string;
+  total_transactions: number;
+  matched_count: number;
+  unmatched_count: number;
+  opening_balance: number;
+  closing_balance: number;
+  calculated_balance: number;
+  variance: number;
+  status: string;
+  started_at: string;
+  completed_at?: string;
+}
+
+export interface ReconciliationMatch {
+  id: string;
+  session_id: string;
+  bank_transaction_id: string;
+  entity_type: string;
+  entity_id: string;
+  entity_reference: string;
+  transaction_amount: number;
+  entity_amount: number;
+  match_difference: number;
+  match_type: string;
+  match_confidence: number;
+  matched_at: string;
+}
+
+export interface ReconciliationSummary {
+  bank_account_id: string;
+  account_name: string;
+  currency: string;
+  gl_balance: number;
+  bank_balance?: number;
+  unreconciled_count: number;
+  unreconciled_debits: number;
+  unreconciled_credits: number;
+  deposits_in_transit: number;
+  outstanding_checks: number;
+  adjusted_balance: number;
+  variance: number;
+  last_reconciled_at?: string;
+}
 export interface BudgetLine {
   account_id: string;
-  account_code: string;
-  account_name: string;
   period: number;
-  budget_amount: number;
-  actual_amount: number;
-  variance: number;
-  variance_percent: number;
+  amount: number;
+  actual?: number;
+  variance?: number;
 }
 
 export interface Budget {

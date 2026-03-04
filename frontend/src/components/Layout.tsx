@@ -76,6 +76,7 @@ const navItems = [
   { path: '/payments', icon: Wallet, label: 'Payments' },
   { path: '/payment-terms', icon: Clock, label: 'Payment Terms' },
   { path: '/vendor-bills', icon: FileInput, label: 'Vendor Bills' },
+  { path: '/bank-reconciliation', icon: RefreshCw, label: 'Bank Recon' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
