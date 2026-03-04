@@ -39,6 +39,7 @@ import PaymentTerms from './pages/PaymentTerms';
 import VendorBills from './pages/VendorBills';
 import Budgets from './pages/Budgets';
 import BankReconciliation from './pages/BankReconciliation';
+import Payroll from './pages/Payroll';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -94,6 +95,7 @@ function AppRoutes() {
       <Route path="/vendor-bills" element={<PrivateRoute><VendorBills /></PrivateRoute>} />
       <Route path="/budgets" element={<PrivateRoute><Budgets /></PrivateRoute>} />
       <Route path="/bank-reconciliation" element={<PrivateRoute><BankReconciliation /></PrivateRoute>} />
+      <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
     </Routes>
   );
 }

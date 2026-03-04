@@ -57,6 +57,7 @@ const navItems = [
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
   { path: '/hr', icon: UserCog, label: 'HR' },
+  { path: '/payroll', icon: DollarSign, label: 'Payroll' },
   { path: '/leave', icon: Calendar, label: 'Leave' },
   { path: '/expenses', icon: Receipt, label: 'Expenses' },
   { path: '/projects', icon: Folder, label: 'Projects' },

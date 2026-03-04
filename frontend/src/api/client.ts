@@ -1567,3 +1567,14 @@ export const vendorBills = {
   delete: (id: string) =>
     api.delete(`/api/v1/vendor-bills/${id}`),
 };
+
+export const payroll = {
+  listRuns: () => api.get<PayrollRun[]>('/api/v1/hr/payroll-runs'),
+  createRun: (data: { pay_period_start: string; pay_period_end: string; pay_date: string }) =>
+    api.post<PayrollRun>('/api/v1/hr/payroll-runs', data),
+  getRun: (id: string) => api.get<PayrollRun>(`/api/v1/hr/payroll-runs/${id}`),
+  processRun: (id: string) => api.post<PayrollRun>(`/api/v1/hr/payroll-runs/${id}/process`),
+  approveRun: (id: string) => api.post<PayrollRun>(`/api/v1/hr/payroll-runs/${id}/approve`),
+  payRun: (id: string) => api.post<{ status: string }>(`/api/v1/hr/payroll-runs/${id}/pay`),
+  listEntries: (runId: string) => api.get<PayrollEntry[]>(`/api/v1/hr/payroll-runs/${runId}/entries`),
+};

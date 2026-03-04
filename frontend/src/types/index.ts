@@ -290,6 +290,55 @@ export interface ReconciliationSummary {
   variance: number;
   last_reconciled_at?: string;
 }
+
+export interface PayrollRun {
+  id: string;
+  run_number: string;
+  pay_period_start: string;
+  pay_period_end: string;
+  pay_date: string;
+  total_gross: number;
+  total_deductions: number;
+  total_net: number;
+  status: string;
+  processed_at?: string;
+  approved_at?: string;
+  created_at: string;
+}
+
+export interface PayrollEntry {
+  id: string;
+  payroll_run_id: string;
+  employee_id: string;
+  employee_name: string;
+  gross_pay: number;
+  total_deductions: number;
+  net_pay: number;
+  payment_method: string;
+  bank_account?: string;
+  status: string;
+}
+
+export interface BudgetLine {
+  account_id: string;
+  period: number;
+  amount: number;
+  actual?: number;
+  variance?: number;
+}
+
+export interface Budget {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  total_amount: number;
+  total_actual: number;
+  total_variance: number;
+  variance_percent: number;
+  status: string;
+  lines: BudgetLine[];
+}
 export interface BudgetLine {
   account_id: string;
   period: number;
