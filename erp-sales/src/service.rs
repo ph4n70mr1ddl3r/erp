@@ -7,10 +7,10 @@ use crate::models::*;
 use crate::repository::*;
 
 fn rand_digits() -> u16 {
-    (std::time::SystemTime::now()
+    std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.subsec_nanos() as u16)
-        .unwrap_or(0))
+        .unwrap_or(0)
 }
 
 pub struct CustomerService { repo: SqliteCustomerRepository }

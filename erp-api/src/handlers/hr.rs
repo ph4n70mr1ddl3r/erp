@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_core::{BaseEntity, Status, Pagination, ContactInfo, Address, Error};
+use erp_core::{BaseEntity, Status, Pagination, ContactInfo, Address};
 use erp_hr::{Employee, Payroll, PayrollRun, EmployeeService, AttendanceService, FullPayrollService};
 
 type PayrollRunRow = (
@@ -393,10 +393,12 @@ pub struct PerformanceReviewResponse {
     pub submitted_at: Option<String>,
     pub status: String,
 }
+type PerformanceCycleRow = (String, String, String, String, String, String, String, String);
+
 pub async fn list_performance_cycles(
     State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<PerformanceCycleResponse>>> {
-    let rows: Vec<(String, String, String, String, String, String, String, String)> = sqlx::query_as(
+    let rows: Vec<PerformanceCycleRow> = sqlx::query_as(
         "SELECT id, name, cycle_type, start_date, end_date, review_due_date, status, created_at FROM performance_cycles ORDER BY created_at DESC"
     )
     .fetch_all(&state.pool)
@@ -516,7 +518,7 @@ pub async fn list_performance_goals(
         "SELECT id, employee_id, cycle_id, title, description, weight, target_value, actual_value, self_rating, manager_rating, final_rating, status FROM performance_goals ORDER BY title"
     };
     
-    let mut query = sqlx::query_as::<_, PerformanceGoalRow>(&sql);
+    let mut query = sqlx::query_as::<_, PerformanceGoalRow>(sql);
     if let Some(id) = cycle_id {
         query = query.bind(id.to_string());
     }
@@ -638,13 +640,13 @@ pub async fn list_performance_reviews(
     State(state): State<AppState>,
     Query(cycle_id): Query<Option<Uuid>>,
 ) -> ApiResult<Json<Vec<PerformanceReviewResponse>>> {
-    let sql = if let Some(cid) = cycle_id {
+    let sql = if let Some(_cid) = cycle_id {
         "SELECT id, employee_id, reviewer_id, cycle_id, review_type, overall_rating, strengths, areas_for_improvement, comments, submitted_at, status FROM performance_reviews WHERE cycle_id = ? ORDER BY created_at DESC"
     } else {
         "SELECT id, employee_id, reviewer_id, cycle_id, review_type, overall_rating, strengths, areas_for_improvement, comments, submitted_at, status FROM performance_reviews ORDER BY created_at DESC"
     };
     
-    let mut query = sqlx::query_as::<_, PerformanceReviewRow>(&sql);
+    let mut query = sqlx::query_as::<_, PerformanceReviewRow>(sql);
     if let Some(id) = cycle_id {
         query = query.bind(id.to_string());
     }

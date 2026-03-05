@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::NaiveDate;
 use erp_core::{Error, Result, Status};
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -28,11 +28,6 @@ impl PerformanceService {
         if name.is_empty() {
             return Err(Error::validation("Name is required"));
         }
-        let cycle_type_str = match cycle_type {
-            CycleType::MidYear => CycleType::MidYear,
-            CycleType::Quarterly => CycleType::Quarterly,
-            _ => CycleType::Annual,
-        };
         let start_date = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")
             .map_err(|_| Error::validation("Invalid start_date format"))?;
         let end_date = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")
