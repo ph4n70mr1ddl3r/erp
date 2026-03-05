@@ -72,6 +72,7 @@ pub mod projects;
 pub mod promotions;
 pub mod purchasing;
 pub mod push;
+pub mod quality;
 pub mod rbac;
 pub mod reports;
 pub mod reportscheduling;

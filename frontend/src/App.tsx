@@ -42,6 +42,7 @@ import BankReconciliation from './pages/BankReconciliation';
 import Payroll from './pages/Payroll';
 import ShiftScheduling from './pages/ShiftScheduling';
 import VendorScorecards from './pages/VendorScorecards';
+import Quality from './pages/Quality';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -100,6 +101,7 @@ function AppRoutes() {
       <Route path="/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
       <Route path="/shift-scheduling" element={<PrivateRoute><ShiftScheduling /></PrivateRoute>} />
       <Route path="/vendor-scorecards" element={<PrivateRoute><VendorScorecards /></PrivateRoute>} />
+      <Route path="/quality" element={<PrivateRoute><Quality /></PrivateRoute>} />
     </Routes>
   );
 }

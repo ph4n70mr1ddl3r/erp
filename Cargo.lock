@@ -786,6 +786,7 @@ dependencies = [
  "erp-promotions",
  "erp-purchasing",
  "erp-push",
+ "erp-quality",
  "erp-reports",
  "erp-reportscheduling",
  "erp-returns",
@@ -2112,12 +2113,14 @@ dependencies = [
 name = "erp-quality"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "chrono",
  "erp-core",
  "serde",
  "serde_json",
  "sqlx",
+ "tracing",
  "uuid 1.21.0",
 ]
 

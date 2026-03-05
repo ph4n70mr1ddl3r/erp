@@ -117,6 +117,7 @@ erp-stock-transfer.workspace = true
 erp-payment-terms.workspace = true
 erp-vendor-bills.workspace = true
 erp-shift-scheduling.workspace = true
+erp-quality.workspace = true
 async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"

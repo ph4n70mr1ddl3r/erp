@@ -86,6 +86,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/iot", handlers::iot::routes())
         .nest("/automation", handlers::automation::routes())
         .nest("/bundles", bundles_routes())
+        .nest("/quality", handlers::quality::routes())
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
         .route(
             "/workflows",

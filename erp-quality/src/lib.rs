@@ -3,4 +3,5 @@ pub mod repository;
 pub mod service;
 
 pub use models::*;
+pub use repository::*;
 pub use service::*;

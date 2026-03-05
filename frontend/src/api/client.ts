@@ -1710,3 +1710,139 @@ export const shiftScheduling = {
   getDailySchedule: (scheduleId: string, date: string) =>
     api.get<ShiftAssignment[]>(`/api/v1/shift-scheduling/schedules/${scheduleId}/daily?date=${date}`),
 };
+
+export interface QualityInspection {
+  id: string;
+  inspection_number: string;
+  inspection_type: string;
+  entity_type: string;
+  entity_id: string;
+  inspector_id: string | null;
+  inspection_date: string;
+  status: string;
+  result: string | null;
+  notes: string | null;
+  created_at: string;
+  items?: InspectionItem[];
+}
+
+export interface InspectionItem {
+  id: string;
+  inspection_id: string;
+  criterion: string;
+  expected_value: string | null;
+  actual_value: string | null;
+  pass_fail: boolean | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface NonConformanceReport {
+  id: string;
+  ncr_number: string;
+  source_type: string;
+  source_id: string | null;
+  product_id: string | null;
+  description: string;
+  severity: string;
+  status: string;
+  assigned_to: string | null;
+  root_cause: string | null;
+  corrective_action: string | null;
+  preventive_action: string | null;
+  resolution_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QualityAnalytics {
+  total_inspections: number;
+  passed_inspections: number;
+  failed_inspections: number;
+  pass_rate: number;
+  total_ncrs: number;
+  open_ncrs: number;
+  closed_ncrs: number;
+  ncrs_by_severity: Record<string, number>;
+  inspections_by_type: Record<string, number>;
+}
+
+export const quality = {
+  listInspections: (status?: string, inspectionType?: string) => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (inspectionType) params.append('inspection_type', inspectionType);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get<ApiResponse<QualityInspection[]>>(`/api/v1/quality/inspections${query}`);
+  },
+  getInspection: (id: string) =>
+    api.get<QualityInspection>(`/api/v1/quality/inspections/${id}`),
+  createInspection: (data: {
+    inspection_type: string;
+    entity_type: string;
+    entity_id: string;
+    inspector_id?: string;
+    inspection_date: string;
+    notes?: string;
+    items: {
+      criterion: string;
+      expected_value?: string;
+      actual_value?: string;
+      pass_fail?: boolean;
+      notes?: string;
+    }[];
+  }) => api.post<QualityInspection>('/api/v1/quality/inspections', data),
+  startInspection: (id: string) =>
+    api.post<QualityInspection>(`/api/v1/quality/inspections/${id}/start`),
+  completeInspection: (id: string) =>
+    api.post<QualityInspection>(`/api/v1/quality/inspections/${id}/complete`),
+  cancelInspection: (id: string) =>
+    api.post<QualityInspection>(`/api/v1/quality/inspections/${id}/cancel`),
+  deleteInspection: (id: string) =>
+    api.delete(`/api/v1/quality/inspections/${id}`),
+  getInspectionItems: (id: string) =>
+    api.get<ApiResponse<InspectionItem[]>>(`/api/v1/quality/inspections/${id}/items`),
+  addInspectionItem: (id: string, data: {
+    criterion: string;
+    expected_value?: string;
+    actual_value?: string;
+    pass_fail?: boolean;
+    notes?: string;
+  }) => api.post<InspectionItem>(`/api/v1/quality/inspections/${id}/items`, data),
+  updateInspectionItem: (inspectionId: string, itemId: string, data: {
+    actual_value?: string;
+    pass_fail?: boolean;
+    notes?: string;
+  }) => api.put<InspectionItem>(`/api/v1/quality/inspections/${inspectionId}/items/${itemId}`, data),
+
+  listNCRs: (status?: string, severity?: string) => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (severity) params.append('severity', severity);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return api.get<ApiResponse<NonConformanceReport[]>>(`/api/v1/quality/ncrs${query}`);
+  },
+  getNCR: (id: string) =>
+    api.get<NonConformanceReport>(`/api/v1/quality/ncrs/${id}`),
+  createNCR: (data: {
+    source_type: string;
+    source_id?: string;
+    product_id?: string;
+    description: string;
+    severity: string;
+    assigned_to?: string;
+  }) => api.post<NonConformanceReport>('/api/v1/quality/ncrs', data),
+  updateNCR: (id: string, data: {
+    root_cause?: string;
+    corrective_action?: string;
+    preventive_action?: string;
+    status?: string;
+  }) => api.put<NonConformanceReport>(`/api/v1/quality/ncrs/${id}`, data),
+  closeNCR: (id: string) =>
+    api.post<NonConformanceReport>(`/api/v1/quality/ncrs/${id}/close`),
+  deleteNCR: (id: string) =>
+    api.delete(`/api/v1/quality/ncrs/${id}`),
+
+  getAnalytics: () =>
+    api.get<QualityAnalytics>('/api/v1/quality/inspections/analytics'),
+};

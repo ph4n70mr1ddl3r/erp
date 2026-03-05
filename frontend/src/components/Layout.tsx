@@ -37,7 +37,8 @@ import {
   FileInput,
   PiggyBank,
   Star,
-  CalendarClock
+  CalendarClock,
+  CheckCircle
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -59,6 +60,7 @@ const navItems = [
   { path: '/purchasing', icon: Users, label: 'Purchasing' },
   { path: '/vendor-scorecards', icon: Star, label: 'Vendor Ratings' },
   { path: '/manufacturing', icon: Factory, label: 'Manufacturing' },
+  { path: '/quality', icon: CheckCircle, label: 'Quality' },
   { path: '/hr', icon: UserCog, label: 'HR' },
   { path: '/payroll', icon: DollarSign, label: 'Payroll' },
   { path: '/shift-scheduling', icon: CalendarClock, label: 'Shift Scheduling' },
