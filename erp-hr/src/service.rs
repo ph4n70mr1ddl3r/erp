@@ -6,6 +6,13 @@ use chrono::NaiveDate;
 use crate::models::*;
 use crate::repository::*;
 
+fn rand_digits() -> u16 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos() as u16)
+        .unwrap_or(0)
+}
+
 pub struct EmployeeService { repo: SqliteEmployeeRepository }
 impl Default for EmployeeService {
     fn default() -> Self {
@@ -364,7 +371,7 @@ impl ExpenseService {
         lines: Vec<(Uuid, &str, &str, i64)>,
     ) -> Result<ExpenseReport> {
         let now = chrono::Utc::now();
-        let report_number = format!("EXP-{}", now.format("%Y%m%d%H%M%S"));
+        let report_number = format!("EXP-{}-{:04x}", now.format("%Y%m%d%H%M%S"), rand_digits());
         let id = Uuid::new_v4();
         
         let total: i64 = lines.iter().map(|(_, _, _, amt)| *amt).sum();
@@ -649,7 +656,7 @@ impl FullPayrollService {
         let now = chrono::Utc::now();
         let run = PayrollRun {
             id: Uuid::new_v4(),
-            run_number: format!("PR-{}", now.format("%Y%m%d%H%M%S")),
+            run_number: format!("PR-{}-{:04x}", now.format("%Y%m%d%H%M%S"), rand_digits()),
             pay_period_start: chrono::NaiveDate::parse_from_str(period_start, "%Y-%m-%d").map_err(|e| Error::validation(format!("Invalid period_start date: {}", e)))?,
             pay_period_end: chrono::NaiveDate::parse_from_str(period_end, "%Y-%m-%d").map_err(|e| Error::validation(format!("Invalid period_end date: {}", e)))?,
             pay_date: chrono::NaiveDate::parse_from_str(pay_date, "%Y-%m-%d").map_err(|e| Error::validation(format!("Invalid pay_date: {}", e)))?,
@@ -710,25 +717,56 @@ impl From<PayrollRunRow> for PayrollRun {
 
 #[derive(sqlx::FromRow)]
 struct JobPostingRow {
-    id: String, job_code: String, title: String, department_id: Option<String>, location: Option<String>,
-    employment_type: String, min_salary: Option<i64>, max_salary: Option<i64>, description: String,
-    requirements: Option<String>, posted_date: Option<String>, closing_date: Option<String>,
-    openings: i64, filled: i64, status: String, hiring_manager: Option<String>, created_at: String,
+    id: String,
+    job_code: String,
+    title: String,
+    department_id: Option<String>,
+    location: Option<String>,
+    employment_type: String,
+    min_salary: Option<i64>,
+    max_salary: Option<i64>,
+    description: String,
+    requirements: Option<String>,
+    posted_date: Option<String>,
+    closing_date: Option<String>,
+    openings: i64,
+    filled: i64,
+    status: String,
+    hiring_manager: Option<String>,
+    created_at: String,
 }
 
 impl From<JobPostingRow> for JobPosting {
     fn from(r: JobPostingRow) -> Self {
         Self {
-            id: Uuid::parse_str(&r.id).unwrap_or_default(), job_code: r.job_code, title: r.title,
-            department_id: r.department_id.and_then(|id| Uuid::parse_str(&id).ok()), location: r.location,
-            employment_type: match r.employment_type.as_str() { "PartTime" => EmploymentType::PartTime, "Contract" => EmploymentType::Contract, "Temporary" => EmploymentType::Temporary, _ => EmploymentType::FullTime },
-            min_salary: r.min_salary, max_salary: r.max_salary, description: r.description, requirements: r.requirements,
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            job_code: r.job_code,
+            title: r.title,
+            department_id: r.department_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            location: r.location,
+            employment_type: match r.employment_type.as_str() {
+                "PartTime" => EmploymentType::PartTime,
+                "Contract" => EmploymentType::Contract,
+                "Temporary" => EmploymentType::Temporary,
+                _ => EmploymentType::FullTime,
+            },
+            min_salary: r.min_salary,
+            max_salary: r.max_salary,
+            description: r.description,
+            requirements: r.requirements,
             posted_date: r.posted_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
             closing_date: r.closing_date.and_then(|d| chrono::NaiveDate::parse_from_str(&d, "%Y-%m-%d").ok()),
-            openings: r.openings as i32, filled: r.filled as i32,
-            status: match r.status.as_str() { "Published" => JobPostingStatus::Published, "Closed" => JobPostingStatus::Closed, _ => JobPostingStatus::Draft },
+            openings: r.openings as i32,
+            filled: r.filled as i32,
+            status: match r.status.as_str() {
+                "Published" => JobPostingStatus::Published,
+                "Closed" => JobPostingStatus::Closed,
+                _ => JobPostingStatus::Draft,
+            },
             hiring_manager: r.hiring_manager,
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at)
+                .map(|d| d.with_timezone(&chrono::Utc))
+                .unwrap_or_else(|_| chrono::Utc::now()),
         }
     }
 }

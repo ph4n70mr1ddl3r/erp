@@ -82,12 +82,15 @@ pub async fn websocket_handler(
     State(_state): State<AppState>,
     Query(_query): Query<WebSocketQuery>,
 ) -> Response {
-    // WebSocket support requires axum ws feature which may not be enabled
-    // Returning a simple response for now
     Response::builder()
         .status(501)
         .body(axum::body::Body::from("WebSocket not implemented"))
-        .unwrap()
+        .unwrap_or_else(|_| {
+            axum::response::IntoResponse::into_response((
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to build response",
+            ))
+        })
 }
 
 #[derive(Debug, Clone, Serialize)]

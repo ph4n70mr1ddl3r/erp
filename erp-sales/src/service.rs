@@ -6,6 +6,13 @@ use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status, Money, 
 use crate::models::*;
 use crate::repository::*;
 
+fn rand_digits() -> u16 {
+    (std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos() as u16)
+        .unwrap_or(0))
+}
+
 pub struct CustomerService { repo: SqliteCustomerRepository }
 impl Default for CustomerService {
     fn default() -> Self {
@@ -55,7 +62,7 @@ impl SalesOrderService {
         let subtotal: i64 = order.lines.iter().map(|l| l.line_total.amount).sum();
         order.subtotal = Money::new(subtotal, Currency::USD);
         order.total = Money::new(subtotal + order.tax_amount.amount, Currency::USD);
-        order.order_number = format!("SO-{}", Utc::now().format("%Y%m%d%H%M%S"));
+        order.order_number = format!("SO-{}-{:04x}", Utc::now().format("%Y%m%d%H%M%S"), rand_digits());
         order.base = BaseEntity::new();
         order.status = Status::Draft;
         
@@ -96,7 +103,7 @@ impl QuotationService {
         let subtotal: i64 = quote.lines.iter().map(|l| l.line_total.amount).sum();
         quote.subtotal = Money::new(subtotal, Currency::USD);
         quote.total = Money::new(subtotal + quote.tax_amount.amount, Currency::USD);
-        quote.quote_number = format!("QT-{}", Utc::now().format("%Y%m%d%H%M%S"));
+        quote.quote_number = format!("QT-{}-{:04x}", Utc::now().format("%Y%m%d%H%M%S"), rand_digits());
         quote.base = BaseEntity::new();
         quote.status = Status::Draft;
         
@@ -149,7 +156,7 @@ impl LeadService {
         assigned_to: Option<Uuid>,
     ) -> Result<Lead> {
         let now = chrono::Utc::now();
-        let lead_number = format!("LD-{}", now.format("%Y%m%d%H%M%S"));
+        let lead_number = format!("LD-{}-{:04x}", now.format("%Y%m%d%H%M%S"), rand_digits());
         let lead = Lead {
             id: Uuid::new_v4(),
             lead_number: lead_number.clone(),
@@ -340,7 +347,7 @@ impl OpportunityService {
         assigned_to: Option<Uuid>,
     ) -> Result<Opportunity> {
         let now = chrono::Utc::now();
-        let opportunity_number = format!("OP-{}", now.format("%Y%m%d%H%M%S"));
+        let opportunity_number = format!("OP-{}-{:04x}", now.format("%Y%m%d%H%M%S"), rand_digits());
         let opp = Opportunity {
             id: Uuid::new_v4(),
             opportunity_number: opportunity_number.clone(),
@@ -1089,7 +1096,7 @@ impl ContractService {
         terms: Option<&str>,
     ) -> Result<Contract> {
         let now = chrono::Utc::now();
-        let contract_number = format!("CTR-{}", now.format("%Y%m%d%H%M%S"));
+        let contract_number = format!("CTR-{}-{:04x}", now.format("%Y%m%d%H%M%S"), rand_digits());
         let contract = Contract {
             id: Uuid::new_v4(),
             contract_number: contract_number.clone(),
@@ -1412,7 +1419,7 @@ impl SubscriptionService {
         price_override: Option<i64>,
     ) -> Result<Subscription> {
         let now = chrono::Utc::now();
-        let subscription_number = format!("SUB-{}", now.format("%Y%m%d%H%M%S"));
+        let subscription_number = format!("SUB-{}-{:04x}", now.format("%Y%m%d%H%M%S"), rand_digits());
         
         let plan_row = sqlx::query_as::<_, PlanRow>(
             "SELECT billing_interval, trial_days FROM subscription_plans WHERE id = ?"

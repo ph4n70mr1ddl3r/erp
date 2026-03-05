@@ -1,0 +1,17 @@
+[package]
+name = "erp-performance"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+async-trait.workspace = true
+anyhow.workspace = true
+chrono.workspace = true
+erp-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+tracing.workspace = true
+uuid.workspace = true

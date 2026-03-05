@@ -1912,6 +1912,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-performance"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "tracing",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-planning"
 version = "0.1.0"
 dependencies = [
