@@ -37,6 +37,7 @@ async fn run_migrations(pool: &SqlitePool) {
         include_str!("../../migrations/20240101000006_auth.sql"),
         include_str!("../../migrations/20240101000011_extended_features.sql"),
         include_str!("../../migrations/20240101000012_advanced_features.sql"),
+        include_str!("../../migrations/20240101000013_enterprise_features.sql"),
         include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
         include_str!("../../migrations/20260302100000_stock_transfers.sql"),
         include_str!("../../migrations/20240309000000_vendor_bills.sql"),
@@ -1110,4 +1111,167 @@ async fn test_vendor_scorecards() {
     assert!(scorecards.as_array().unwrap().len() == 1);
     assert_eq!(scorecards[0]["period"], "2024-01");
     assert_eq!(scorecards[0]["vendor_id"], vendor_id);
+}
+
+#[tokio::test]
+async fn test_performance_management() {
+    init_test_env();
+    let pool = setup_test_db().await;
+    let app = create_router(create_test_app(pool));
+
+    let (_, register_body) = make_request(&app, Method::POST, "/auth/register", Some(json!({
+        "username": "perfuser",
+        "email": "perf@example.com",
+        "password": "password123",
+        "full_name": "Performance User"
+    }))).await;
+    let token = register_body["token"].as_str().unwrap();
+
+    let employee_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hr/employees")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_number": "EMP-PERF",
+            "first_name": "Performance",
+            "last_name": "Employee",
+            "email": "perf.emp@example.com",
+            "hire_date": "2024-01-01"
+        })).unwrap())).unwrap();
+    let employee_response = app.clone().oneshot(employee_request).await.unwrap();
+    assert_eq!(employee_response.status(), StatusCode::OK);
+    let emp_body_bytes = employee_response.into_body().collect().await.unwrap().to_bytes();
+    let employee: serde_json::Value = serde_json::from_slice(&emp_body_bytes).unwrap();
+    let employee_id = employee["id"].as_str().unwrap();
+
+    let cycle_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hr/performance-cycles")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "name": "2024 Annual Review",
+            "cycle_type": "Annual",
+            "start_date": "2024-01-01",
+            "end_date": "2024-12-31",
+            "review_due_date": "2024-12-15"
+        })).unwrap())).unwrap();
+    let cycle_response = app.clone().oneshot(cycle_request).await.unwrap();
+    assert_eq!(cycle_response.status(), StatusCode::OK);
+    let cycle_body_bytes = cycle_response.into_body().collect().await.unwrap().to_bytes();
+    let cycle: serde_json::Value = serde_json::from_slice(&cycle_body_bytes).unwrap();
+    let cycle_id = cycle["id"].as_str().unwrap();
+    assert_eq!(cycle["name"], "2024 Annual Review");
+    assert_eq!(cycle["cycle_type"], "Annual");
+    assert_eq!(cycle["status"], "Draft");
+
+    let activate_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/hr/performance-cycles/{}/activate", cycle_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let activate_response = app.clone().oneshot(activate_request).await.unwrap();
+    assert_eq!(activate_response.status(), StatusCode::OK);
+    let activate_body_bytes = activate_response.into_body().collect().await.unwrap().to_bytes();
+    let activated_cycle: serde_json::Value = serde_json::from_slice(&activate_body_bytes).unwrap();
+    assert_eq!(activated_cycle["status"], "Active");
+
+    let goal_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hr/performance-goals")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_id": employee_id,
+            "cycle_id": cycle_id,
+            "title": "Complete project deliverables",
+            "description": "Deliver all assigned projects on time",
+            "weight": 50,
+            "target_value": "100%"
+        })).unwrap())).unwrap();
+    let goal_response = app.clone().oneshot(goal_request).await.unwrap();
+    assert_eq!(goal_response.status(), StatusCode::OK);
+    let goal_body_bytes = goal_response.into_body().collect().await.unwrap().to_bytes();
+    let goal: serde_json::Value = serde_json::from_slice(&goal_body_bytes).unwrap();
+    let goal_id = goal["id"].as_str().unwrap();
+    assert_eq!(goal["title"], "Complete project deliverables");
+    assert_eq!(goal["weight"], 50);
+    assert_eq!(goal["status"], "Draft");
+
+    let rating_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/hr/performance-goals/{}/rating", goal_id))
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "rating_type": "self",
+            "rating": 4,
+            "actual_value": "95%"
+        })).unwrap())).unwrap();
+    let rating_response = app.clone().oneshot(rating_request).await.unwrap();
+    assert_eq!(rating_response.status(), StatusCode::OK);
+    let rating_body_bytes = rating_response.into_body().collect().await.unwrap().to_bytes();
+    let rated_goal: serde_json::Value = serde_json::from_slice(&rating_body_bytes).unwrap();
+    assert_eq!(rated_goal["self_rating"], 4);
+    assert_eq!(rated_goal["actual_value"], "95%");
+
+    let review_request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/hr/performance-reviews")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "employee_id": employee_id,
+            "reviewer_id": employee_id,
+            "cycle_id": cycle_id,
+            "review_type": "SelfReview"
+        })).unwrap())).unwrap();
+    let review_response = app.clone().oneshot(review_request).await.unwrap();
+    assert_eq!(review_response.status(), StatusCode::OK);
+    let review_body_bytes = review_response.into_body().collect().await.unwrap().to_bytes();
+    let review: serde_json::Value = serde_json::from_slice(&review_body_bytes).unwrap();
+    let review_id = review["id"].as_str().unwrap();
+    assert_eq!(review["review_type"], "SelfReview");
+    assert_eq!(review["status"], "Draft");
+
+    let submit_review_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/hr/performance-reviews/{}/submit", review_id))
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::from(serde_json::to_string(&json!({
+            "overall_rating": 4,
+            "strengths": "Strong technical skills",
+            "areas_for_improvement": "Communication skills"
+        })).unwrap())).unwrap();
+    let submit_response = app.clone().oneshot(submit_review_request).await.unwrap();
+    assert_eq!(submit_response.status(), StatusCode::OK);
+    let submit_body_bytes = submit_response.into_body().collect().await.unwrap().to_bytes();
+    let submitted_review: serde_json::Value = serde_json::from_slice(&submit_body_bytes).unwrap();
+    assert_eq!(submitted_review["overall_rating"], 4);
+    assert_eq!(submitted_review["strengths"], "Strong technical skills");
+    assert_eq!(submitted_review["status"], "Submitted");
+
+    let list_cycles_request = Request::builder()
+        .method(Method::GET)
+        .uri("/api/v1/hr/performance-cycles")
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let list_cycles_response = app.clone().oneshot(list_cycles_request).await.unwrap();
+    assert_eq!(list_cycles_response.status(), StatusCode::OK);
+    let list_cycles_body = list_cycles_response.into_body().collect().await.unwrap().to_bytes();
+    let cycles: serde_json::Value = serde_json::from_slice(&list_cycles_body).unwrap();
+    assert!(cycles.as_array().unwrap().len() >= 1);
+
+    let close_request = Request::builder()
+        .method(Method::POST)
+        .uri(&format!("/api/v1/hr/performance-cycles/{}/close", cycle_id))
+        .header("Authorization", format!("Bearer {}", token))
+        .body(Body::empty()).unwrap();
+    let close_response = app.clone().oneshot(close_request).await.unwrap();
+    assert_eq!(close_response.status(), StatusCode::OK);
+    let close_body_bytes = close_response.into_body().collect().await.unwrap().to_bytes();
+    let closed_cycle: serde_json::Value = serde_json::from_slice(&close_body_bytes).unwrap();
+    assert_eq!(closed_cycle["status"], "Closed");
 }

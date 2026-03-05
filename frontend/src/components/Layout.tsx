@@ -38,7 +38,8 @@ import {
   PiggyBank,
   Star,
   CalendarClock,
-  CheckCircle
+  CheckCircle,
+  TrendingUp
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -65,6 +66,7 @@ const navItems = [
   { path: '/payroll', icon: DollarSign, label: 'Payroll' },
   { path: '/shift-scheduling', icon: CalendarClock, label: 'Shift Scheduling' },
   { path: '/leave', icon: Calendar, label: 'Leave' },
+  { path: '/performance', icon: TrendingUp, label: 'Performance' },
   { path: '/expenses', icon: Receipt, label: 'Expenses' },
   { path: '/projects', icon: Folder, label: 'Projects' },
   { path: '/service', icon: Headphones, label: 'Service Desk' },

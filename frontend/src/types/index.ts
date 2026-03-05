@@ -408,3 +408,43 @@ export interface ShiftAssignment {
   created_at: string;
   updated_at: string;
 }
+
+export interface PerformanceCycle {
+  id: string;
+  name: string;
+  cycle_type: string;
+  start_date: string;
+  end_date: string;
+  review_due_date: string;
+  status: string;
+  created_at: string;
+}
+
+export interface PerformanceGoal {
+  id: string;
+  employee_id: string;
+  cycle_id: string;
+  title: string;
+  description?: string;
+  weight: number;
+  target_value?: string;
+  actual_value?: string;
+  self_rating?: number;
+  manager_rating?: number;
+  final_rating?: number;
+  status: string;
+}
+
+export interface PerformanceReview {
+  id: string;
+  employee_id: string;
+  reviewer_id: string;
+  cycle_id: string;
+  review_type: string;
+  overall_rating?: number;
+  strengths?: string;
+  areas_for_improvement?: string;
+  comments?: string;
+  submitted_at?: string;
+  status: string;
+}

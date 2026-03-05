@@ -611,6 +611,35 @@ fn hr_routes(state: AppState) -> Router<AppState> {
             "/payroll-runs/:id/entries",
             get(handlers::hr::list_payroll_entries),
         )
+        .route(
+            "/performance-cycles",
+            get(handlers::hr::list_performance_cycles).post(handlers::hr::create_performance_cycle),
+        )
+        .route(
+            "/performance-cycles/:id/activate",
+            post(handlers::hr::activate_performance_cycle),
+        )
+        .route(
+            "/performance-cycles/:id/close",
+            post(handlers::hr::close_performance_cycle),
+        )
+        .route(
+            "/performance-goals",
+            get(handlers::hr::list_performance_goals).post(handlers::hr::create_performance_goal),
+        )
+        .route(
+            "/performance-goals/:id/rating",
+            post(handlers::hr::update_goal_rating),
+        )
+        .route(
+            "/performance-reviews",
+            get(handlers::hr::list_performance_reviews)
+                .post(handlers::hr::create_performance_review),
+        )
+        .route(
+            "/performance-reviews/:id/submit",
+            post(handlers::hr::submit_performance_review),
+        )
         .with_state(state)
 }
 

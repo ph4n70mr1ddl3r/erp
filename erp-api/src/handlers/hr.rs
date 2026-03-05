@@ -546,7 +546,7 @@ pub async fn create_performance_goal(
 ) -> ApiResult<Json<PerformanceGoalResponse>> {
     let id = Uuid::new_v4();
     sqlx::query(
-        "INSERT INTO performance_goals (id, employee_id, cycle_id, title, description, weight, target_value, actual_value, self_rating, manager_rating, final_rating, status) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, 'Draft')"
+        "INSERT INTO performance_goals (id, employee_id, cycle_id, title, description, weight, target_value, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'Draft')"
     )
     .bind(id.to_string())
     .bind(req.employee_id.to_string())
@@ -584,21 +584,18 @@ pub async fn update_goal_rating(
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateGoalRatingRequest>,
 ) -> ApiResult<Json<PerformanceGoalResponse>> {
-    let now = Utc::now().to_rfc3339();
     match req.rating_type.as_str() {
         "self" => {
-            sqlx::query("UPDATE performance_goals SET self_rating = ?, actual_value = ?, status = 'Pending', updated_at = ? WHERE id = ?")
+            sqlx::query("UPDATE performance_goals SET self_rating = ?, actual_value = ?, status = 'Pending' WHERE id = ?")
                 .bind(req.rating)
                 .bind(&req.actual_value)
-                .bind(&now)
                 .bind(id.to_string())
                 .execute(&state.pool)
                 .await?;
         }
         "manager" => {
-            sqlx::query("UPDATE performance_goals SET manager_rating = ?, status = 'Approved', updated_at = ? WHERE id = ?")
+            sqlx::query("UPDATE performance_goals SET manager_rating = ?, status = 'Approved' WHERE id = ?")
                 .bind(req.rating)
-                .bind(&now)
                 .bind(id.to_string())
                 .execute(&state.pool)
                 .await?;
@@ -673,7 +670,7 @@ pub async fn create_performance_review(
 ) -> ApiResult<Json<PerformanceReviewResponse>> {
     let id = Uuid::new_v4();
     sqlx::query(
-        "INSERT INTO performance_reviews (id, employee_id, reviewer_id, cycle_id, review_type, overall_rating, strengths, areas_for_improvement, comments, submitted_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, NULL, 'Draft')"
+        "INSERT INTO performance_reviews (id, employee_id, reviewer_id, cycle_id, review_type, status) VALUES (?, ?, ?, ?, ?, 'Draft')"
     )
     .bind(id.to_string())
     .bind(req.employee_id.to_string())

@@ -2,7 +2,8 @@ import axios from 'axios';
 import type { 
   AuthResponse, User, Paginated, Account, JournalEntry, Product, 
   Warehouse, Customer, SalesOrder, Vendor, PurchaseOrder, Employee,
-  Lead, Opportunity, SupplierScorecard
+  Lead, Opportunity, SupplierScorecard, PerformanceCycle, PerformanceGoal,
+  PerformanceReview
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || '';
@@ -1845,4 +1846,55 @@ export const quality = {
 
   getAnalytics: () =>
     api.get<QualityAnalytics>('/api/v1/quality/inspections/analytics'),
+};
+
+export const performance = {
+  listCycles: () =>
+    api.get<PerformanceCycle[]>('/api/v1/hr/performance-cycles'),
+  createCycle: (data: {
+    name: string;
+    cycle_type: string;
+    start_date: string;
+    end_date: string;
+    review_due_date: string;
+  }) => api.post<PerformanceCycle>('/api/v1/hr/performance-cycles', data),
+  activateCycle: (id: string) =>
+    api.post<PerformanceCycle>(`/api/v1/hr/performance-cycles/${id}/activate`),
+  closeCycle: (id: string) =>
+    api.post<PerformanceCycle>(`/api/v1/hr/performance-cycles/${id}/close`),
+
+  listGoals: (cycleId?: string) => {
+    const query = cycleId ? `?cycle_id=${cycleId}` : '';
+    return api.get<PerformanceGoal[]>(`/api/v1/hr/performance-goals${query}`);
+  },
+  createGoal: (data: {
+    employee_id: string;
+    cycle_id: string;
+    title: string;
+    description?: string;
+    weight: number;
+    target_value?: string;
+  }) => api.post<PerformanceGoal>('/api/v1/hr/performance-goals', data),
+  updateGoalRating: (id: string, data: {
+    rating_type: string;
+    rating: number;
+    actual_value?: string;
+  }) => api.post<PerformanceGoal>(`/api/v1/hr/performance-goals/${id}/rating`, data),
+
+  listReviews: (cycleId?: string) => {
+    const query = cycleId ? `?cycle_id=${cycleId}` : '';
+    return api.get<PerformanceReview[]>(`/api/v1/hr/performance-reviews${query}`);
+  },
+  createReview: (data: {
+    employee_id: string;
+    reviewer_id: string;
+    cycle_id: string;
+    review_type: string;
+  }) => api.post<PerformanceReview>('/api/v1/hr/performance-reviews', data),
+  submitReview: (id: string, data: {
+    overall_rating: number;
+    strengths?: string;
+    areas_for_improvement?: string;
+    comments?: string;
+  }) => api.post<PerformanceReview>(`/api/v1/hr/performance-reviews/${id}/submit`, data),
 };
