@@ -365,3 +365,46 @@ export interface VendorPerformance {
   notes?: string;
   created_at: string;
 }
+
+export interface Shift {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  break_minutes: number;
+  grace_period_minutes: number;
+  color_code?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Schedule {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  department_id?: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  schedule_id: string;
+  shift_id: string;
+  employee_id: string;
+  assignment_date: string;
+  actual_start_time?: string;
+  actual_end_time?: string;
+  overtime_minutes: number;
+  notes?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}

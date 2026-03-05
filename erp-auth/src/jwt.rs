@@ -17,7 +17,9 @@ pub fn init_jwt_secret(secret: &str) -> Result<()> {
     let mut hasher = Sha256::new();
     Digest::update(&mut hasher, secret.as_bytes());
     let key: [u8; 32] = hasher.finalize().into();
-    let _ = JWT_SECRET.set(key);
+    JWT_SECRET
+        .set(key)
+        .map_err(|_| anyhow::anyhow!("JWT secret already initialized"))?;
     Ok(())
 }
 
@@ -99,6 +101,7 @@ mod tests {
     use super::*;
 
     fn init_test() {
+        let _ = JWT_SECRET.set([0u8; 32]);
         init_jwt_secret("test-secret-key-must-be-at-least-32-chars")
             .expect("Failed to init JWT secret");
     }

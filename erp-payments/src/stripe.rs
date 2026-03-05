@@ -276,7 +276,9 @@ impl StripeService {
                 if let Ok(Some(mut payment_intent)) = StripeRepository::get_payment_intent_by_stripe_id(pool, intent_id).await {
                     payment_intent.status = "refunded".to_string();
                     payment_intent.updated_at = Utc::now();
-                    let _ = StripeRepository::update_payment_intent_status(pool, &payment_intent).await;
+                    if let Err(e) = StripeRepository::update_payment_intent_status(pool, &payment_intent).await {
+                        tracing::warn!("Failed to update payment intent status after refund: {}", e);
+                    }
                 }
             }
         }

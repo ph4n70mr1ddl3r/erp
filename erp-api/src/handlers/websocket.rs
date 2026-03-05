@@ -59,7 +59,9 @@ impl WebSocketManagerInner {
     }
 
     pub fn broadcast(&self, message: WebSocketMessage) {
-        let _ = self.tx.send(message);
+        if self.tx.send(message).is_err() {
+            tracing::debug!("No active subscribers to receive websocket message");
+        }
     }
 
     pub fn subscribe(&self) -> broadcast::Receiver<WebSocketMessage> {

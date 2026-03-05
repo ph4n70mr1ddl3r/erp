@@ -339,7 +339,7 @@ impl WebhookSignature {
         let payload_with_timestamp = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
 
         let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes())
-            .expect("HMAC can take key of any size");
+            .expect("HMAC-SHA256 accepts keys of any size");
         mac.update(payload_with_timestamp.as_bytes());
         let result = mac.finalize();
         let signature = hex::encode(result.into_bytes());

@@ -1,6 +1,7 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
+    Extension,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -8,6 +9,7 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::error::ApiResult;
+use crate::handlers::auth::AuthUser;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateAPIKeyRequest {
@@ -41,9 +43,11 @@ pub struct APIKeyWithSecretResponse {
 
 pub async fn create_api_key(
     State(state): State<AppState>,
+    Extension(AuthUser(user)): Extension<AuthUser>,
     Json(req): Json<CreateAPIKeyRequest>,
 ) -> ApiResult<Json<APIKeyWithSecretResponse>> {
-    let created_by = Uuid::nil();
+    let created_by = Uuid::parse_str(&user.user_id)
+        .map_err(|_| erp_core::Error::validation("Invalid user ID in token"))?;
     let expires_at = req.expires_at.as_deref()
         .map(chrono::DateTime::parse_from_rfc3339)
         .transpose()
@@ -133,9 +137,11 @@ pub struct ConnectionResponse {
 
 pub async fn create_connection(
     State(state): State<AppState>,
+    Extension(AuthUser(user)): Extension<AuthUser>,
     Json(req): Json<CreateConnectionRequest>,
 ) -> ApiResult<Json<ConnectionResponse>> {
-    let created_by = Uuid::nil();
+    let created_by = Uuid::parse_str(&user.user_id)
+        .map_err(|_| erp_core::Error::validation("Invalid user ID in token"))?;
     let connection_type = parse_connection_type(&req.connection_type)?;
     let auth_type = parse_auth_type(&req.auth_type)?;
     

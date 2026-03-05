@@ -1584,3 +1584,129 @@ export const payroll = {
   payRun: (id: string) => api.post<{ status: string }>(`/api/v1/hr/payroll-runs/${id}/pay`),
   listEntries: (runId: string) => api.get<PayrollEntry[]>(`/api/v1/hr/payroll-runs/${runId}/entries`),
 };
+
+export interface Shift {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  start_time: string;
+  end_time: string;
+  break_minutes: number;
+  grace_period_minutes: number;
+  color_code?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Schedule {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  department_id?: string;
+  start_date: string;
+  end_date: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShiftAssignment {
+  id: string;
+  schedule_id: string;
+  shift_id: string;
+  employee_id: string;
+  assignment_date: string;
+  actual_start_time?: string;
+  actual_end_time?: string;
+  overtime_minutes: number;
+  notes?: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const shiftScheduling = {
+  listShifts: (page = 1, perPage = 50) =>
+    api.get<Paginated<Shift>>(`/api/v1/shift-scheduling/shifts?page=${page}&per_page=${perPage}`),
+  listActiveShifts: () =>
+    api.get<Shift[]>('/api/v1/shift-scheduling/shifts/active'),
+  getShift: (id: string) =>
+    api.get<Shift>(`/api/v1/shift-scheduling/shifts/${id}`),
+  createShift: (data: {
+    code: string;
+    name: string;
+    description?: string;
+    start_time: string;
+    end_time: string;
+    break_minutes?: number;
+    grace_period_minutes?: number;
+    color_code?: string;
+  }) => api.post<Shift>('/api/v1/shift-scheduling/shifts', data),
+  updateShift: (id: string, data: Partial<{
+    name: string;
+    description: string;
+    start_time: string;
+    end_time: string;
+    break_minutes: number;
+    grace_period_minutes: number;
+    color_code: string;
+    status: string;
+  }>) => api.put<Shift>(`/api/v1/shift-scheduling/shifts/${id}`, data),
+  deleteShift: (id: string) =>
+    api.delete(`/api/v1/shift-scheduling/shifts/${id}`),
+
+  listSchedules: (page = 1, perPage = 50) =>
+    api.get<Paginated<Schedule>>(`/api/v1/shift-scheduling/schedules?page=${page}&per_page=${perPage}`),
+  getSchedule: (id: string) =>
+    api.get<Schedule>(`/api/v1/shift-scheduling/schedules/${id}`),
+  createSchedule: (data: {
+    code: string;
+    name: string;
+    description?: string;
+    department_id?: string;
+    start_date: string;
+    end_date: string;
+  }) => api.post<Schedule>('/api/v1/shift-scheduling/schedules', data),
+  updateSchedule: (id: string, data: Partial<{
+    name: string;
+    description: string;
+    department_id: string;
+    start_date: string;
+    end_date: string;
+    status: string;
+  }>) => api.put<Schedule>(`/api/v1/shift-scheduling/schedules/${id}`, data),
+  deleteSchedule: (id: string) =>
+    api.delete(`/api/v1/shift-scheduling/schedules/${id}`),
+  publishSchedule: (id: string) =>
+    api.post<Schedule>(`/api/v1/shift-scheduling/schedules/${id}/publish`),
+
+  listAssignments: (scheduleId: string) =>
+    api.get<ShiftAssignment[]>(`/api/v1/shift-scheduling/schedules/${scheduleId}/assignments`),
+  listEmployeeAssignments: (employeeId: string, fromDate: string, toDate: string) =>
+    api.get<ShiftAssignment[]>(`/api/v1/shift-scheduling/assignments?employee_id=${employeeId}&from_date=${fromDate}&to_date=${toDate}`),
+  getAssignment: (id: string) =>
+    api.get<ShiftAssignment>(`/api/v1/shift-scheduling/assignments/${id}`),
+  createAssignment: (data: {
+    schedule_id: string;
+    shift_id: string;
+    employee_id: string;
+    assignment_date: string;
+    notes?: string;
+  }) => api.post<ShiftAssignment>('/api/v1/shift-scheduling/assignments', data),
+  updateAssignment: (id: string, data: Partial<{
+    notes: string;
+    status: string;
+    overtime_minutes: number;
+  }>) => api.put<ShiftAssignment>(`/api/v1/shift-scheduling/assignments/${id}`, data),
+  deleteAssignment: (id: string) =>
+    api.delete(`/api/v1/shift-scheduling/assignments/${id}`),
+  clockIn: (id: string) =>
+    api.post<ShiftAssignment>(`/api/v1/shift-scheduling/assignments/${id}/clock-in`),
+  clockOut: (id: string) =>
+    api.post<ShiftAssignment>(`/api/v1/shift-scheduling/assignments/${id}/clock-out`),
+  getDailySchedule: (scheduleId: string, date: string) =>
+    api.get<ShiftAssignment[]>(`/api/v1/shift-scheduling/schedules/${scheduleId}/daily?date=${date}`),
+};

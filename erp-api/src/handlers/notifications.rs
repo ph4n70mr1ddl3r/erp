@@ -1,6 +1,7 @@
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
+    Extension,
     Json,
 };
 use serde::{Deserialize, Serialize};
@@ -8,6 +9,7 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::error::ApiResult;
+use crate::handlers::auth::AuthUser;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateNotificationRequest {
@@ -83,9 +85,11 @@ pub async fn send_notification(
 
 pub async fn list_notifications(
     State(state): State<AppState>,
+    Extension(AuthUser(user)): Extension<AuthUser>,
     Query(query): Query<NotificationListQuery>,
 ) -> ApiResult<Json<Vec<NotificationResponse>>> {
-    let user_id = Uuid::nil();
+    let user_id = Uuid::parse_str(&user.user_id)
+        .map_err(|_| erp_core::Error::validation("Invalid user ID in token"))?;
     let limit = query.limit.unwrap_or(50);
     let offset = query.offset.unwrap_or(0);
     
@@ -119,8 +123,10 @@ pub async fn mark_notification_read(
 
 pub async fn mark_all_notifications_read(
     State(state): State<AppState>,
+    Extension(AuthUser(user)): Extension<AuthUser>,
 ) -> ApiResult<StatusCode> {
-    let user_id = Uuid::nil();
+    let user_id = Uuid::parse_str(&user.user_id)
+        .map_err(|_| erp_core::Error::validation("Invalid user ID in token"))?;
     let service = erp_notifications::NotificationService::new();
     service.mark_all_read(&state.pool, user_id).await?;
     Ok(StatusCode::OK)
@@ -128,8 +134,10 @@ pub async fn mark_all_notifications_read(
 
 pub async fn unread_count(
     State(state): State<AppState>,
+    Extension(AuthUser(user)): Extension<AuthUser>,
 ) -> ApiResult<Json<i64>> {
-    let user_id = Uuid::nil();
+    let user_id = Uuid::parse_str(&user.user_id)
+        .map_err(|_| erp_core::Error::validation("Invalid user ID in token"))?;
     let service = erp_notifications::NotificationService::new();
     let count = service.unread_count(&state.pool, user_id).await?;
     Ok(Json(count))

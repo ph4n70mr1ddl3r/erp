@@ -1,12 +1,14 @@
 use axum::{
     extract::{Path, State},
     routing::{get, post},
+    Extension,
     Json, Router,
 };
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
+use crate::handlers::auth::AuthUser;
 use erp_core::BaseEntity;
 use erp_monitoring::{
     MonitoringService, HealthCheck, HealthCheckType, AlertRule,
@@ -222,10 +224,13 @@ pub async fn list_alerts(State(state): State<AppState>) -> ApiResult<Json<Vec<Al
 
 pub async fn acknowledge_alert(
     State(state): State<AppState>,
+    Extension(AuthUser(user)): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
+    let user_id = Uuid::parse_str(&user.user_id)
+        .map_err(|_| erp_core::Error::validation("Invalid user ID in token"))?;
     let service = MonitoringService::new();
-    let _ = service.acknowledge_alert(&state.pool, id, Uuid::nil()).await?;
+    service.acknowledge_alert(&state.pool, id, user_id).await?;
     Ok(Json(serde_json::json!({ "status": "acknowledged" })))
 }
 
@@ -234,7 +239,7 @@ pub async fn resolve_alert(
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let service = MonitoringService::new();
-    let _ = service.resolve_alert(&state.pool, id, None).await?;
+    service.resolve_alert(&state.pool, id, None).await?;
     Ok(Json(serde_json::json!({ "status": "resolved" })))
 }
 

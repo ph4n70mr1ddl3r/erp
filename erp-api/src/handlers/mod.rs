@@ -84,6 +84,7 @@ pub mod search;
 pub mod security;
 pub mod service;
 pub mod shipping;
+pub mod shift_scheduling;
 pub mod signing;
 pub mod sourcing;
 pub mod spend_analytics;

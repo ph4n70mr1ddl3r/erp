@@ -1,5 +1,5 @@
 [package]
-name = "erp-payments"
+name = "erp-shift-scheduling"
 version.workspace = true
 edition.workspace = true
 
@@ -12,12 +12,4 @@ sqlx.workspace = true
 chrono.workspace = true
 uuid.workspace = true
 async-trait.workspace = true
-thiserror.workspace = true
-reqwest.workspace = true
-sha2.workspace = true
-hmac.workspace = true
-hex.workspace = true
-base64.workspace = true
-anyhow.workspace = true
-stripe-rust.workspace = true
 tracing.workspace = true

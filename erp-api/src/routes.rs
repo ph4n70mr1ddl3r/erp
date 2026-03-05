@@ -281,6 +281,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         )
         .nest("/stock-transfers", handlers::stock_transfer::routes())
         .nest("/vendor-bills", handlers::vendor_bills::routes())
+        .nest("/shift-scheduling", shift_scheduling_routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
@@ -1124,4 +1125,65 @@ fn bundles_routes() -> Router<AppState> {
             get(handlers::bundles::calculate_price),
         )
         .route("/:id/analytics", get(handlers::bundles::get_analytics))
+}
+
+fn shift_scheduling_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/shifts",
+            get(handlers::shift_scheduling::list_shifts)
+                .post(handlers::shift_scheduling::create_shift),
+        )
+        .route(
+            "/shifts/active",
+            get(handlers::shift_scheduling::list_active_shifts),
+        )
+        .route(
+            "/shifts/:id",
+            get(handlers::shift_scheduling::get_shift)
+                .put(handlers::shift_scheduling::update_shift)
+                .delete(handlers::shift_scheduling::delete_shift),
+        )
+        .route(
+            "/schedules",
+            get(handlers::shift_scheduling::list_schedules)
+                .post(handlers::shift_scheduling::create_schedule),
+        )
+        .route(
+            "/schedules/:id",
+            get(handlers::shift_scheduling::get_schedule)
+                .put(handlers::shift_scheduling::update_schedule)
+                .delete(handlers::shift_scheduling::delete_schedule),
+        )
+        .route(
+            "/schedules/:id/publish",
+            post(handlers::shift_scheduling::publish_schedule),
+        )
+        .route(
+            "/schedules/:id/assignments",
+            get(handlers::shift_scheduling::list_assignments),
+        )
+        .route(
+            "/schedules/:id/daily",
+            get(handlers::shift_scheduling::get_daily_schedule),
+        )
+        .route(
+            "/assignments",
+            get(handlers::shift_scheduling::list_employee_assignments)
+                .post(handlers::shift_scheduling::create_assignment),
+        )
+        .route(
+            "/assignments/:id",
+            get(handlers::shift_scheduling::get_assignment)
+                .put(handlers::shift_scheduling::update_assignment)
+                .delete(handlers::shift_scheduling::delete_assignment),
+        )
+        .route(
+            "/assignments/:id/clock-in",
+            post(handlers::shift_scheduling::clock_in),
+        )
+        .route(
+            "/assignments/:id/clock-out",
+            post(handlers::shift_scheduling::clock_out),
+        )
 }
