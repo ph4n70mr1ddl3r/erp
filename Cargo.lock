@@ -741,6 +741,7 @@ dependencies = [
  "erp-core",
  "erp-cpq",
  "erp-credit",
+ "erp-credit-notes",
  "erp-demand",
  "erp-documents",
  "erp-eam",
