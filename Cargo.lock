@@ -770,6 +770,7 @@ dependencies = [
  "erp-mdm",
  "erp-monitoring",
  "erp-mrp",
+ "erp-notes",
  "erp-notifications",
  "erp-ocr",
  "erp-partner",
@@ -1807,6 +1808,22 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
+ "uuid 1.21.0",
+]
+
+[[package]]
+name = "erp-notes"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
  "uuid 1.21.0",
 ]
 

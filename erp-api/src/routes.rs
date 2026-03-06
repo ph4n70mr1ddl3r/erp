@@ -283,6 +283,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/stock-transfers", handlers::stock_transfer::routes())
         .nest("/vendor-bills", handlers::vendor_bills::routes())
         .nest("/shift-scheduling", shift_scheduling_routes())
+        .nest("/notes", handlers::notes::routes())
         .route("/ws-stats", get(handlers::websocket::get_ws_stats))
 }
 
