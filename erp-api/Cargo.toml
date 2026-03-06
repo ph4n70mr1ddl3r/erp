@@ -119,6 +119,7 @@ erp-vendor-bills.workspace = true
 erp-shift-scheduling.workspace = true
 erp-notes.workspace = true
 erp-quality.workspace = true
+erp-product-variants.workspace = true
 async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"
