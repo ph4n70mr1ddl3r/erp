@@ -162,3 +162,53 @@ pub struct LandedCostAllocation {
     pub allocated_amount: Money,
     pub allocation_factor: f64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VendorInvoice {
+    pub base: BaseEntity,
+    pub invoice_number: String,
+    pub vendor_id: Uuid,
+    pub purchase_order_id: Uuid,
+    pub invoice_date: DateTime<Utc>,
+    pub due_date: DateTime<Utc>,
+    pub lines: Vec<VendorInvoiceLine>,
+    pub subtotal: Money,
+    pub tax_amount: Money,
+    pub total: Money,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VendorInvoiceLine {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub description: String,
+    pub quantity: i64,
+    pub unit_price: Money,
+    pub line_total: Money,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThreeWayMatch {
+    pub id: Uuid,
+    pub invoice_id: Uuid,
+    pub purchase_order_id: Uuid,
+    pub goods_receipt_id: Uuid,
+    pub price_matched: bool,
+    pub quantity_matched: bool,
+    pub price_variance: i64,
+    pub quantity_variance: i64,
+    pub status: MatchStatus,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum MatchStatus {
+    Pending,
+    Matched,
+    Variance,
+    Rejected,
+}
+

@@ -384,8 +384,84 @@ impl LandedCostService {
     }
 }
 
+pub struct ThreeWayMatchService;
+
+impl ThreeWayMatchService {
+    pub fn perform_match(
+        invoice: &VendorInvoice,
+        po: &PurchaseOrder,
+        gr: &GoodsReceipt,
+    ) -> Result<ThreeWayMatch> {
+        if invoice.purchase_order_id != po.base.id {
+            return Err(Error::validation("Invoice PO ID does not match Purchase Order ID"));
+        }
+        if gr.purchase_order_id != po.base.id {
+            return Err(Error::validation("Goods Receipt PO ID does not match Purchase Order ID"));
+        }
+
+        let mut price_matched = true;
+        let mut quantity_matched = true;
+        let mut price_variance = 0;
+        let mut quantity_variance = 0;
+
+        for inv_line in &invoice.lines {
+            // Find corresponding PO line
+            let po_line = po.lines.iter()
+                .find(|l| l.product_id == inv_line.product_id)
+                .ok_or_else(|| Error::validation(&format!("Product {} not found in PO", inv_line.product_id)))?;
+
+            // Find corresponding GR line
+            let gr_line = gr.lines.iter()
+                .find(|l| l.product_id == inv_line.product_id)
+                .ok_or_else(|| Error::validation(&format!("Product {} not found in Goods Receipt", inv_line.product_id)))?;
+
+            // 1. Price Match (Invoice vs PO)
+            if inv_line.unit_price.amount != po_line.unit_price.amount {
+                price_matched = false;
+                price_variance += (inv_line.unit_price.amount - po_line.unit_price.amount) * inv_line.quantity;
+            }
+
+            // 2. Quantity Match (Invoice vs Goods Receipt)
+            if inv_line.quantity != gr_line.quantity_received {
+                quantity_matched = false;
+                quantity_variance += inv_line.quantity - gr_line.quantity_received;
+            }
+        }
+
+        let status = if price_matched && quantity_matched {
+            MatchStatus::Matched
+        } else {
+            MatchStatus::Variance
+        };
+
+        let notes = if status == MatchStatus::Variance {
+            Some(format!(
+                "Price Variance: {}, Quantity Variance: {}",
+                price_variance, quantity_variance
+            ))
+        } else {
+            None
+        };
+
+        Ok(ThreeWayMatch {
+            id: Uuid::new_v4(),
+            invoice_id: invoice.base.id,
+            purchase_order_id: po.base.id,
+            goods_receipt_id: gr.base.id,
+            price_matched,
+            quantity_matched,
+            price_variance,
+            quantity_variance,
+            status,
+            notes,
+            created_at: Utc::now(),
+        })
+    }
+}
+
 #[derive(sqlx::FromRow)]
 struct ScorecardRow {
+
     id: String,
     vendor_id: String,
     period: String,
