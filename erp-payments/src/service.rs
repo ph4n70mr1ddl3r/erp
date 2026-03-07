@@ -13,7 +13,6 @@ pub struct PaymentService<
     repo: P,
     refund_repo: R,
     allocation_repo: A,
-    pool: SqlitePool,
 }
 
 impl PaymentService<SqlitePaymentRepository, SqliteRefundRepository, SqlitePaymentAllocationRepository> {
@@ -21,8 +20,7 @@ impl PaymentService<SqlitePaymentRepository, SqliteRefundRepository, SqlitePayme
         Self {
             repo: SqlitePaymentRepository::new(pool.clone()),
             refund_repo: SqliteRefundRepository::new(pool.clone()),
-            allocation_repo: SqlitePaymentAllocationRepository::new(pool.clone()),
-            pool,
+            allocation_repo: SqlitePaymentAllocationRepository::new(pool),
         }
     }
 }
@@ -33,18 +31,17 @@ where
     R: RefundRepository,
     A: PaymentAllocationRepository,
 {
-    pub fn with_repos(repo: P, refund_repo: R, allocation_repo: A, pool: SqlitePool) -> Self {
+    pub fn with_repos(repo: P, refund_repo: R, allocation_repo: A) -> Self {
         Self {
             repo,
             refund_repo,
             allocation_repo,
-            pool,
         }
     }
 
     pub async fn create(&self, req: CreatePaymentRequest, user_id: Option<Uuid>) -> Result<Payment> {
         let now = Utc::now();
-        let payment_number = format!("PAY-{}", now.format("%Y%m%d%H%M%S"));
+        let payment_number = format!("PAY-{}-{}", now.format("%Y%m%d%H%M%S"), &Uuid::new_v4().to_string()[0..8]);
         
         let payment = Payment {
             base: BaseEntity {
@@ -119,7 +116,7 @@ where
         }
         
         let now = Utc::now();
-        let refund_number = format!("RFD-{}", now.format("%Y%m%d%H%M%S"));
+        let refund_number = format!("RFD-{}-{}", now.format("%Y%m%d%H%M%S"), &Uuid::new_v4().to_string()[0..8]);
         
         let refund = Refund {
             base: BaseEntity {
@@ -147,14 +144,7 @@ where
             PaymentStatus::PartiallyRefunded
         };
         
-        sqlx::query(
-            r#"UPDATE payments SET refunded_amount = ?, status = ?, refund_reason = ? WHERE id = ?"#
-        )
-        .bind(new_refunded)
-        .bind(new_status)
-        .bind(&refund.reason)
-        .bind(req.payment_id)
-        .execute(&self.pool).await?;
+        self.repo.update_refunded_amount(req.payment_id, new_refunded, new_status, Some(refund.reason.clone())).await?;
         
         Ok(refund)
     }
@@ -168,7 +158,6 @@ pub struct GatewayService<
     repo: G,
     payment_repo: P,
     allocation_repo: A,
-    pool: SqlitePool,
 }
 
 impl GatewayService<SqliteGatewayRepository, SqlitePaymentRepository, SqlitePaymentAllocationRepository> {
@@ -176,8 +165,7 @@ impl GatewayService<SqliteGatewayRepository, SqlitePaymentRepository, SqlitePaym
         Self {
             repo: SqliteGatewayRepository::new(pool.clone()),
             payment_repo: SqlitePaymentRepository::new(pool.clone()),
-            allocation_repo: SqlitePaymentAllocationRepository::new(pool.clone()),
-            pool,
+            allocation_repo: SqlitePaymentAllocationRepository::new(pool),
         }
     }
 }
@@ -188,12 +176,11 @@ where
     P: PaymentRepository,
     A: PaymentAllocationRepository,
 {
-    pub fn with_repos(repo: G, payment_repo: P, allocation_repo: A, pool: SqlitePool) -> Self {
+    pub fn with_repos(repo: G, payment_repo: P, allocation_repo: A) -> Self {
         Self {
             repo,
             payment_repo,
             allocation_repo,
-            pool,
         }
     }
 
@@ -233,7 +220,7 @@ where
             .ok_or_else(|| Error::not_found("Gateway", &req.gateway_id.to_string()))?;
         
         let now = Utc::now();
-        let payment_number = format!("PAY-{}", now.format("%Y%m%d%H%M%S"));
+        let payment_number = format!("PAY-{}-{}", now.format("%Y%m%d%H%M%S"), &Uuid::new_v4().to_string()[0..8]);
         let processing_fee = (req.amount as f64 * 0.029 + 30.0) as i64;
         
         let payment = Payment {

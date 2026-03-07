@@ -3,7 +3,7 @@ use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
 #[sqlx(type_name = "TEXT")]
 pub enum PaymentStatus {
     Pending,
@@ -15,7 +15,7 @@ pub enum PaymentStatus {
     PartiallyRefunded,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
 #[sqlx(type_name = "TEXT")]
 pub enum PaymentMethod {
     CreditCard,

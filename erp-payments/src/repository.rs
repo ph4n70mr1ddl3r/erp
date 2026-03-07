@@ -58,7 +58,7 @@ impl StripeRepository for SqliteStripeRepository {
         )
         .bind(stripe_id)
         .fetch_optional(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
     }
     
     async fn update_payment_intent(&self, intent: StripePaymentIntent) -> Result<StripePaymentIntent> {
@@ -78,7 +78,7 @@ impl StripeRepository for SqliteStripeRepository {
         )
         .bind(customer_id)
         .fetch_all(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
     }
 
     async fn create_checkout_session(&self, session: StripeCheckoutSession) -> Result<StripeCheckoutSession> {
@@ -110,7 +110,7 @@ impl StripeRepository for SqliteStripeRepository {
         )
         .bind(stripe_id)
         .fetch_optional(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
     }
 
     async fn get_payment_intent_by_id(&self, id: Uuid) -> Result<Option<StripePaymentIntent>> {
@@ -119,7 +119,7 @@ impl StripeRepository for SqliteStripeRepository {
         )
         .bind(id)
         .fetch_optional(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
     }
 
     async fn get_checkout_session_by_id(&self, id: Uuid) -> Result<Option<StripeCheckoutSession>> {
@@ -128,7 +128,7 @@ impl StripeRepository for SqliteStripeRepository {
         )
         .bind(id)
         .fetch_optional(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
     }
 
     async fn update_payment_intent_status(&self, intent: &StripePaymentIntent) -> Result<()> {
@@ -176,6 +176,7 @@ pub trait PaymentRepository: Send + Sync {
     async fn create(&self, payment: Payment) -> Result<Payment>;
     async fn get_by_id(&self, id: Uuid) -> Result<Option<Payment>>;
     async fn list_by_customer(&self, customer_id: Uuid) -> Result<Vec<Payment>>;
+    async fn update_refunded_amount(&self, id: Uuid, refunded_amount: i64, status: PaymentStatus, reason: Option<String>) -> Result<()>;
 }
 
 pub struct SqlitePaymentRepository {
@@ -192,8 +193,8 @@ impl SqlitePaymentRepository {
 impl PaymentRepository for SqlitePaymentRepository {
     async fn create(&self, payment: Payment) -> Result<Payment> {
         sqlx::query(
-            r#"INSERT INTO payments (id, payment_number, gateway_id, invoice_id, customer_id, amount, currency, payment_method, status, gateway_transaction_id, gateway_response, card_last_four, card_brand, bank_name, bank_account_last_four, check_number, refunded_amount, refund_reason, processing_fee, notes, paid_at, created_at, created_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+            r#"INSERT INTO payments (id, payment_number, gateway_id, invoice_id, customer_id, amount, currency, payment_method, status, gateway_transaction_id, gateway_response, card_last_four, card_brand, bank_name, bank_account_last_four, check_number, refunded_amount, refund_reason, processing_fee, notes, paid_at, created_at, updated_at, created_by, updated_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(payment.base.id)
         .bind(&payment.payment_number)
@@ -217,7 +218,9 @@ impl PaymentRepository for SqlitePaymentRepository {
         .bind(&payment.notes)
         .bind(payment.paid_at)
         .bind(payment.base.created_at)
+        .bind(payment.base.updated_at)
         .bind(payment.base.created_by)
+        .bind(payment.base.updated_by)
         .execute(&self.pool).await?;
         Ok(payment)
     }
@@ -228,7 +231,7 @@ impl PaymentRepository for SqlitePaymentRepository {
         )
         .bind(id)
         .fetch_optional(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
     }
 
     async fn list_by_customer(&self, customer_id: Uuid) -> Result<Vec<Payment>> {
@@ -237,7 +240,19 @@ impl PaymentRepository for SqlitePaymentRepository {
         )
         .bind(customer_id)
         .fetch_all(&self.pool).await
-        .map_err(|e| Error::Internal(e.into()))
+        .map_err(Error::from)
+    }
+
+    async fn update_refunded_amount(&self, id: Uuid, refunded_amount: i64, status: PaymentStatus, reason: Option<String>) -> Result<()> {
+        sqlx::query(
+            r#"UPDATE payments SET refunded_amount = ?, status = ?, refund_reason = ? WHERE id = ?"#
+        )
+        .bind(refunded_amount)
+        .bind(status)
+        .bind(reason)
+        .bind(id)
+        .execute(&self.pool).await?;
+        Ok(())
     }
 }
 
@@ -261,8 +276,8 @@ impl SqliteGatewayRepository {
 impl GatewayRepository for SqliteGatewayRepository {
     async fn create(&self, gateway: PaymentGateway) -> Result<PaymentGateway> {
         sqlx::query(
-            r#"INSERT INTO payment_gateways (id, code, name, gateway_type, api_key, api_secret, merchant_id, webhook_secret, is_live, is_active, supported_methods, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+            r#"INSERT INTO payment_gateways (id, code, name, gateway_type, api_key, api_secret, merchant_id, webhook_secret, is_live, is_active, supported_methods, created_at, updated_at, created_by, updated_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(gateway.base.id)
         .bind(&gateway.code)
@@ -277,6 +292,8 @@ impl GatewayRepository for SqliteGatewayRepository {
         .bind(&gateway.supported_methods)
         .bind(gateway.base.created_at)
         .bind(gateway.base.updated_at)
+        .bind(gateway.base.created_by)
+        .bind(gateway.base.updated_by)
         .execute(&self.pool).await?;
         Ok(gateway)
     }
@@ -309,8 +326,8 @@ impl SqliteRefundRepository {
 impl RefundRepository for SqliteRefundRepository {
     async fn create(&self, refund: Refund) -> Result<Refund> {
         sqlx::query(
-            r#"INSERT INTO refunds (id, refund_number, payment_id, amount, currency, reason, status, gateway_refund_id, processed_at, created_at, created_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+            r#"INSERT INTO refunds (id, refund_number, payment_id, amount, currency, reason, status, gateway_refund_id, processed_at, created_at, updated_at, created_by, updated_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
         .bind(refund.base.id)
         .bind(&refund.refund_number)
@@ -322,7 +339,9 @@ impl RefundRepository for SqliteRefundRepository {
         .bind(&refund.gateway_refund_id)
         .bind(refund.processed_at)
         .bind(refund.base.created_at)
+        .bind(refund.base.updated_at)
         .bind(refund.base.created_by)
+        .bind(refund.base.updated_by)
         .execute(&self.pool).await?;
         Ok(refund)
     }
@@ -347,14 +366,17 @@ impl SqlitePaymentAllocationRepository {
 impl PaymentAllocationRepository for SqlitePaymentAllocationRepository {
     async fn create(&self, allocation: PaymentAllocation) -> Result<PaymentAllocation> {
         sqlx::query(
-            r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at)
-               VALUES (?, ?, ?, ?, ?)"#
+            r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at, updated_at, created_by, updated_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#
         )
         .bind(allocation.base.id)
         .bind(allocation.payment_id)
         .bind(allocation.invoice_id)
         .bind(allocation.amount)
         .bind(allocation.base.created_at)
+        .bind(allocation.base.updated_at)
+        .bind(allocation.base.created_by)
+        .bind(allocation.base.updated_by)
         .execute(&self.pool).await?;
         Ok(allocation)
     }
@@ -379,8 +401,8 @@ impl SqliteCustomerPaymentMethodRepository {
 impl CustomerPaymentMethodRepository for SqliteCustomerPaymentMethodRepository {
     async fn create(&self, method: CustomerPaymentMethod) -> Result<CustomerPaymentMethod> {
         sqlx::query(
-            r#"INSERT INTO customer_payment_methods (id, customer_id, payment_method, is_default, card_last_four, card_brand, card_expiry_month, card_expiry_year, card_holder_name, bank_name, bank_account_type, gateway_token, nickname, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+            r#"INSERT INTO customer_payment_methods (id, customer_id, payment_method, is_default, card_last_four, card_brand, card_expiry_month, card_expiry_year, card_holder_name, bank_name, bank_account_type, gateway_token, nickname, created_at, updated_at, created_by, updated_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
         )
         .bind(method.base.id)
         .bind(method.customer_id)
@@ -396,6 +418,9 @@ impl CustomerPaymentMethodRepository for SqliteCustomerPaymentMethodRepository {
         .bind(&method.gateway_token)
         .bind(&method.nickname)
         .bind(method.base.created_at)
+        .bind(method.base.updated_at)
+        .bind(method.base.created_by)
+        .bind(method.base.updated_by)
         .execute(&self.pool).await?;
         Ok(method)
     }

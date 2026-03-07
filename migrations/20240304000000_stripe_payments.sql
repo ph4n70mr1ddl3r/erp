@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS payment_gateways (
     is_active INTEGER NOT NULL DEFAULT 1,
     supported_methods TEXT NOT NULL DEFAULT '[]',
     created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
+    updated_at TEXT NOT NULL,
+    created_by TEXT,
+    updated_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS payments (
@@ -37,7 +39,9 @@ CREATE TABLE IF NOT EXISTS payments (
     notes TEXT,
     paid_at TEXT,
     created_at TEXT NOT NULL,
-    created_by TEXT
+    updated_at TEXT NOT NULL,
+    created_by TEXT,
+    updated_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS payment_allocations (
@@ -45,7 +49,10 @@ CREATE TABLE IF NOT EXISTS payment_allocations (
     payment_id TEXT NOT NULL,
     invoice_id TEXT NOT NULL,
     amount INTEGER NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    created_by TEXT,
+    updated_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS refunds (
@@ -59,7 +66,9 @@ CREATE TABLE IF NOT EXISTS refunds (
     gateway_refund_id TEXT,
     processed_at TEXT,
     created_at TEXT NOT NULL,
-    created_by TEXT
+    updated_at TEXT NOT NULL,
+    created_by TEXT,
+    updated_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS customer_payment_methods (
@@ -76,7 +85,10 @@ CREATE TABLE IF NOT EXISTS customer_payment_methods (
     bank_account_type TEXT,
     gateway_token TEXT,
     nickname TEXT,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    created_by TEXT,
+    updated_by TEXT
 );
 
 CREATE TABLE IF NOT EXISTS payment_batches (
