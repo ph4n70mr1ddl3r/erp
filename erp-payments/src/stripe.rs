@@ -43,24 +43,28 @@ impl StripeConfig {
 pub struct StripeService {
     client: Client,
     config: StripeConfig,
+    repo: StripeRepository,
+    payment_repo: PaymentRepository,
+    pool: SqlitePool,
 }
 
 impl StripeService {
-    pub fn new(config: StripeConfig) -> Result<Self> {
+    pub fn new(config: StripeConfig, pool: SqlitePool) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_secs(STRIPE_API_TIMEOUT_SECS))
             .build()
             .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to create HTTP client: {}", e)))?;
-        Ok(Self { client, config })
-    }
-    
-    pub fn from_env() -> Result<Self> {
-        Self::new(StripeConfig::from_env()?)
+        Ok(Self { 
+            client, 
+            config, 
+            repo: StripeRepository::new(pool.clone()),
+            payment_repo: PaymentRepository::new(pool.clone()),
+            pool,
+        })
     }
     
     pub async fn create_payment_intent(
         &self,
-        pool: &SqlitePool,
         req: CreatePaymentIntentRequest,
     ) -> Result<PaymentIntentResponse> {
         let amount_in_cents = req.amount;
@@ -116,7 +120,7 @@ impl StripeService {
             updated_at: now,
         };
         
-        StripeRepository::create_payment_intent(pool, &payment_intent).await?;
+        self.repo.create_payment_intent(payment_intent.clone()).await?;
         
         Ok(PaymentIntentResponse {
             id: payment_intent.id,
@@ -130,7 +134,6 @@ impl StripeService {
     
     pub async fn create_checkout_session(
         &self,
-        pool: &SqlitePool,
         req: CreateCheckoutSessionRequest,
     ) -> Result<CheckoutSessionResponse> {
         let amount_in_cents = req.amount;
@@ -192,7 +195,7 @@ impl StripeService {
             created_at: now,
         };
         
-        StripeRepository::create_checkout_session(pool, &checkout_session).await?;
+        self.repo.create_checkout_session(checkout_session.clone()).await?;
         
         Ok(CheckoutSessionResponse {
             id: checkout_session.id,
@@ -238,7 +241,6 @@ impl StripeService {
     
     pub async fn create_refund(
         &self,
-        pool: &SqlitePool,
         payment_intent_id: &str,
         amount: Option<i64>,
         reason: Option<String>,
@@ -273,10 +275,10 @@ impl StripeService {
         
         if refund_response.status == "succeeded" {
             if let Some(intent_id) = &refund_response.payment_intent {
-                if let Ok(Some(mut payment_intent)) = StripeRepository::get_payment_intent_by_stripe_id(pool, intent_id).await {
+                if let Ok(Some(mut payment_intent)) = self.repo.get_payment_intent_by_stripe_id(intent_id).await {
                     payment_intent.status = "refunded".to_string();
                     payment_intent.updated_at = Utc::now();
-                    if let Err(e) = StripeRepository::update_payment_intent_status(pool, &payment_intent).await {
+                    if let Err(e) = self.repo.update_payment_intent_status(&payment_intent).await {
                         tracing::warn!("Failed to update payment intent status after refund: {}", e);
                     }
                 }
@@ -341,7 +343,6 @@ impl StripeService {
     
     pub async fn process_webhook_event(
         &self,
-        pool: &SqlitePool,
         webhook: StripeWebhookPayload,
     ) -> Result<()> {
         let now = Utc::now();
@@ -358,41 +359,41 @@ impl StripeService {
             created_at: now,
         };
         
-        StripeRepository::create_webhook_event(pool, &webhook_event).await?;
+        self.repo.create_webhook_event(&webhook_event).await?;
         
-        let result = self.handle_webhook_event(pool, &webhook).await;
+        let result = self.handle_webhook_event(&webhook).await;
         
         match result {
             Ok(()) => {
                 sqlx::query(
                     r#"UPDATE stripe_webhook_events SET processed = 1, processed_at = ? WHERE id = ?"#
                 )
-                .bind(now.to_rfc3339())
-                .bind(event_id.to_string())
-                .execute(pool).await?;
+                .bind(now)
+                .bind(event_id)
+                .execute(&self.pool).await?;
             }
             Err(e) => {
                 sqlx::query(
                     r#"UPDATE stripe_webhook_events SET error_message = ? WHERE id = ?"#
                 )
                 .bind(e.to_string())
-                .bind(event_id.to_string())
-                .execute(pool).await?;
+                .bind(event_id)
+                .execute(&self.pool).await?;
             }
         }
         
         Ok(())
     }
     
-    async fn handle_webhook_event(&self, pool: &SqlitePool, webhook: &StripeWebhookPayload) -> Result<()> {
+    async fn handle_webhook_event(&self, webhook: &StripeWebhookPayload) -> Result<()> {
         match webhook.event_type.as_str() {
             "payment_intent.succeeded" => {
                 if let Some(data) = &webhook.data.object {
                     if let Some(intent_id) = data.get("id").and_then(|v| v.as_str()) {
-                        if let Ok(Some(mut payment_intent)) = StripeRepository::get_payment_intent_by_stripe_id(pool, intent_id).await {
+                        if let Ok(Some(mut payment_intent)) = self.repo.get_payment_intent_by_stripe_id(intent_id).await {
                             payment_intent.status = "succeeded".to_string();
                             payment_intent.updated_at = Utc::now();
-                            StripeRepository::update_payment_intent_status(pool, &payment_intent).await?;
+                            self.repo.update_payment_intent_status(&payment_intent).await?;
                             
                             let payment = Payment {
                                 id: Uuid::new_v4(),
@@ -420,7 +421,7 @@ impl StripeService {
                                 created_by: None,
                             };
                             
-                            PaymentRepository::create(pool, &payment).await?;
+                            self.payment_repo.create(payment).await?;
                         }
                     }
                 }
@@ -428,10 +429,10 @@ impl StripeService {
             "payment_intent.payment_failed" => {
                 if let Some(data) = &webhook.data.object {
                     if let Some(intent_id) = data.get("id").and_then(|v| v.as_str()) {
-                        if let Ok(Some(mut payment_intent)) = StripeRepository::get_payment_intent_by_stripe_id(pool, intent_id).await {
+                        if let Ok(Some(mut payment_intent)) = self.repo.get_payment_intent_by_stripe_id(intent_id).await {
                             payment_intent.status = "failed".to_string();
                             payment_intent.updated_at = Utc::now();
-                            StripeRepository::update_payment_intent_status(pool, &payment_intent).await?;
+                            self.repo.update_payment_intent_status(&payment_intent).await?;
                         }
                     }
                 }
@@ -439,10 +440,10 @@ impl StripeService {
             "checkout.session.completed" => {
                 if let Some(data) = &webhook.data.object {
                     if let Some(session_id) = data.get("id").and_then(|v| v.as_str()) {
-                        if let Ok(Some(mut checkout_session)) = StripeRepository::get_checkout_session_by_stripe_id(pool, session_id).await {
+                        if let Ok(Some(mut checkout_session)) = self.repo.get_checkout_session_by_stripe_id(session_id).await {
                             checkout_session.status = "completed".to_string();
                             checkout_session.completed_at = Some(Utc::now());
-                            StripeRepository::update_checkout_session_status(pool, &checkout_session).await?;
+                            self.repo.update_checkout_session_status(&checkout_session).await?;
                         }
                     }
                 }
@@ -453,16 +454,16 @@ impl StripeService {
         Ok(())
     }
     
-    pub async fn get_payment_intent(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<StripePaymentIntent>> {
-        StripeRepository::get_payment_intent_by_id(pool, id).await
+    pub async fn get_payment_intent(&self, id: Uuid) -> Result<Option<StripePaymentIntent>> {
+        self.repo.get_payment_intent_by_id(id).await
     }
     
-    pub async fn get_checkout_session(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<StripeCheckoutSession>> {
-        StripeRepository::get_checkout_session_by_id(pool, id).await
+    pub async fn get_checkout_session(&self, id: Uuid) -> Result<Option<StripeCheckoutSession>> {
+        self.repo.get_checkout_session_by_id(id).await
     }
     
-    pub async fn list_payment_intents_by_customer(&self, pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<StripePaymentIntent>> {
-        StripeRepository::list_payment_intents_by_customer(pool, customer_id).await
+    pub async fn list_payment_intents_by_customer(&self, customer_id: Uuid) -> Result<Vec<StripePaymentIntent>> {
+        self.repo.list_payment_intents_by_customer(customer_id).await
     }
     
     pub fn get_publishable_key(&self) -> &str {

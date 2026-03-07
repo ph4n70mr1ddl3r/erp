@@ -29,7 +29,7 @@ pub enum PaymentMethod {
     Other,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct PaymentGateway {
     pub id: Uuid,
     pub code: String,
@@ -46,7 +46,7 @@ pub struct PaymentGateway {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Payment {
     pub id: Uuid,
     pub payment_number: String,
@@ -73,7 +73,7 @@ pub struct Payment {
     pub created_by: Option<Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct PaymentAllocation {
     pub id: Uuid,
     pub payment_id: Uuid,
@@ -82,7 +82,7 @@ pub struct PaymentAllocation {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Refund {
     pub id: Uuid,
     pub refund_number: String,
@@ -97,7 +97,7 @@ pub struct Refund {
     pub created_by: Option<Uuid>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct CustomerPaymentMethod {
     pub id: Uuid,
     pub customer_id: Uuid,
@@ -115,7 +115,7 @@ pub struct CustomerPaymentMethod {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct PaymentBatch {
     pub id: Uuid,
     pub batch_number: String,
@@ -164,7 +164,7 @@ pub struct CreateRefundRequest {
     pub reason: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct StripePaymentIntent {
     pub id: Uuid,
     pub stripe_intent_id: String,
@@ -180,7 +180,7 @@ pub struct StripePaymentIntent {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct StripeCheckoutSession {
     pub id: Uuid,
     pub stripe_session_id: String,
@@ -198,7 +198,7 @@ pub struct StripeCheckoutSession {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct StripeWebhookEvent {
     pub id: Uuid,
     pub stripe_event_id: String,
@@ -209,6 +209,7 @@ pub struct StripeWebhookEvent {
     pub error_message: Option<String>,
     pub created_at: DateTime<Utc>,
 }
+
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreatePaymentIntentRequest {

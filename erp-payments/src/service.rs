@@ -5,10 +5,22 @@ use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-pub struct PaymentService;
+pub struct PaymentService {
+    repo: PaymentRepository,
+    refund_repo: RefundRepository,
+    pool: SqlitePool,
+}
 
 impl PaymentService {
-    pub async fn create(pool: &SqlitePool, req: CreatePaymentRequest, user_id: Option<Uuid>) -> Result<Payment> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self {
+            repo: PaymentRepository::new(pool.clone()),
+            refund_repo: RefundRepository::new(pool.clone()),
+            pool,
+        }
+    }
+
+    pub async fn create(&self, req: CreatePaymentRequest, user_id: Option<Uuid>) -> Result<Payment> {
         let now = Utc::now();
         let payment_number = format!("PAY-{}", now.format("%Y%m%d%H%M%S"));
         
@@ -37,40 +49,40 @@ impl PaymentService {
             created_at: now,
             created_by: user_id,
         };
-        PaymentRepository::create(pool, &payment).await?;
+        self.repo.create(payment.clone()).await?;
         
         if let Some(invoice_id) = req.invoice_id {
-            Self::allocate_to_invoice(pool, payment.id, invoice_id, req.amount).await?;
+            self.allocate_to_invoice(payment.id, invoice_id, req.amount).await?;
         }
         
         Ok(payment)
     }
 
-    async fn allocate_to_invoice(pool: &SqlitePool, payment_id: Uuid, invoice_id: Uuid, amount: i64) -> Result<()> {
+    async fn allocate_to_invoice(&self, payment_id: Uuid, invoice_id: Uuid, amount: i64) -> Result<()> {
         let now = Utc::now();
         sqlx::query(
             r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at)
                VALUES (?, ?, ?, ?, ?)"#
         )
-        .bind(Uuid::new_v4().to_string())
-        .bind(payment_id.to_string())
-        .bind(invoice_id.to_string())
+        .bind(Uuid::new_v4())
+        .bind(payment_id)
+        .bind(invoice_id)
         .bind(amount)
-        .bind(now.to_rfc3339())
-        .execute(pool).await?;
+        .bind(now)
+        .execute(&self.pool).await?;
         Ok(())
     }
 
-    pub async fn get(pool: &SqlitePool, id: Uuid) -> Result<Option<Payment>> {
-        PaymentRepository::get_by_id(pool, id).await
+    pub async fn get(&self, id: Uuid) -> Result<Option<Payment>> {
+        self.repo.get_by_id(id).await
     }
 
-    pub async fn list_by_customer(pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<Payment>> {
-        PaymentRepository::list_by_customer(pool, customer_id).await
+    pub async fn list_by_customer(&self, customer_id: Uuid) -> Result<Vec<Payment>> {
+        self.repo.list_by_customer(customer_id).await
     }
 
-    pub async fn refund(pool: &SqlitePool, req: CreateRefundRequest, user_id: Option<Uuid>) -> Result<Refund> {
-        let payment = PaymentRepository::get_by_id(pool, req.payment_id).await?
+    pub async fn refund(&self, req: CreateRefundRequest, user_id: Option<Uuid>) -> Result<Refund> {
+        let payment = self.repo.get_by_id(req.payment_id).await?
             .ok_or_else(|| Error::not_found("Payment", &req.payment_id.to_string()))?;
         
         if req.amount > payment.amount - payment.refunded_amount {
@@ -93,7 +105,7 @@ impl PaymentService {
             created_at: now,
             created_by: user_id,
         };
-        RefundRepository::create(pool, &refund).await?;
+        self.refund_repo.create(refund.clone()).await?;
         
         let new_refunded = payment.refunded_amount + req.amount;
         let new_status = if new_refunded >= payment.amount {
@@ -106,19 +118,31 @@ impl PaymentService {
             r#"UPDATE payments SET refunded_amount = ?, status = ?, refund_reason = ? WHERE id = ?"#
         )
         .bind(new_refunded)
-        .bind(format!("{:?}", new_status))
+        .bind(new_status)
         .bind(&refund.reason)
-        .bind(req.payment_id.to_string())
-        .execute(pool).await?;
+        .bind(req.payment_id)
+        .execute(&self.pool).await?;
         
         Ok(refund)
     }
 }
 
-pub struct GatewayService;
+pub struct GatewayService {
+    repo: GatewayRepository,
+    payment_repo: PaymentRepository,
+    pool: SqlitePool,
+}
 
 impl GatewayService {
-    pub async fn create(pool: &SqlitePool, code: String, name: String, gateway_type: String, supported_methods: Vec<String>) -> Result<PaymentGateway> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self {
+            repo: GatewayRepository::new(pool.clone()),
+            payment_repo: PaymentRepository::new(pool.clone()),
+            pool,
+        }
+    }
+
+    pub async fn create(&self, code: String, name: String, gateway_type: String, supported_methods: Vec<String>) -> Result<PaymentGateway> {
         let now = Utc::now();
         let gateway = PaymentGateway {
             id: Uuid::new_v4(),
@@ -136,16 +160,16 @@ impl GatewayService {
             created_at: now,
             updated_at: now,
         };
-        GatewayRepository::create(pool, &gateway).await?;
+        self.repo.create(gateway.clone()).await?;
         Ok(gateway)
     }
 
-    pub async fn list_active(pool: &SqlitePool) -> Result<Vec<PaymentGateway>> {
-        GatewayRepository::list_active(pool).await
+    pub async fn list_active(&self) -> Result<Vec<PaymentGateway>> {
+        self.repo.list_active().await
     }
 
-    pub async fn process_payment(pool: &SqlitePool, req: ProcessPaymentRequest) -> Result<Payment> {
-        let _gateway = GatewayRepository::list_active(pool).await?
+    pub async fn process_payment(&self, req: ProcessPaymentRequest) -> Result<Payment> {
+        let _gateway = self.repo.list_active().await?
             .into_iter().find(|g| g.id == req.gateway_id)
             .ok_or_else(|| Error::not_found("Gateway", &req.gateway_id.to_string()))?;
         
@@ -178,19 +202,19 @@ impl GatewayService {
             created_at: now,
             created_by: None,
         };
-        PaymentRepository::create(pool, &payment).await?;
+        self.payment_repo.create(payment.clone()).await?;
         
         if let Some(invoice_id) = req.invoice_id {
             sqlx::query(
                 r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at)
                    VALUES (?, ?, ?, ?, ?)"#
             )
-            .bind(Uuid::new_v4().to_string())
-            .bind(payment.id.to_string())
-            .bind(invoice_id.to_string())
+            .bind(Uuid::new_v4())
+            .bind(payment.id)
+            .bind(invoice_id)
             .bind(req.amount)
-            .bind(now.to_rfc3339())
-            .execute(pool).await?;
+            .bind(now)
+            .execute(&self.pool).await?;
         }
         
         Ok(payment)
@@ -198,10 +222,18 @@ impl GatewayService {
 }
 
 
-pub struct CustomerPaymentMethodService;
+pub struct CustomerPaymentMethodService {
+    repo: CustomerPaymentMethodRepository,
+}
 
 impl CustomerPaymentMethodService {
-    pub async fn save(pool: &SqlitePool, customer_id: Uuid, payment_method: PaymentMethod, gateway_token: String, card_last_four: Option<String>, card_brand: Option<String>) -> Result<CustomerPaymentMethod> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self {
+            repo: CustomerPaymentMethodRepository::new(pool),
+        }
+    }
+
+    pub async fn save(&self, customer_id: Uuid, payment_method: PaymentMethod, gateway_token: String, card_last_four: Option<String>, card_brand: Option<String>) -> Result<CustomerPaymentMethod> {
         let now = Utc::now();
         let method = CustomerPaymentMethod {
             id: Uuid::new_v4(),
@@ -219,25 +251,6 @@ impl CustomerPaymentMethodService {
             nickname: None,
             created_at: now,
         };
-        sqlx::query(
-            r#"INSERT INTO customer_payment_methods (id, customer_id, payment_method, is_default, card_last_four, card_brand, card_expiry_month, card_expiry_year, card_holder_name, bank_name, bank_account_type, gateway_token, nickname, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
-        )
-        .bind(method.id.to_string())
-        .bind(method.customer_id.to_string())
-        .bind(format!("{:?}", method.payment_method))
-        .bind(method.is_default)
-        .bind(&method.card_last_four)
-        .bind(&method.card_brand)
-        .bind(method.card_expiry_month)
-        .bind(method.card_expiry_year)
-        .bind(&method.card_holder_name)
-        .bind(&method.bank_name)
-        .bind(&method.bank_account_type)
-        .bind(&method.gateway_token)
-        .bind(&method.nickname)
-        .bind(method.created_at.to_rfc3339())
-        .execute(pool).await?;
-        Ok(method)
+        self.repo.create(method).await
     }
 }

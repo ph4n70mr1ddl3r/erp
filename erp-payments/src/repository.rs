@@ -1,121 +1,76 @@
 use crate::models::*;
 use erp_core::{Error, Result};
-use sqlx::{SqlitePool, Row};
+use sqlx::SqlitePool;
 use uuid::Uuid;
 
-pub struct StripeRepository;
+pub struct StripeRepository {
+    pool: SqlitePool,
+}
 
 impl StripeRepository {
-    pub async fn create_payment_intent(pool: &SqlitePool, intent: &StripePaymentIntent) -> Result<()> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn create_payment_intent(&self, intent: StripePaymentIntent) -> Result<StripePaymentIntent> {
         sqlx::query(
             r#"INSERT INTO stripe_payment_intents (id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
-        .bind(intent.id.to_string())
+        .bind(intent.id)
         .bind(&intent.stripe_intent_id)
-        .bind(intent.customer_id.to_string())
-        .bind(intent.invoice_id.map(|id| id.to_string()))
+        .bind(intent.customer_id)
+        .bind(intent.invoice_id)
         .bind(intent.amount)
         .bind(&intent.currency)
         .bind(&intent.status)
         .bind(&intent.client_secret)
         .bind(&intent.description)
         .bind(&intent.metadata)
-        .bind(intent.created_at.to_rfc3339())
-        .bind(intent.updated_at.to_rfc3339())
-        .execute(pool).await?;
-        Ok(())
+        .bind(intent.created_at)
+        .bind(intent.updated_at)
+        .execute(&self.pool).await?;
+        Ok(intent)
     }
     
-    pub async fn get_payment_intent_by_id(pool: &SqlitePool, id: Uuid) -> Result<Option<StripePaymentIntent>> {
-        let row = sqlx::query(
-            r#"SELECT id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at FROM stripe_payment_intents WHERE id = ?"#
-        )
-        .bind(id.to_string())
-        .fetch_optional(pool).await?;
-        
-        match row {
-            Some(r) => Ok(Some(Self::row_to_payment_intent(&r)?)),
-            None => Ok(None),
-        }
-    }
-    
-    pub async fn get_payment_intent_by_stripe_id(pool: &SqlitePool, stripe_id: &str) -> Result<Option<StripePaymentIntent>> {
-        let row = sqlx::query(
-            r#"SELECT id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at FROM stripe_payment_intents WHERE stripe_intent_id = ?"#
+    pub async fn get_payment_intent_by_stripe_id(&self, stripe_id: &str) -> Result<Option<StripePaymentIntent>> {
+        sqlx::query_as::<_, StripePaymentIntent>(
+            "SELECT * FROM stripe_payment_intents WHERE stripe_intent_id = ?"
         )
         .bind(stripe_id)
-        .fetch_optional(pool).await?;
-        
-        match row {
-            Some(r) => Ok(Some(Self::row_to_payment_intent(&r)?)),
-            None => Ok(None),
-        }
+        .fetch_optional(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
     }
     
-    pub async fn update_payment_intent_status(pool: &SqlitePool, intent: &StripePaymentIntent) -> Result<()> {
+    pub async fn update_payment_intent(&self, intent: StripePaymentIntent) -> Result<StripePaymentIntent> {
         sqlx::query(
-            r#"UPDATE stripe_payment_intents SET status = ?, updated_at = ? WHERE id = ?"#
+            "UPDATE stripe_payment_intents SET status = ?, updated_at = ? WHERE id = ?"
         )
         .bind(&intent.status)
-        .bind(intent.updated_at.to_rfc3339())
-        .bind(intent.id.to_string())
-        .execute(pool).await?;
-        Ok(())
+        .bind(intent.updated_at)
+        .bind(intent.id)
+        .execute(&self.pool).await?;
+        Ok(intent)
     }
     
-    pub async fn list_payment_intents_by_customer(pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<StripePaymentIntent>> {
-        let rows = sqlx::query(
-            r#"SELECT id, stripe_intent_id, customer_id, invoice_id, amount, currency, status, client_secret, description, metadata, created_at, updated_at FROM stripe_payment_intents WHERE customer_id = ? ORDER BY created_at DESC"#
+    pub async fn list_payment_intents_by_customer(&self, customer_id: Uuid) -> Result<Vec<StripePaymentIntent>> {
+        sqlx::query_as::<_, StripePaymentIntent>(
+            "SELECT * FROM stripe_payment_intents WHERE customer_id = ?"
         )
-        .bind(customer_id.to_string())
-        .fetch_all(pool).await?;
-        
-        let mut intents = Vec::new();
-        for row in rows {
-            intents.push(Self::row_to_payment_intent(&row)?);
-        }
-        Ok(intents)
+        .bind(customer_id)
+        .fetch_all(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
     }
-    
-    fn row_to_payment_intent(r: &sqlx::sqlite::SqliteRow) -> Result<StripePaymentIntent> {
-        let id_str: String = r.get("id");
-        let customer_id_str: String = r.get("customer_id");
-        let created_at_str: String = r.get("created_at");
-        let updated_at_str: String = r.get("updated_at");
 
-        Ok(StripePaymentIntent {
-            id: Uuid::parse_str(&id_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse payment intent id: {}", e)))?,
-            stripe_intent_id: r.get("stripe_intent_id"),
-            customer_id: Uuid::parse_str(&customer_id_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse customer_id: {}", e)))?,
-            invoice_id: r.get::<Option<String>, _>("invoice_id")
-                .and_then(|s| Uuid::parse_str(&s).ok()),
-            amount: r.get("amount"),
-            currency: r.get("currency"),
-            status: r.get("status"),
-            client_secret: r.get("client_secret"),
-            description: r.get("description"),
-            metadata: r.get("metadata"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
-                .with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&updated_at_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse updated_at: {}", e)))?
-                .with_timezone(&chrono::Utc),
-        })
-    }
-    
-    pub async fn create_checkout_session(pool: &SqlitePool, session: &StripeCheckoutSession) -> Result<()> {
+    pub async fn create_checkout_session(&self, session: StripeCheckoutSession) -> Result<StripeCheckoutSession> {
         sqlx::query(
             r#"INSERT INTO stripe_checkout_sessions (id, stripe_session_id, customer_id, invoice_id, amount, currency, status, checkout_url, success_url, cancel_url, payment_intent_id, expires_at, completed_at, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
-        .bind(session.id.to_string())
+        .bind(session.id)
         .bind(&session.stripe_session_id)
-        .bind(session.customer_id.to_string())
-        .bind(session.invoice_id.map(|id| id.to_string()))
+        .bind(session.customer_id)
+        .bind(session.invoice_id)
         .bind(session.amount)
         .bind(&session.currency)
         .bind(&session.status)
@@ -123,112 +78,104 @@ impl StripeRepository {
         .bind(&session.success_url)
         .bind(&session.cancel_url)
         .bind(&session.payment_intent_id)
-        .bind(session.expires_at.map(|d| d.to_rfc3339()))
-        .bind(session.completed_at.map(|d| d.to_rfc3339()))
-        .bind(session.created_at.to_rfc3339())
-        .execute(pool).await?;
-        Ok(())
+        .bind(session.expires_at)
+        .bind(session.completed_at)
+        .bind(session.created_at)
+        .execute(&self.pool).await?;
+        Ok(session)
     }
     
-    pub async fn get_checkout_session_by_id(pool: &SqlitePool, id: Uuid) -> Result<Option<StripeCheckoutSession>> {
-        let row = sqlx::query(
-            r#"SELECT id, stripe_session_id, customer_id, invoice_id, amount, currency, status, checkout_url, success_url, cancel_url, payment_intent_id, expires_at, completed_at, created_at FROM stripe_checkout_sessions WHERE id = ?"#
-        )
-        .bind(id.to_string())
-        .fetch_optional(pool).await?;
-        
-        match row {
-            Some(r) => Ok(Some(Self::row_to_checkout_session(&r)?)),
-            None => Ok(None),
-        }
-    }
-    
-    pub async fn get_checkout_session_by_stripe_id(pool: &SqlitePool, stripe_id: &str) -> Result<Option<StripeCheckoutSession>> {
-        let row = sqlx::query(
-            r#"SELECT id, stripe_session_id, customer_id, invoice_id, amount, currency, status, checkout_url, success_url, cancel_url, payment_intent_id, expires_at, completed_at, created_at FROM stripe_checkout_sessions WHERE stripe_session_id = ?"#
+    pub async fn get_checkout_session_by_stripe_id(&self, stripe_id: &str) -> Result<Option<StripeCheckoutSession>> {
+        sqlx::query_as::<_, StripeCheckoutSession>(
+            "SELECT * FROM stripe_checkout_sessions WHERE stripe_session_id = ?"
         )
         .bind(stripe_id)
-        .fetch_optional(pool).await?;
-        
-        match row {
-            Some(r) => Ok(Some(Self::row_to_checkout_session(&r)?)),
-            None => Ok(None),
-        }
+        .fetch_optional(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
     }
-    
-    pub async fn update_checkout_session_status(pool: &SqlitePool, session: &StripeCheckoutSession) -> Result<()> {
-        sqlx::query(
-            r#"UPDATE stripe_checkout_sessions SET status = ?, completed_at = ? WHERE id = ?"#
+
+    pub async fn get_payment_intent_by_id(&self, id: Uuid) -> Result<Option<StripePaymentIntent>> {
+        sqlx::query_as::<_, StripePaymentIntent>(
+            "SELECT * FROM stripe_payment_intents WHERE id = ?"
         )
-        .bind(&session.status)
-        .bind(session.completed_at.map(|d| d.to_rfc3339()))
-        .bind(session.id.to_string())
-        .execute(pool).await?;
+        .bind(id)
+        .fetch_optional(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
+    }
+
+    pub async fn get_checkout_session_by_id(&self, id: Uuid) -> Result<Option<StripeCheckoutSession>> {
+        sqlx::query_as::<_, StripeCheckoutSession>(
+            "SELECT * FROM stripe_checkout_sessions WHERE id = ?"
+        )
+        .bind(id)
+        .fetch_optional(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
+    }
+
+    pub async fn update_payment_intent_status(&self, intent: &StripePaymentIntent) -> Result<()> {
+        sqlx::query(
+            "UPDATE stripe_payment_intents SET status = ?, updated_at = ? WHERE id = ?"
+        )
+        .bind(&intent.status)
+        .bind(intent.updated_at)
+        .bind(intent.id)
+        .execute(&self.pool).await?;
         Ok(())
     }
-    
-    fn row_to_checkout_session(r: &sqlx::sqlite::SqliteRow) -> Result<StripeCheckoutSession> {
-        let id_str: String = r.get("id");
-        let customer_id_str: String = r.get("customer_id");
-        let created_at_str: String = r.get("created_at");
 
-        Ok(StripeCheckoutSession {
-            id: Uuid::parse_str(&id_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse checkout session id: {}", e)))?,
-            stripe_session_id: r.get("stripe_session_id"),
-            customer_id: Uuid::parse_str(&customer_id_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse customer_id: {}", e)))?,
-            invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
-            amount: r.get("amount"),
-            currency: r.get("currency"),
-            status: r.get("status"),
-            checkout_url: r.get("checkout_url"),
-            success_url: r.get("success_url"),
-            cancel_url: r.get("cancel_url"),
-            payment_intent_id: r.get("payment_intent_id"),
-            expires_at: r.get::<Option<String>, _>("expires_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
-                .with_timezone(&chrono::Utc),
-        })
+    pub async fn update_checkout_session_status(&self, session: &StripeCheckoutSession) -> Result<()> {
+        sqlx::query(
+            "UPDATE stripe_checkout_sessions SET status = ?, completed_at = ? WHERE id = ?"
+        )
+        .bind(&session.status)
+        .bind(session.completed_at)
+        .bind(session.id)
+        .execute(&self.pool).await?;
+        Ok(())
     }
-    
-    pub async fn create_webhook_event(pool: &SqlitePool, event: &StripeWebhookEvent) -> Result<()> {
+
+    pub async fn create_webhook_event(&self, event: &StripeWebhookEvent) -> Result<()> {
         sqlx::query(
             r#"INSERT INTO stripe_webhook_events (id, stripe_event_id, event_type, payload, processed, processed_at, error_message, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
-        .bind(event.id.to_string())
+        .bind(event.id)
         .bind(&event.stripe_event_id)
         .bind(&event.event_type)
         .bind(&event.payload)
         .bind(event.processed)
-        .bind(event.processed_at.map(|d| d.to_rfc3339()))
+        .bind(event.processed_at)
         .bind(&event.error_message)
-        .bind(event.created_at.to_rfc3339())
-        .execute(pool).await?;
+        .bind(event.created_at)
+        .execute(&self.pool).await?;
         Ok(())
     }
 }
 
-pub struct PaymentRepository;
+
+pub struct PaymentRepository {
+    pool: SqlitePool,
+}
 
 impl PaymentRepository {
-    pub async fn create(pool: &SqlitePool, payment: &Payment) -> Result<()> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn create(&self, payment: Payment) -> Result<Payment> {
         sqlx::query(
             r#"INSERT INTO payments (id, payment_number, gateway_id, invoice_id, customer_id, amount, currency, payment_method, status, gateway_transaction_id, gateway_response, card_last_four, card_brand, bank_name, bank_account_last_four, check_number, refunded_amount, refund_reason, processing_fee, notes, paid_at, created_at, created_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
-        .bind(payment.id.to_string())
+        .bind(payment.id)
         .bind(&payment.payment_number)
-        .bind(payment.gateway_id.map(|id| id.to_string()))
-        .bind(payment.invoice_id.map(|id| id.to_string()))
-        .bind(payment.customer_id.to_string())
+        .bind(payment.gateway_id)
+        .bind(payment.invoice_id)
+        .bind(payment.customer_id)
         .bind(payment.amount)
         .bind(&payment.currency)
-        .bind(format!("{:?}", payment.payment_method))
-        .bind(format!("{:?}", payment.status))
+        .bind(&payment.payment_method)
+        .bind(&payment.status)
         .bind(&payment.gateway_transaction_id)
         .bind(&payment.gateway_response)
         .bind(&payment.card_last_four)
@@ -240,128 +187,47 @@ impl PaymentRepository {
         .bind(&payment.refund_reason)
         .bind(payment.processing_fee)
         .bind(&payment.notes)
-        .bind(payment.paid_at.map(|d| d.to_rfc3339()))
-        .bind(payment.created_at.to_rfc3339())
-        .bind(payment.created_by.map(|id| id.to_string()))
-        .execute(pool).await?;
-        Ok(())
+        .bind(payment.paid_at)
+        .bind(payment.created_at)
+        .bind(payment.created_by)
+        .execute(&self.pool).await?;
+        Ok(payment)
     }
 
-    pub async fn get_by_id(pool: &SqlitePool, id: Uuid) -> Result<Option<Payment>> {
-        let row = sqlx::query(
-            r#"SELECT id, payment_number, gateway_id, invoice_id, customer_id, amount, currency, payment_method, status, gateway_transaction_id, gateway_response, card_last_four, card_brand, bank_name, bank_account_last_four, check_number, refunded_amount, refund_reason, processing_fee, notes, paid_at, created_at, created_by FROM payments WHERE id = ?"#
+    pub async fn get_by_id(&self, id: Uuid) -> Result<Option<Payment>> {
+        sqlx::query_as::<_, Payment>(
+            "SELECT * FROM payments WHERE id = ?"
         )
-        .bind(id.to_string())
-        .fetch_optional(pool).await?;
-        match row {
-            Some(r) => Ok(Some(Self::row_to_payment(&r)?)),
-            None => Ok(None),
-        }
+        .bind(id)
+        .fetch_optional(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
     }
 
-    pub async fn list_by_customer(pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<Payment>> {
-        let rows = sqlx::query(
-            r#"SELECT id, payment_number, gateway_id, invoice_id, customer_id, amount, currency, payment_method, status, gateway_transaction_id, gateway_response, card_last_four, card_brand, bank_name, bank_account_last_four, check_number, refunded_amount, refund_reason, processing_fee, notes, paid_at, created_at, created_by FROM payments WHERE customer_id = ? ORDER BY created_at DESC"#
+    pub async fn list_by_customer(&self, customer_id: Uuid) -> Result<Vec<Payment>> {
+        sqlx::query_as::<_, Payment>(
+            "SELECT * FROM payments WHERE customer_id = ?"
         )
-        .bind(customer_id.to_string())
-        .fetch_all(pool).await?;
-        
-        let mut payments = Vec::new();
-        for row in rows {
-            payments.push(Self::row_to_payment(&row)?);
-        }
-        Ok(payments)
-    }
-
-    fn row_to_payment(r: &sqlx::sqlite::SqliteRow) -> Result<Payment> {
-        let id_str: String = r.get("id");
-        let customer_id_str: String = r.get("customer_id");
-        let created_at_str: String = r.get("created_at");
-
-        Ok(Payment {
-            id: Uuid::parse_str(&id_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse payment id: {}", e)))?,
-            payment_number: r.get("payment_number"),
-            gateway_id: r.get::<Option<String>, _>("gateway_id").and_then(|s| Uuid::parse_str(&s).ok()),
-            invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
-            customer_id: Uuid::parse_str(&customer_id_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse customer_id: {}", e)))?,
-            amount: r.get("amount"),
-            currency: r.get("currency"),
-            payment_method: match r.get::<String, _>("payment_method").as_str() {
-                "CreditCard" => PaymentMethod::CreditCard,
-                "DebitCard" => PaymentMethod::DebitCard,
-                "BankTransfer" => PaymentMethod::BankTransfer,
-                "ACH" => PaymentMethod::ACH,
-                "WireTransfer" => PaymentMethod::WireTransfer,
-                "Check" => PaymentMethod::Check,
-                "Cash" => PaymentMethod::Cash,
-                "PayPal" => PaymentMethod::PayPal,
-                "Stripe" => PaymentMethod::Stripe,
-                _ => PaymentMethod::Other,
-            },
-            status: match r.get::<String, _>("status").as_str() {
-                "Processing" => PaymentStatus::Processing,
-                "Completed" => PaymentStatus::Completed,
-                "Failed" => PaymentStatus::Failed,
-                "Cancelled" => PaymentStatus::Cancelled,
-                "Refunded" => PaymentStatus::Refunded,
-                "PartiallyRefunded" => PaymentStatus::PartiallyRefunded,
-                _ => PaymentStatus::Pending,
-            },
-            gateway_transaction_id: r.get("gateway_transaction_id"),
-            gateway_response: r.get("gateway_response"),
-            card_last_four: r.get("card_last_four"),
-            card_brand: r.get("card_brand"),
-            bank_name: r.get("bank_name"),
-            bank_account_last_four: r.get("bank_account_last_four"),
-            check_number: r.get("check_number"),
-            refunded_amount: r.get("refunded_amount"),
-            refund_reason: r.get("refund_reason"),
-            processing_fee: r.get("processing_fee"),
-            notes: r.get("notes"),
-            paid_at: r.get::<Option<String>, _>("paid_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
-                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
-                .with_timezone(&chrono::Utc),
-            created_by: r.get::<Option<String>, _>("created_by").and_then(|s| Uuid::parse_str(&s).ok()),
-        })
+        .bind(customer_id)
+        .fetch_all(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
     }
 }
 
-pub struct RefundRepository;
-
-impl RefundRepository {
-    pub async fn create(pool: &SqlitePool, refund: &Refund) -> Result<()> {
-        sqlx::query(
-            r#"INSERT INTO refunds (id, refund_number, payment_id, amount, currency, reason, status, gateway_refund_id, processed_at, created_at, created_by)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
-        )
-        .bind(refund.id.to_string())
-        .bind(&refund.refund_number)
-        .bind(refund.payment_id.to_string())
-        .bind(refund.amount)
-        .bind(&refund.currency)
-        .bind(&refund.reason)
-        .bind(&refund.status)
-        .bind(&refund.gateway_refund_id)
-        .bind(refund.processed_at.map(|d| d.to_rfc3339()))
-        .bind(refund.created_at.to_rfc3339())
-        .bind(refund.created_by.map(|id| id.to_string()))
-        .execute(pool).await?;
-        Ok(())
-    }
+pub struct GatewayRepository {
+    pool: SqlitePool,
 }
-
-pub struct GatewayRepository;
 
 impl GatewayRepository {
-    pub async fn create(pool: &SqlitePool, gateway: &PaymentGateway) -> Result<()> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn create(&self, gateway: PaymentGateway) -> Result<PaymentGateway> {
         sqlx::query(
             r#"INSERT INTO payment_gateways (id, code, name, gateway_type, api_key, api_secret, merchant_id, webhook_secret, is_live, is_active, supported_methods, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
         )
-        .bind(gateway.id.to_string())
+        .bind(gateway.id)
         .bind(&gateway.code)
         .bind(&gateway.name)
         .bind(&gateway.gateway_type)
@@ -372,45 +238,81 @@ impl GatewayRepository {
         .bind(gateway.is_live)
         .bind(gateway.is_active)
         .bind(&gateway.supported_methods)
-        .bind(gateway.created_at.to_rfc3339())
-        .bind(gateway.updated_at.to_rfc3339())
-        .execute(pool).await?;
-        Ok(())
+        .bind(gateway.created_at)
+        .bind(gateway.updated_at)
+        .execute(&self.pool).await?;
+        Ok(gateway)
     }
 
-    pub async fn list_active(pool: &SqlitePool) -> Result<Vec<PaymentGateway>> {
-        let rows = sqlx::query(
-            r#"SELECT id, code, name, gateway_type, api_key, api_secret, merchant_id, webhook_secret, is_live, is_active, supported_methods, created_at, updated_at FROM payment_gateways WHERE is_active = 1"#
+    pub async fn list_active(&self) -> Result<Vec<PaymentGateway>> {
+        sqlx::query_as::<_, PaymentGateway>(
+            "SELECT * FROM payment_gateways WHERE is_active = 1"
         )
-        .fetch_all(pool).await?;
-        
-        let mut gateways = Vec::new();
-        for row in rows {
-            let id_str: String = row.get("id");
-            let created_at_str: String = row.get("created_at");
-            let updated_at_str: String = row.get("updated_at");
-
-            gateways.push(PaymentGateway {
-                id: Uuid::parse_str(&id_str)
-                    .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse gateway id: {}", e)))?,
-                code: row.get("code"),
-                name: row.get("name"),
-                gateway_type: row.get("gateway_type"),
-                api_key: row.get("api_key"),
-                api_secret: row.get("api_secret"),
-                merchant_id: row.get("merchant_id"),
-                webhook_secret: row.get("webhook_secret"),
-                is_live: row.get("is_live"),
-                is_active: row.get("is_active"),
-                supported_methods: row.get("supported_methods"),
-                created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
-                    .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
-                    .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(&updated_at_str)
-                    .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse updated_at: {}", e)))?
-                    .with_timezone(&chrono::Utc),
-            });
-        }
-        Ok(gateways)
+        .fetch_all(&self.pool).await
+        .map_err(|e| Error::Internal(e.into()))
     }
 }
+
+pub struct RefundRepository {
+    pool: SqlitePool,
+}
+
+impl RefundRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn create(&self, refund: Refund) -> Result<Refund> {
+        sqlx::query(
+            r#"INSERT INTO refunds (id, refund_number, payment_id, amount, currency, reason, status, gateway_refund_id, processed_at, created_at, created_by)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(refund.id)
+        .bind(&refund.refund_number)
+        .bind(refund.payment_id)
+        .bind(refund.amount)
+        .bind(&refund.currency)
+        .bind(&refund.reason)
+        .bind(&refund.status)
+        .bind(&refund.gateway_refund_id)
+        .bind(refund.processed_at)
+        .bind(refund.created_at)
+        .bind(refund.created_by)
+        .execute(&self.pool).await?;
+        Ok(refund)
+    }
+}
+
+pub struct CustomerPaymentMethodRepository {
+    pool: SqlitePool,
+}
+
+impl CustomerPaymentMethodRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+
+    pub async fn create(&self, method: CustomerPaymentMethod) -> Result<CustomerPaymentMethod> {
+        sqlx::query(
+            r#"INSERT INTO customer_payment_methods (id, customer_id, payment_method, is_default, card_last_four, card_brand, card_expiry_month, card_expiry_year, card_holder_name, bank_name, bank_account_type, gateway_token, nickname, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(method.id)
+        .bind(method.customer_id)
+        .bind(&method.payment_method)
+        .bind(method.is_default)
+        .bind(&method.card_last_four)
+        .bind(&method.card_brand)
+        .bind(method.card_expiry_month)
+        .bind(method.card_expiry_year)
+        .bind(&method.card_holder_name)
+        .bind(&method.bank_name)
+        .bind(&method.bank_account_type)
+        .bind(&method.gateway_token)
+        .bind(&method.nickname)
+        .bind(method.created_at)
+        .execute(&self.pool).await?;
+        Ok(method)
+    }
+}
+
