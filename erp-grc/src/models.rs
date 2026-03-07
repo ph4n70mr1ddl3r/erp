@@ -548,3 +548,106 @@ pub enum ThresholdStatus {
     Yellow,
     Red,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HSCode {
+    pub id: Uuid,
+    pub code: String,
+    pub description: String,
+    pub section: Option<String>,
+    pub chapter: Option<String>,
+    pub heading: Option<String>,
+    pub subheading: Option<String>,
+    pub general_duty_rate: f64,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductTradeData {
+    pub id: Uuid,
+    pub product_id: Uuid,
+    pub hs_code_id: Option<Uuid>,
+    pub country_of_origin: String,
+    pub eccn: Option<String>,
+    pub export_license_required: bool,
+    pub import_license_required: bool,
+    pub dual_use: bool,
+    pub scheduled_b_number: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TradeLicense {
+    pub id: Uuid,
+    pub license_number: String,
+    pub license_type: TradeLicenseType,
+    pub entity_id: Uuid, // Vendor or Customer
+    pub entity_type: String,
+    pub issue_date: DateTime<Utc>,
+    pub expiry_date: DateTime<Utc>,
+    pub issuing_authority: String,
+    pub status: TradeLicenseStatus,
+    pub terms: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum TradeLicenseType {
+    Import,
+    Export,
+    SpecialPermit,
+    GeneralLicense,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum TradeLicenseStatus {
+    Applied,
+    Active,
+    Expired,
+    Revoked,
+    Suspended,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScreeningResult {
+    pub id: Uuid,
+    pub entity_id: Uuid,
+    pub entity_type: String,
+    pub screening_date: DateTime<Utc>,
+    pub status: ScreeningStatus,
+    pub source: String,
+    pub match_count: i32,
+    pub match_details: Option<String>,
+    pub expiration_date: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ScreeningStatus {
+    Clear,
+    MatchFound,
+    UnderReview,
+    Blocked,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateHSCodeRequest {
+    pub code: String,
+    pub description: String,
+    pub general_duty_rate: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateProductTradeDataRequest {
+    pub hs_code_id: Option<Uuid>,
+    pub country_of_origin: String,
+    pub eccn: Option<String>,
+    pub export_license_required: bool,
+    pub import_license_required: bool,
+}
