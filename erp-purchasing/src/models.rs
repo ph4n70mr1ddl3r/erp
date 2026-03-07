@@ -105,3 +105,60 @@ pub struct VendorPerformance {
     pub notes: Option<String>,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LandedCostCategory {
+    pub id: Uuid,
+    pub code: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub allocation_method: LandedCostAllocationMethod,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum LandedCostAllocationMethod {
+    ByQuantity,
+    ByValue,
+    ByWeight,
+    ByVolume,
+    Equal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LandedCostVoucher {
+    pub base: BaseEntity,
+    pub voucher_number: String,
+    pub voucher_date: DateTime<Utc>,
+    pub reference_type: LandedCostReferenceType,
+    pub reference_id: Uuid, // PO ID or Goods Receipt ID
+    pub total_landed_cost: Money,
+    pub status: Status,
+    pub lines: Vec<LandedCostLine>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum LandedCostReferenceType {
+    PurchaseOrder,
+    GoodsReceipt,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LandedCostLine {
+    pub id: Uuid,
+    pub voucher_id: Uuid,
+    pub category_id: Uuid,
+    pub description: String,
+    pub amount: Money,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LandedCostAllocation {
+    pub id: Uuid,
+    pub voucher_id: Uuid,
+    pub item_id: Uuid, // Product ID
+    pub allocated_amount: Money,
+    pub allocation_factor: f64,
+}

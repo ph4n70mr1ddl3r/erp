@@ -219,6 +219,96 @@ impl SupplierScorecardService {
     }
 }
 
+pub struct LandedCostService;
+
+impl LandedCostService {
+    pub fn new() -> Self { Self }
+
+    pub fn calculate_allocations(
+        &self,
+        voucher: &LandedCostVoucher,
+        order: &PurchaseOrder,
+        categories: &[LandedCostCategory],
+    ) -> Result<Vec<LandedCostAllocation>> {
+        let mut all_allocations = Vec::new();
+
+        for voucher_line in &voucher.lines {
+            let category = categories.iter()
+                .find(|c| c.id == voucher_line.category_id)
+                .ok_or_else(|| Error::validation(&format!("Category not found: {}", voucher_line.category_id)))?;
+
+            let line_allocations = match category.allocation_method {
+                LandedCostAllocationMethod::ByValue => {
+                    let total_po_value: i64 = order.lines.iter().map(|l| l.line_total.amount).sum();
+                    if total_po_value == 0 { return Err(Error::validation("Cannot allocate by value to a zero-value PO")); }
+                    
+                    order.lines.iter().map(|line| {
+                        let factor = line.line_total.amount as f64 / total_po_value as f64;
+                        let amount = (voucher_line.amount.amount as f64 * factor) as i64;
+                        LandedCostAllocation {
+                            id: Uuid::new_v4(),
+                            voucher_id: voucher.base.id,
+                            item_id: line.product_id,
+                            allocated_amount: Money::new(amount, order.total.currency.clone()),
+                            allocation_factor: factor,
+                        }
+                    }).collect::<Vec<_>>()
+                },
+                LandedCostAllocationMethod::ByQuantity => {
+                    let total_qty: i64 = order.lines.iter().map(|l| l.quantity).sum();
+                    if total_qty == 0 { return Err(Error::validation("Cannot allocate by quantity to a zero-quantity PO")); }
+                    
+                    order.lines.iter().map(|line| {
+                        let factor = line.quantity as f64 / total_qty as f64;
+                        let amount = (voucher_line.amount.amount as f64 * factor) as i64;
+                        LandedCostAllocation {
+                            id: Uuid::new_v4(),
+                            voucher_id: voucher.base.id,
+                            item_id: line.product_id,
+                            allocated_amount: Money::new(amount, order.total.currency.clone()),
+                            allocation_factor: factor,
+                        }
+                    }).collect::<Vec<_>>()
+                },
+                LandedCostAllocationMethod::Equal => {
+                    let count = order.lines.len();
+                    if count == 0 { return Err(Error::validation("Cannot allocate to a PO with no lines")); }
+                    
+                    order.lines.iter().map(|line| {
+                        let factor = 1.0 / count as f64;
+                        let amount = (voucher_line.amount.amount as f64 * factor) as i64;
+                        LandedCostAllocation {
+                            id: Uuid::new_v4(),
+                            voucher_id: voucher.base.id,
+                            item_id: line.product_id,
+                            allocated_amount: Money::new(amount, order.total.currency.clone()),
+                            allocation_factor: factor,
+                        }
+                    }).collect::<Vec<_>>()
+                },
+                _ => return Err(Error::validation("Allocation method not yet implemented")),
+            };
+            all_allocations.extend(line_allocations);
+        }
+
+        // Aggregate by item_id
+        let mut final_allocations = std::collections::HashMap::new();
+        for alloc in all_allocations {
+            let entry = final_allocations.entry(alloc.item_id).or_insert(LandedCostAllocation {
+                id: Uuid::new_v4(),
+                voucher_id: voucher.base.id,
+                item_id: alloc.item_id,
+                allocated_amount: Money::new(0, order.total.currency.clone()),
+                allocation_factor: 0.0,
+            });
+            entry.allocated_amount.amount += alloc.allocated_amount.amount;
+            entry.allocation_factor += alloc.allocation_factor;
+        }
+
+        Ok(final_allocations.into_values().collect())
+    }
+}
+
 #[derive(sqlx::FromRow)]
 struct ScorecardRow {
     id: String,
