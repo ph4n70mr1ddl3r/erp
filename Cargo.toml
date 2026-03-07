@@ -112,7 +112,8 @@ members = [
     "erp-shift-scheduling",
     "erp-notes",
     "erp-credit-notes",
-    "erp-product-variants"
+    "erp-product-variants",
+    "erp-giftcards"
 ]
 resolver = "2"
 
@@ -259,6 +260,7 @@ erp-shift-scheduling = { path = "erp-shift-scheduling" }
 erp-notes = { path = "erp-notes" }
 erp-credit-notes = { path = "erp-credit-notes" }
 erp-product-variants = { path = "erp-product-variants" }
+erp-giftcards = { path = "erp-giftcards" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"

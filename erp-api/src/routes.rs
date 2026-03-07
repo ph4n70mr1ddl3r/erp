@@ -256,6 +256,7 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/lease", handlers::lease::routes())
         .nest("/bank", handlers::bank::routes())
         .nest("/loyalty", handlers::loyalty::routes())
+        .nest("/giftcards", handlers::giftcards::routes())
         .nest("/partner", handlers::partner::routes())
         .nest("/pcard", handlers::pcard::routes())
         .nest("/territory", handlers::territory::routes())

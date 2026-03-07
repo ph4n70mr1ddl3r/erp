@@ -39,7 +39,8 @@ import {
   Star,
   CalendarClock,
   CheckCircle,
-  TrendingUp
+  TrendingUp,
+  Gift
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -73,6 +74,7 @@ const navItems = [
   { path: '/assets', icon: Monitor, label: 'IT Assets' },
   { path: '/compliance', icon: Shield, label: 'Compliance' },
   { path: '/pos', icon: CreditCard, label: 'POS' },
+  { path: '/giftcards', icon: Gift, label: 'Gift Cards' },
   { path: '/ecommerce', icon: Globe, label: 'E-Commerce' },
   { path: '/documents', icon: FileText, label: 'Documents' },
   { path: '/pricing', icon: DollarSign, label: 'Pricing' },

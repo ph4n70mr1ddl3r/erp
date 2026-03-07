@@ -1898,3 +1898,52 @@ export const performance = {
     comments?: string;
   }) => api.post<PerformanceReview>(`/api/v1/hr/performance-reviews/${id}/submit`, data),
 };
+
+export interface GiftCard {
+  id: string;
+  card_number: string;
+  gift_card_type: 'Physical' | 'Digital' | 'ECode';
+  initial_balance: number;
+  current_balance: number;
+  currency: string;
+  status: 'Active' | 'Inactive' | 'Redeemed' | 'Expired' | 'Cancelled';
+  issued_date: string;
+  expiry_date?: string;
+  recipient_name?: string;
+  recipient_email?: string;
+}
+
+export interface GiftCardTransaction {
+  id: string;
+  transaction_number: string;
+  gift_card_id: string;
+  transaction_type: 'Issue' | 'Reload' | 'Redeem' | 'Refund' | 'Adjust' | 'Expire';
+  amount: number;
+  balance_before: number;
+  balance_after: number;
+  created_at: string;
+}
+
+export const giftcards = {
+  list: () => api.get<GiftCard[]>('/api/v1/giftcards'),
+  get: (id: string) => api.get<GiftCard>(`/api/v1/giftcards/${id}`),
+  create: (data: {
+    gift_card_type: 'Physical' | 'Digital' | 'ECode';
+    initial_balance: number;
+    currency?: string;
+    recipient_name?: string;
+    recipient_email?: string;
+    message?: string;
+  }) => api.post<GiftCard>('/api/v1/giftcards', data),
+  redeem: (id: string, data: { amount: number; order_id?: string; reference?: string }) =>
+    api.post<GiftCardTransaction>(`/api/v1/giftcards/${id}/redeem`, data),
+  reload: (id: string, data: { amount: number; order_id?: string; reference?: string }) =>
+    api.post<GiftCardTransaction>(`/api/v1/giftcards/${id}/reload`, data),
+  adjust: (id: string, data: { amount: number; reason: string }) =>
+    api.post<GiftCardTransaction>(`/api/v1/giftcards/${id}/adjust`, data),
+  cancel: (id: string, data: { reason: string }) =>
+    api.post<GiftCard>(`/api/v1/giftcards/${id}/cancel`, data),
+  getTransactions: (id: string) => api.get<GiftCardTransaction[]>(`/api/v1/giftcards/${id}/transactions`),
+  checkBalance: (cardNumber: string, pin?: string) =>
+    api.post<GiftCard>('/api/v1/giftcards/check-balance', { card_number: cardNumber, pin }),
+};

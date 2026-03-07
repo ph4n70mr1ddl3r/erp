@@ -100,6 +100,7 @@ pub mod tms;
 pub mod tpm;
 pub mod vendor_bills;
 pub mod credit_notes;
+pub mod giftcards;
 pub mod warranty;
 pub mod webhooks;
 pub mod websocket;
