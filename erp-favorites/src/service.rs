@@ -33,10 +33,7 @@ impl FavoriteService {
             return Err(Error::validation("Entity name cannot be empty").into());
         }
 
-        let favorite_type: FavoriteType = req
-            .favorite_type
-            .parse()
-            .map_err(|e: String| Error::validation(&e))?;
+        let favorite_type = req.favorite_type;
 
         if let Some(entity_id) = req.entity_id {
             let exists = self.repo.exists(pool, user_id, &favorite_type, entity_id).await?;
@@ -124,7 +121,7 @@ impl FavoriteService {
             Ok((fav, false))
         } else {
             let req = CreateFavoriteRequest {
-                favorite_type: favorite_type.to_string(),
+                favorite_type: favorite_type.clone(),
                 entity_id: Some(entity_id),
                 entity_name,
                 entity_code,
@@ -185,7 +182,7 @@ mod tests {
         let user_id = Uuid::new_v4();
         
         let empty_name_req = CreateFavoriteRequest {
-            favorite_type: "Customer".to_string(),
+            favorite_type: FavoriteType::Customer,
             entity_id: Some(Uuid::new_v4()),
             entity_name: "   ".to_string(),
             entity_code: None,

@@ -49,6 +49,12 @@ pub async fn me(
 #[derive(Clone)]
 pub struct AuthUser(pub erp_auth::jwt::TokenData);
 
+impl AuthUser {
+    pub fn user_id(&self) -> uuid::Uuid {
+        uuid::Uuid::parse_str(&self.0.user_id).unwrap_or_default()
+    }
+}
+
 fn extract_token(req: &Request<Body>) -> Option<String> {
     let auth = req.headers().get(AUTHORIZATION)?.to_str().ok()?;
     auth.strip_prefix("Bearer ").map(|s| s.to_string())

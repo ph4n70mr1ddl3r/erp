@@ -2,7 +2,8 @@ use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[serde(rename_all = "PascalCase")]
 pub enum FavoriteType {
     Customer,
     Vendor,
@@ -44,7 +45,7 @@ impl std::str::FromStr for FavoriteType {
             "customer" => Ok(FavoriteType::Customer),
             "vendor" => Ok(FavoriteType::Vendor),
             "product" => Ok(FavoriteType::Product),
-            "order" | "salesorder" => Ok(FavoriteType::Order),
+            "order" | "salesorder" | "sales_order" => Ok(FavoriteType::Order),
             "invoice" => Ok(FavoriteType::Invoice),
             "quote" | "quotation" => Ok(FavoriteType::Quote),
             "purchaseorder" | "purchase_order" | "po" => Ok(FavoriteType::PurchaseOrder),
@@ -91,7 +92,7 @@ impl Favorite {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateFavoriteRequest {
-    pub favorite_type: String,
+    pub favorite_type: FavoriteType,
     pub entity_id: Option<Uuid>,
     pub entity_name: String,
     pub entity_code: Option<String>,

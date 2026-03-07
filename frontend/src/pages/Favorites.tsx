@@ -89,14 +89,16 @@ const Favorites: React.FC = () => {
     }
   };
 
-  const groupedFavorites = favorites.reduce((acc, fav) => {
-    const type = fav.favorite_type;
-    if (!acc[type]) acc[type] = [];
-    acc[type].push(fav);
-    return acc;
-  }, {} as Record<string, Favorite[]>);
+  const groupedFavorites = React.useMemo(() => {
+    return favorites.reduce((acc, fav) => {
+      const type = fav.favorite_type;
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(fav);
+      return acc;
+    }, {} as Record<string, Favorite[]>);
+  }, [favorites]);
 
-  const types = Object.keys(groupedFavorites);
+  const types = Object.keys(groupedFavorites).sort();
 
   if (loading) {
     return (
@@ -120,13 +122,9 @@ const Favorites: React.FC = () => {
             className="border rounded px-3 py-2"
           >
             <option value="">All Types</option>
-            <option value="Product">Products</option>
-            <option value="Customer">Customers</option>
-            <option value="Vendor">Vendors</option>
-            <option value="Order">Orders</option>
-            <option value="Invoice">Invoices</option>
-            <option value="Project">Projects</option>
-            <option value="Ticket">Tickets</option>
+            {Object.keys(typeIcons).sort().map(type => (
+              <option key={type} value={type}>{type}s</option>
+            ))}
           </select>
         </div>
       </div>

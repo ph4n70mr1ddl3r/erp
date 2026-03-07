@@ -44,7 +44,7 @@ impl From<Favorite> for FavoriteResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct CreateFavoriteBody {
-    pub favorite_type: String,
+    pub favorite_type: FavoriteType,
     pub entity_id: Option<Uuid>,
     pub entity_name: String,
     pub entity_code: Option<String>,
@@ -53,7 +53,7 @@ pub struct CreateFavoriteBody {
 
 #[derive(Debug, Deserialize)]
 pub struct ToggleFavoriteBody {
-    pub favorite_type: String,
+    pub favorite_type: FavoriteType,
     pub entity_id: Uuid,
     pub entity_name: String,
     pub entity_code: Option<String>,
@@ -76,11 +76,11 @@ pub async fn list_favorites(
     Extension(auth_user): Extension<AuthUser>,
     Query(query): Query<FavoritesQuery>,
 ) -> ApiResult<Json<FavoriteListResponse>> {
-    let user_id = Uuid::parse_str(&auth_user.0.user_id).unwrap_or_default();
+    let user_id = auth_user.user_id();
     let svc = FavoriteService::new();
 
     if let Some(ft) = &query.favorite_type {
-        let favorite_type: FavoriteType = ft.parse().unwrap_or(FavoriteType::Page);
+        let favorite_type: FavoriteType = ft.parse().map_err(|e: String| erp_core::Error::validation(&e))?;
         let items = svc.list_for_user_by_type(&state.pool, user_id, &favorite_type).await?;
         let total = items.len() as i64;
         return Ok(Json(FavoriteListResponse {
@@ -101,7 +101,7 @@ pub async fn create_favorite(
     Extension(auth_user): Extension<AuthUser>,
     Json(body): Json<CreateFavoriteBody>,
 ) -> ApiResult<Json<FavoriteResponse>> {
-    let user_id = Uuid::parse_str(&auth_user.0.user_id).unwrap_or_default();
+    let user_id = auth_user.user_id();
     let svc = FavoriteService::new();
 
     let req = CreateFavoriteRequest {
@@ -130,7 +130,7 @@ pub async fn delete_favorite(
     Extension(auth_user): Extension<AuthUser>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let user_id = Uuid::parse_str(&auth_user.0.user_id).unwrap_or_default();
+    let user_id = auth_user.user_id();
     let svc = FavoriteService::new();
     svc.delete(&state.pool, id, user_id).await?;
     Ok(Json(serde_json::json!({ "status": "deleted" })))
@@ -141,16 +141,13 @@ pub async fn toggle_favorite(
     Extension(auth_user): Extension<AuthUser>,
     Json(body): Json<ToggleFavoriteBody>,
 ) -> ApiResult<Json<ToggleFavoriteResponse>> {
-    let user_id = Uuid::parse_str(&auth_user.0.user_id).unwrap_or_default();
+    let user_id = auth_user.user_id();
     let svc = FavoriteService::new();
-
-    let favorite_type: FavoriteType = body.favorite_type.parse()
-        .map_err(|e: String| erp_core::Error::validation(&e))?;
 
     let (favorite, is_favorited) = svc.toggle_favorite(
         &state.pool,
         user_id,
-        &favorite_type,
+        &body.favorite_type,
         body.entity_id,
         body.entity_name,
         body.entity_code,
@@ -172,7 +169,7 @@ pub async fn is_favorite(
     Extension(auth_user): Extension<AuthUser>,
     Path((favorite_type, entity_id)): Path<(String, Uuid)>,
 ) -> ApiResult<Json<IsFavoriteResponse>> {
-    let user_id = Uuid::parse_str(&auth_user.0.user_id).unwrap_or_default();
+    let user_id = auth_user.user_id();
     let svc = FavoriteService::new();
 
     let fav_type: FavoriteType = favorite_type.parse()
@@ -191,7 +188,7 @@ pub async fn favorite_count(
     State(state): State<AppState>,
     Extension(auth_user): Extension<AuthUser>,
 ) -> ApiResult<Json<FavoriteCountResponse>> {
-    let user_id = Uuid::parse_str(&auth_user.0.user_id).unwrap_or_default();
+    let user_id = auth_user.user_id();
     let svc = FavoriteService::new();
     let count = svc.count_for_user(&state.pool, user_id).await?;
     Ok(Json(FavoriteCountResponse { count }))
