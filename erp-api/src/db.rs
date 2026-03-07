@@ -3,11 +3,14 @@ use std::sync::Arc;
 use crate::Config;
 use crate::handlers::websocket::WebSocketManager;
 
+use erp_auth::AuthService;
+...
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
     pub config: Arc<Config>,
     pub ws_manager: WebSocketManager,
+    pub auth_svc: Arc<AuthService>,
 }
 
 impl AppState {
@@ -21,9 +24,10 @@ impl AppState {
         run_migrations(&pool).await?;
         
         Ok(Self {
-            pool,
+            pool: pool.clone(),
             config: Arc::new(config),
             ws_manager: Arc::new(crate::handlers::websocket::WebSocketManagerInner::new()),
+            auth_svc: Arc::new(AuthService::new(pool)),
         })
     }
 }

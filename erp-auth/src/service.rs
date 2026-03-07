@@ -1,8 +1,7 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
 use argon2::{password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString}, Argon2};
-use erp_core::{Error, Result};
+use erp_core::{BaseEntity, Error, Result};
 use crate::models::*;
 use crate::repository::*;
 use crate::jwt;
@@ -31,18 +30,14 @@ pub struct AuthService {
     repo: SqliteUserRepository,
 }
 
-impl Default for AuthService {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl AuthService {
-    pub fn new() -> Self {
-        Self { repo: SqliteUserRepository }
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { 
+            repo: SqliteUserRepository::new(pool),
+        }
     }
 
-    pub async fn register(&self, pool: &SqlitePool, req: RegisterRequest) -> Result<AuthResponse> {
+    pub async fn register(&self, req: RegisterRequest) -> Result<AuthResponse> {
         if req.username.is_empty() || req.email.is_empty() || req.password.is_empty() {
             return Err(Error::validation("Username, email, and password are required"));
         }
@@ -50,10 +45,9 @@ impl AuthService {
         validate_password_strength(&req.password)?;
         
         let password_hash = self.hash_password(&req.password)?;
-        let now = Utc::now();
         
         let user = User {
-            id: Uuid::new_v4(),
+            base: BaseEntity::new(),
             username: req.username,
             email: req.email,
             password_hash,
@@ -61,24 +55,22 @@ impl AuthService {
             role: UserRole::User,
             status: UserStatus::Active,
             last_login: None,
-            created_at: now,
-            updated_at: now,
         };
         
-        let user = self.repo.create(pool, user).await.map_err(|e| {
+        let user = self.repo.create(user).await.map_err(|e| {
             if matches!(e, Error::Database(_)) {
                 Error::Conflict("Registration failed. Please try different credentials.".to_string())
             } else {
                 e
             }
         })?;
-        let (token, expires_at) = jwt::generate_token(&user.id.to_string(), &user.username, user.role.as_str(), 24)?;
+        let (token, expires_at) = jwt::generate_token(&user.base.id.to_string(), &user.username, user.role.as_str(), 24)?;
         
         Ok(AuthResponse {
             token,
             expires_at,
             user: UserInfo {
-                id: user.id,
+                id: user.base.id,
                 username: user.username,
                 email: user.email,
                 full_name: user.full_name,
@@ -87,8 +79,8 @@ impl AuthService {
         })
     }
 
-    pub async fn login(&self, pool: &SqlitePool, req: LoginRequest) -> Result<AuthResponse> {
-        let user = self.repo.find_by_username(pool, &req.username).await.map_err(|e| {
+    pub async fn login(&self, req: LoginRequest) -> Result<AuthResponse> {
+        let user = self.repo.find_by_username(&req.username).await.map_err(|e| {
             match e {
                 Error::NotFound(_) => Error::Unauthorized,
                 _ => e
@@ -103,15 +95,15 @@ impl AuthService {
             return Err(Error::Unauthorized);
         }
         
-        self.repo.update_last_login(pool, user.id).await?;
+        self.repo.update_last_login(user.base.id).await?;
         
-        let (token, expires_at) = jwt::generate_token(&user.id.to_string(), &user.username, user.role.as_str(), 24)?;
+        let (token, expires_at) = jwt::generate_token(&user.base.id.to_string(), &user.username, user.role.as_str(), 24)?;
         
         Ok(AuthResponse {
             token,
             expires_at,
             user: UserInfo {
-                id: user.id,
+                id: user.base.id,
                 username: user.username,
                 email: user.email,
                 full_name: user.full_name,
@@ -120,12 +112,12 @@ impl AuthService {
         })
     }
 
-    pub async fn get_user(&self, pool: &SqlitePool, id: Uuid) -> Result<User> {
-        self.repo.find_by_id(pool, id).await
+    pub async fn get_user(&self, id: Uuid) -> Result<User> {
+        self.repo.find_by_id(id).await
     }
 
-    pub async fn list_users(&self, pool: &SqlitePool) -> Result<Vec<User>> {
-        self.repo.list(pool).await
+    pub async fn list_users(&self) -> Result<Vec<User>> {
+        self.repo.list().await
     }
 
     pub fn validate_token(&self, token: &str) -> Result<jwt::TokenData> {
@@ -179,7 +171,8 @@ mod tests {
     
     #[test]
     fn test_hash_password() {
-        let svc = AuthService::new();
+        let pool = SqlitePool::connect_lazy("sqlite::memory:");
+        let svc = AuthService::new(pool);
         let password = "testpassword123";
         let hash = svc.hash_password(password).unwrap();
         
@@ -189,7 +182,8 @@ mod tests {
     
     #[test]
     fn test_verify_password_correct() {
-        let svc = AuthService::new();
+        let pool = SqlitePool::connect_lazy("sqlite::memory:");
+        let svc = AuthService::new(pool);
         let password = "testpassword123";
         let hash = svc.hash_password(password).unwrap();
         
@@ -198,7 +192,8 @@ mod tests {
     
     #[test]
     fn test_verify_password_incorrect() {
-        let svc = AuthService::new();
+        let pool = SqlitePool::connect_lazy("sqlite::memory:");
+        let svc = AuthService::new(pool);
         let password = "testpassword123";
         let hash = svc.hash_password(password).unwrap();
         

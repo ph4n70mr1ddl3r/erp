@@ -7,105 +7,114 @@ use crate::models::*;
 
 #[async_trait]
 pub trait UserRepository: Send + Sync {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<User>;
-    async fn find_by_username(&self, pool: &SqlitePool, username: &str) -> Result<User>;
-    async fn find_by_email(&self, pool: &SqlitePool, email: &str) -> Result<User>;
-    async fn create(&self, pool: &SqlitePool, user: User) -> Result<User>;
-    async fn update_last_login(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
-    async fn list(&self, pool: &SqlitePool) -> Result<Vec<User>>;
+    async fn find_by_id(&self, id: Uuid) -> Result<User>;
+    async fn find_by_username(&self, username: &str) -> Result<User>;
+    async fn find_by_email(&self, email: &str) -> Result<User>;
+    async fn create(&self, user: User) -> Result<User>;
+    async fn update_last_login(&self, id: Uuid) -> Result<()>;
+    async fn list(&self) -> Result<Vec<User>>;
 }
 
-pub struct SqliteUserRepository;
+pub struct SqliteUserRepository {
+    pool: SqlitePool,
+}
+
+impl SqliteUserRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
 
 #[async_trait]
 impl UserRepository for SqliteUserRepository {
-    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<User> {
-        let row = sqlx::query_as::<_, UserRow>(
-            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users WHERE id = ?"
-        ).bind(id.to_string()).fetch_optional(pool).await?
+    async fn find_by_id(&self, id: Uuid) -> Result<User> {
+        let row = sqlx::query(
+            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at, created_by, updated_by FROM users WHERE id = ?"
+        ).bind(id.to_string()).fetch_optional(&self.pool).await?
         .ok_or_else(|| erp_core::Error::not_found("User", &id.to_string()))?;
-        Ok(row.into_user()?)
+        
+        self.map_user_row(row)
     }
 
-    async fn find_by_username(&self, pool: &SqlitePool, username: &str) -> Result<User> {
-        let row = sqlx::query_as::<_, UserRow>(
-            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users WHERE username = ?"
-        ).bind(username).fetch_optional(pool).await?
+    async fn find_by_username(&self, username: &str) -> Result<User> {
+        let row = sqlx::query(
+            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at, created_by, updated_by FROM users WHERE username = ?"
+        ).bind(username).fetch_optional(&self.pool).await?
         .ok_or_else(|| erp_core::Error::not_found("User", username))?;
-        Ok(row.into_user()?)
+        
+        self.map_user_row(row)
     }
 
-    async fn find_by_email(&self, pool: &SqlitePool, email: &str) -> Result<User> {
-        let row = sqlx::query_as::<_, UserRow>(
-            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users WHERE email = ?"
-        ).bind(email).fetch_optional(pool).await?
+    async fn find_by_email(&self, email: &str) -> Result<User> {
+        let row = sqlx::query(
+            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at, created_by, updated_by FROM users WHERE email = ?"
+        ).bind(email).fetch_optional(&self.pool).await?
         .ok_or_else(|| erp_core::Error::not_found("User", email))?;
-        Ok(row.into_user()?)
+        
+        self.map_user_row(row)
     }
 
-    async fn create(&self, pool: &SqlitePool, user: User) -> Result<User> {
-        let now = Utc::now();
+    async fn create(&self, user: User) -> Result<User> {
         sqlx::query(
-            "INSERT INTO users (id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        ).bind(user.id.to_string()).bind(&user.username).bind(&user.email).bind(&user.password_hash)
-        .bind(&user.full_name).bind(user.role.as_str()).bind(user.status.as_str())
-        .bind(user.last_login.map(|d| d.to_rfc3339())).bind(user.created_at.to_rfc3339()).bind(now.to_rfc3339())
-        .execute(pool).await?;
+            "INSERT INTO users (id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at, created_by, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(user.base.id.to_string())
+        .bind(&user.username)
+        .bind(&user.email)
+        .bind(&user.password_hash)
+        .bind(&user.full_name)
+        .bind(&user.role)
+        .bind(&user.status)
+        .bind(user.last_login)
+        .bind(user.base.created_at)
+        .bind(user.base.updated_at)
+        .bind(user.base.created_by.map(|id| id.to_string()))
+        .bind(user.base.updated_by.map(|id| id.to_string()))
+        .execute(&self.pool).await?;
         Ok(user)
     }
 
-    async fn update_last_login(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+    async fn update_last_login(&self, id: Uuid) -> Result<()> {
         let rows = sqlx::query("UPDATE users SET last_login = ? WHERE id = ?")
-            .bind(Utc::now().to_rfc3339()).bind(id.to_string()).execute(pool).await?;
+            .bind(Utc::now()).bind(id.to_string()).execute(&self.pool).await?;
         if rows.rows_affected() == 0 {
             return Err(erp_core::Error::not_found("User", &id.to_string()));
         }
         Ok(())
     }
 
-    async fn list(&self, pool: &SqlitePool) -> Result<Vec<User>> {
-        let rows = sqlx::query_as::<_, UserRow>(
-            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at FROM users ORDER BY username"
-        ).fetch_all(pool).await?;
-        rows.into_iter().map(|r| r.into_user()).collect()
+    async fn list(&self) -> Result<Vec<User>> {
+        let rows = sqlx::query(
+            "SELECT id, username, email, password_hash, full_name, role, status, last_login, created_at, updated_at, created_by, updated_by FROM users ORDER BY username"
+        ).fetch_all(&self.pool).await?;
+        
+        rows.into_iter().map(|r| self.map_user_row(r)).collect()
     }
 }
 
-#[derive(sqlx::FromRow)]
-struct UserRow {
-    id: String,
-    username: String,
-    email: String,
-    password_hash: String,
-    full_name: String,
-    role: String,
-    status: String,
-    last_login: Option<String>,
-    created_at: String,
-    updated_at: String,
-}
+impl SqliteUserRepository {
+    fn map_user_row(&self, row: sqlx::sqlite::SqliteRow) -> Result<User> {
+        use sqlx::Row;
+        use erp_core::BaseEntity;
 
-impl UserRow {
-    fn into_user(self) -> Result<User> {
-        let id = Uuid::parse_str(&self.id)
-            .map_err(|_| erp_core::Error::validation("Invalid user ID format"))?;
-        let created_at = chrono::DateTime::parse_from_rfc3339(&self.created_at)
-            .map(|d| d.with_timezone(&Utc))
-            .map_err(|_| erp_core::Error::validation("Invalid created_at timestamp"))?;
-        let updated_at = chrono::DateTime::parse_from_rfc3339(&self.updated_at)
-            .map(|d| d.with_timezone(&Utc))
-            .map_err(|_| erp_core::Error::validation("Invalid updated_at timestamp"))?;
+        let id_str: String = row.try_get("id")?;
+        let id = Uuid::parse_str(&id_str).map_err(|_| erp_core::Error::validation("Invalid UUID in database"))?;
+
         Ok(User {
-            id,
-            username: self.username,
-            email: self.email,
-            password_hash: self.password_hash,
-            full_name: self.full_name,
-            role: UserRole::parse(&self.role),
-            status: UserStatus::parse(&self.status),
-            last_login: self.last_login.and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&Utc))),
-            created_at,
-            updated_at,
+            base: BaseEntity {
+                id,
+                created_at: row.try_get("created_at")?,
+                updated_at: row.try_get("updated_at")?,
+                created_by: row.try_get::<Option<String>, _>("created_by")?.and_then(|s| Uuid::parse_str(&s).ok()),
+                updated_by: row.try_get::<Option<String>, _>("updated_by")?.and_then(|s| Uuid::parse_str(&s).ok()),
+            },
+            username: row.try_get("username")?,
+            email: row.try_get("email")?,
+            password_hash: row.try_get("password_hash")?,
+            full_name: row.try_get("full_name")?,
+            role: row.try_get("role")?,
+            status: row.try_get("status")?,
+            last_login: row.try_get("last_login")?,
         })
     }
 }

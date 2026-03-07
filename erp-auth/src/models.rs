@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use erp_core::BaseEntity;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -7,7 +8,7 @@ use validator::Validate;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct User {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub username: String,
     pub email: String,
     pub password_hash: String,
@@ -15,11 +16,10 @@ pub struct User {
     pub role: UserRole,
     pub status: UserStatus,
     pub last_login: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
 pub enum UserRole {
     Admin,
     Finance,
@@ -53,7 +53,8 @@ impl UserRole {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
 pub enum UserStatus {
     Active,
     Inactive,

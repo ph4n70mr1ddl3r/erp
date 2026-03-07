@@ -15,8 +15,7 @@ pub async fn register(
     Json(req): Json<RegisterRequest>,
 ) -> ApiResult<Json<AuthResponse>> {
     req.validate().map_err(|e| erp_core::Error::Validation(e.to_string()))?;
-    let svc = AuthService::new();
-    let res = svc.register(&state.pool, req).await?;
+    let res = state.auth_svc.register(req).await?;
     Ok(Json(res))
 }
 
@@ -25,8 +24,7 @@ pub async fn login(
     Json(req): Json<LoginRequest>,
 ) -> ApiResult<Json<AuthResponse>> {
     req.validate().map_err(|e| erp_core::Error::Validation(e.to_string()))?;
-    let svc = AuthService::new();
-    let res = svc.login(&state.pool, req).await?;
+    let res = state.auth_svc.login(req).await?;
     Ok(Json(res))
 }
 
@@ -34,11 +32,10 @@ pub async fn me(
     State(state): State<AppState>,
     axum::Extension(AuthUser(user)): axum::Extension<AuthUser>,
 ) -> ApiResult<Json<UserInfo>> {
-    let svc = AuthService::new();
     let id = uuid::Uuid::parse_str(&user.user_id).map_err(|_| erp_core::Error::Unauthorized)?;
-    let user = svc.get_user(&state.pool, id).await?;
+    let user = state.auth_svc.get_user(id).await?;
     Ok(Json(UserInfo {
-        id: user.id,
+        id: user.base.id,
         username: user.username,
         email: user.email,
         full_name: user.full_name,
@@ -46,7 +43,7 @@ pub async fn me(
     }))
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AuthUser(pub erp_auth::jwt::TokenData);
 
 impl AuthUser {
@@ -57,18 +54,21 @@ impl AuthUser {
 
 fn extract_token(req: &Request<Body>) -> Option<String> {
     let auth = req.headers().get(AUTHORIZATION)?.to_str().ok()?;
-    auth.strip_prefix("Bearer ").map(|s| s.to_string())
+    if auth.starts_with("Bearer ") {
+        Some(auth[7..].to_string())
+    } else {
+        None
+    }
 }
 
 pub async fn auth_middleware(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     req: Request<Body>,
     next: axum::middleware::Next,
 ) -> Result<Response, StatusCode> {
     let token = extract_token(&req).ok_or(StatusCode::UNAUTHORIZED)?;
     
-    let svc = AuthService::new();
-    let token_data = svc.validate_token(&token).map_err(|_| StatusCode::UNAUTHORIZED)?;
+    let token_data = state.auth_svc.validate_token(&token).map_err(|_| StatusCode::UNAUTHORIZED)?;
     
     let mut req = req;
     req.extensions_mut().insert(AuthUser(token_data));
@@ -76,13 +76,12 @@ pub async fn auth_middleware(
 }
 
 pub async fn optional_auth_middleware(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     mut req: Request<Body>,
     next: axum::middleware::Next,
 ) -> Response {
     if let Some(token) = extract_token(&req) {
-        let svc = AuthService::new();
-        if let Ok(token_data) = svc.validate_token(&token) {
+        if let Ok(token_data) = state.auth_svc.validate_token(&token) {
             req.extensions_mut().insert(AuthUser(token_data));
         }
     }
