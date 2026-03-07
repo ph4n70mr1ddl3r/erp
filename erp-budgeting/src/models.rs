@@ -41,6 +41,15 @@ pub enum ForecastMethod {
     Manual,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum BudgetEnforcementLevel {
+    None,
+    Advisory,
+    Soft,
+    Hard,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Budget {
     pub base: BaseEntity,
@@ -49,6 +58,7 @@ pub struct Budget {
     pub description: Option<String>,
     pub budget_type: BudgetType,
     pub status: BudgetStatus,
+    pub enforcement_level: BudgetEnforcementLevel,
     pub fiscal_year: i32,
     pub start_date: DateTime<Utc>,
     pub end_date: DateTime<Utc>,

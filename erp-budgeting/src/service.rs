@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use erp_core::error::{Error, Result};
 use erp_core::models::{BaseEntity, Money, Currency, Status};
+use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
@@ -25,6 +26,7 @@ impl BudgetService {
         name: String,
         code: String,
         budget_type: BudgetType,
+        enforcement_level: BudgetEnforcementLevel,
         fiscal_year: i32,
         start_date: DateTime<Utc>,
         end_date: DateTime<Utc>,
@@ -47,6 +49,7 @@ impl BudgetService {
             description: None,
             budget_type,
             status: BudgetStatus::Draft,
+            enforcement_level,
             fiscal_year,
             start_date,
             end_date,
@@ -146,7 +149,95 @@ impl BudgetService {
         };
         (variance, percent)
     }
+
+    /// Checks if the budget has enough funds for a proposed amount.
+    /// This is a critical feature in commercial ERPs to prevent over-expenditure.
+    pub async fn check_budget_availability(
+        &self,
+        budget_line: &BudgetLine,
+        budget: &Budget,
+        requested_amount: i64,
+    ) -> Result<BudgetAvailabilityResponse> {
+        let available = budget_line.planned_amount.amount - (budget_line.committed_amount.amount + budget_line.actual_amount.amount);
+        
+        if requested_amount <= available {
+            return Ok(BudgetAvailabilityResponse {
+                is_available: true,
+                available_amount: available,
+                requested_amount,
+                message: "Budget funds available".to_string(),
+                status: BudgetAvailabilityStatus::Success,
+            });
+        }
+
+        match budget.enforcement_level {
+            BudgetEnforcementLevel::None => Ok(BudgetAvailabilityResponse {
+                is_available: true,
+                available_amount: available,
+                requested_amount,
+                message: "Over budget but enforcement is None".to_string(),
+                status: BudgetAvailabilityStatus::Warning,
+            }),
+            BudgetEnforcementLevel::Advisory => Ok(BudgetAvailabilityResponse {
+                is_available: true,
+                available_amount: available,
+                requested_amount,
+                message: format!("Warning: Budget exceeded by {}", requested_amount - available),
+                status: BudgetAvailabilityStatus::Warning,
+            }),
+            BudgetEnforcementLevel::Soft => Ok(BudgetAvailabilityResponse {
+                is_available: false,
+                available_amount: available,
+                requested_amount,
+                message: "Budget exceeded. Approval required to override.".to_string(),
+                status: BudgetAvailabilityStatus::RequiresApproval,
+            }),
+            BudgetEnforcementLevel::Hard => Ok(BudgetAvailabilityResponse {
+                is_available: false,
+                available_amount: available,
+                requested_amount,
+                message: format!("Error: Budget exceeded by {}. Transaction blocked.", requested_amount - available),
+                status: BudgetAvailabilityStatus::Blocked,
+            }),
+        }
+    }
+
+    pub async fn commit_funds(
+        &self,
+        line: &mut BudgetLine,
+        budget: &Budget,
+        amount: i64,
+    ) -> Result<()> {
+        let check = self.check_budget_availability(line, budget, amount).await?;
+        if !check.is_available && budget.enforcement_level == BudgetEnforcementLevel::Hard {
+            return Err(Error::validation(check.message));
+        }
+
+        line.committed_amount.amount += amount;
+        line.variance_amount.amount = line.planned_amount.amount - (line.committed_amount.amount + line.actual_amount.amount);
+        
+        // In a real system, we would call repository update here
+        Ok(())
+    }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BudgetAvailabilityResponse {
+    pub is_available: bool,
+    pub available_amount: i64,
+    pub requested_amount: i64,
+    pub message: String,
+    pub status: BudgetAvailabilityStatus,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum BudgetAvailabilityStatus {
+    Success,
+    Warning,
+    RequiresApproval,
+    Blocked,
+}
+
 
 #[allow(dead_code)]
 pub struct ForecastService {
