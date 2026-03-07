@@ -88,128 +88,9 @@ fn api_routes(state: AppState) -> Router<AppState> {
         .nest("/bundles", bundles_routes())
         .nest("/quality", handlers::quality::routes())
         .route("/audit-logs", get(handlers::audit::list_audit_logs))
-        .route(
-            "/workflows",
-            get(handlers::workflow::list_workflows).post(handlers::workflow::create_workflow),
-        )
-        .route(
-            "/approvals",
-            get(handlers::workflow::list_pending_approvals),
-        )
-        .route(
-            "/approvals/:id/approve",
-            post(handlers::workflow::approve_request),
-        )
-        .route(
-            "/approvals/:id/reject",
-            post(handlers::workflow::reject_request),
-        )
-        .route(
-            "/attachments",
-            get(handlers::attachment::list_attachments)
-                .post(handlers::attachment::upload_attachment),
-        )
-        .route(
-            "/attachments/:id",
-            get(handlers::attachment::get_attachment)
-                .delete(handlers::attachment::delete_attachment),
-        )
-        .route("/currencies", get(handlers::extended::list_currencies))
-        .route(
-            "/exchange-rates",
-            post(handlers::extended::set_exchange_rate),
-        )
-        .route("/convert", get(handlers::extended::convert_currency))
-        .route(
-            "/budgets",
-            get(handlers::extended::list_budgets).post(handlers::extended::create_budget),
-        )
-        .route(
-            "/lots",
-            get(handlers::extended::list_lots).post(handlers::extended::create_lot),
-        )
-        .route("/leave-types", get(handlers::extended::list_leave_types))
-        .route(
-            "/leave-requests",
-            get(handlers::extended::list_pending_leave)
-                .post(handlers::extended::create_leave_request),
-        )
-        .route(
-            "/leave-requests/:id/approve",
-            post(handlers::extended::approve_leave),
-        )
-        .route(
-            "/leave-requests/:id/reject",
-            post(handlers::extended::reject_leave),
-        )
-        .route(
-            "/expense-categories",
-            get(handlers::extended::list_expense_categories)
-                .post(handlers::extended::create_expense_category),
-        )
-        .route(
-            "/expense-reports",
-            get(handlers::extended::list_expense_reports)
-                .post(handlers::extended::create_expense_report),
-        )
-        .route(
-            "/expense-reports/:id/submit",
-            post(handlers::extended::submit_expense),
-        )
-        .route(
-            "/expense-reports/:id/approve",
-            post(handlers::extended::approve_expense),
-        )
-        .route(
-            "/expense-reports/:id/reject",
-            post(handlers::extended::reject_expense),
-        )
-        .route(
-            "/fixed-assets",
-            get(handlers::extended::list_fixed_assets).post(handlers::extended::create_fixed_asset),
-        )
-        .route(
-            "/fixed-assets/:id/depreciate",
-            post(handlers::extended::depreciate_asset),
-        )
-        .route("/inspections", post(handlers::extended::create_inspection))
-        .route(
-            "/inspections/:id/complete",
-            post(handlers::extended::complete_inspection),
-        )
-        .route("/ncrs", post(handlers::extended::create_ncr))
-        .route(
-            "/leads",
-            get(handlers::extended::list_leads).post(handlers::extended::create_lead),
-        )
-        .route(
-            "/opportunities",
-            get(handlers::extended::list_opportunities)
-                .post(handlers::extended::create_opportunity),
-        )
-        .route(
-            "/opportunities/:id/stage",
-            post(handlers::extended::update_opportunity_stage),
-        )
-        .route(
-            "/schedules",
-            get(handlers::extended::list_schedules)
-                .post(handlers::extended::create_production_schedule),
-        )
-        .route("/scorecards", post(handlers::extended::create_scorecard))
-        .route(
-            "/scorecards/:vendor_id",
-            get(handlers::extended::list_scorecards),
-        )
-        .route(
-            "/custom-fields",
-            post(handlers::extended::create_custom_field),
-        )
-        .route(
-            "/custom-fields/:entity_type",
-            get(handlers::extended::list_custom_fields),
-        )
-        .route("/custom-values", post(handlers::extended::set_custom_value))
+        .merge(workflow_routes())
+        .merge(attachment_routes())
+        .merge(extended_routes())
         .route("/export", get(handlers::import_export::export_csv))
         .route("/import", post(handlers::import_export::import_csv))
         .nest("/compliance", compliance_routes(state.clone()))
@@ -1220,4 +1101,138 @@ fn shift_scheduling_routes() -> Router<AppState> {
             "/assignments/:id/clock-out",
             post(handlers::shift_scheduling::clock_out),
         )
+}
+
+fn workflow_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/workflows",
+            get(handlers::workflow::list_workflows).post(handlers::workflow::create_workflow),
+        )
+        .route(
+            "/approvals",
+            get(handlers::workflow::list_pending_approvals),
+        )
+        .route(
+            "/approvals/:id/approve",
+            post(handlers::workflow::approve_request),
+        )
+        .route(
+            "/approvals/:id/reject",
+            post(handlers::workflow::reject_request),
+        )
+}
+
+fn attachment_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            "/attachments",
+            get(handlers::attachment::list_attachments)
+                .post(handlers::attachment::upload_attachment),
+        )
+        .route(
+            "/attachments/:id",
+            get(handlers::attachment::get_attachment)
+                .delete(handlers::attachment::delete_attachment),
+        )
+}
+
+fn extended_routes() -> Router<AppState> {
+    Router::new()
+        .route("/currencies", get(handlers::extended::list_currencies))
+        .route(
+            "/exchange-rates",
+            post(handlers::extended::set_exchange_rate),
+        )
+        .route("/convert", get(handlers::extended::convert_currency))
+        .route(
+            "/budgets",
+            get(handlers::extended::list_budgets).post(handlers::extended::create_budget),
+        )
+        .route(
+            "/lots",
+            get(handlers::extended::list_lots).post(handlers::extended::create_lot),
+        )
+        .route("/leave-types", get(handlers::extended::list_leave_types))
+        .route(
+            "/leave-requests",
+            get(handlers::extended::list_pending_leave)
+                .post(handlers::extended::create_leave_request),
+        )
+        .route(
+            "/leave-requests/:id/approve",
+            post(handlers::extended::approve_leave),
+        )
+        .route(
+            "/leave-requests/:id/reject",
+            post(handlers::extended::reject_leave),
+        )
+        .route(
+            "/expense-categories",
+            get(handlers::extended::list_expense_categories)
+                .post(handlers::extended::create_expense_category),
+        )
+        .route(
+            "/expense-reports",
+            get(handlers::extended::list_expense_reports)
+                .post(handlers::extended::create_expense_report),
+        )
+        .route(
+            "/expense-reports/:id/submit",
+            post(handlers::extended::submit_expense),
+        )
+        .route(
+            "/expense-reports/:id/approve",
+            post(handlers::extended::approve_expense),
+        )
+        .route(
+            "/expense-reports/:id/reject",
+            post(handlers::extended::reject_expense),
+        )
+        .route(
+            "/fixed-assets",
+            get(handlers::extended::list_fixed_assets).post(handlers::extended::create_fixed_asset),
+        )
+        .route(
+            "/fixed-assets/:id/depreciate",
+            post(handlers::extended::depreciate_asset),
+        )
+        .route("/inspections", post(handlers::extended::create_inspection))
+        .route(
+            "/inspections/:id/complete",
+            post(handlers::extended::complete_inspection),
+        )
+        .route("/ncrs", post(handlers::extended::create_ncr))
+        .route(
+            "/leads",
+            get(handlers::extended::list_leads).post(handlers::extended::create_lead),
+        )
+        .route(
+            "/opportunities",
+            get(handlers::extended::list_opportunities)
+                .post(handlers::extended::create_opportunity),
+        )
+        .route(
+            "/opportunities/:id/stage",
+            post(handlers::extended::update_opportunity_stage),
+        )
+        .route(
+            "/schedules",
+            get(handlers::extended::list_schedules)
+                .post(handlers::extended::create_production_schedule),
+        )
+        .route("/scorecards", post(handlers::extended::create_scorecard))
+        .route(
+            "/scorecards/:vendor_id",
+            get(handlers::extended::list_scorecards),
+        )
+        .route(
+            "/custom-fields",
+            post(handlers::extended::create_custom_field),
+        )
+        .route(
+            "/custom-fields/:entity_type",
+            get(handlers::extended::list_custom_fields),
+        )
+        .route("/custom-values", post(handlers::extended::set_custom_value))
 }

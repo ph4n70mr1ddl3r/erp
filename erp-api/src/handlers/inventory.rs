@@ -83,9 +83,7 @@ pub async fn create_product(
     State(state): State<AppState>,
     Json(req): Json<CreateProductRequest>,
 ) -> ApiResult<Json<ProductResponse>> {
-    req.validate().map_err(|e| {
-        erp_core::Error::validation(format!("Validation failed: {}", e))
-    })?;
+    req.validate()?;
     
     let service = ProductService::new();
     
@@ -113,9 +111,7 @@ pub async fn update_product(
     Path(id): Path<Uuid>,
     Json(req): Json<CreateProductRequest>,
 ) -> ApiResult<Json<ProductResponse>> {
-    req.validate().map_err(|e| {
-        erp_core::Error::validation(format!("Validation failed: {}", e))
-    })?;
+    req.validate()?;
     
     let service = ProductService::new();
     
@@ -219,9 +215,7 @@ pub async fn create_warehouse(
     State(state): State<AppState>,
     Json(req): Json<CreateWarehouseRequest>,
 ) -> ApiResult<Json<WarehouseResponse>> {
-    req.validate().map_err(|e| {
-        erp_core::Error::validation(format!("Validation failed: {}", e))
-    })?;
+    req.validate()?;
     
     let service = WarehouseService::new();
     
@@ -273,9 +267,7 @@ pub async fn create_stock_movement(
     State(state): State<AppState>,
     Json(req): Json<CreateStockMovementRequest>,
 ) -> ApiResult<Json<StockMovementResponse>> {
-    req.validate().map_err(|e| {
-        erp_core::Error::validation(format!("Validation failed: {}", e))
-    })?;
+    req.validate()?;
     
     let service = StockService::new();
     

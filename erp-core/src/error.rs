@@ -53,5 +53,5 @@ impl Error {
 
 pub fn parse_uuid(s: &str, field_name: &str) -> Result<Uuid> {
     Uuid::parse_str(s)
-        .map_err(|e| Error::internal(format!("Invalid UUID for {}: {} - {}", field_name, s, e)))
+        .map_err(|e| Error::validation(format!("Invalid UUID for {}: {} - {}", field_name, s, e)))
 }
