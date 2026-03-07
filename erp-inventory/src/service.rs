@@ -2919,3 +2919,132 @@ impl ValuationService {
         Ok(())
     }
 }
+
+pub struct InventoryValuationService {
+    repo: SqliteValuationRepository,
+}
+
+impl Default for InventoryValuationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl InventoryValuationService {
+    pub fn new() -> Self {
+        Self { repo: SqliteValuationRepository }
+    }
+
+    pub async fn record_receipt(
+        &self,
+        pool: &SqlitePool,
+        product_id: Uuid,
+        warehouse_id: Uuid,
+        quantity: i64,
+        unit_cost: i64,
+        reference: &str,
+    ) -> Result<()> {
+        let now = Utc::now();
+        let layer = InventoryCostLayer {
+            id: Uuid::new_v4(),
+            product_id,
+            warehouse_id,
+            layer_date: now,
+            receipt_reference: reference.to_string(),
+            receipt_id: None,
+            quantity,
+            unit_cost,
+            remaining_quantity: quantity,
+            total_value: quantity * unit_cost,
+            created_at: now,
+        };
+
+        self.repo.add_cost_layer(pool, layer).await?;
+
+        // Update overall product valuation
+        let mut valuation = match self.repo.get_valuation(pool, product_id, warehouse_id).await {
+            Ok(v) => v,
+            Err(_) => ProductValuation {
+                id: Uuid::new_v4(),
+                product_id,
+                warehouse_id,
+                valuation_method: ValuationMethod::FIFO,
+                standard_cost: 0,
+                current_unit_cost: unit_cost,
+                total_quantity: 0,
+                total_value: 0,
+                last_receipt_cost: 0,
+                last_receipt_date: None,
+                last_issue_cost: 0,
+                last_issue_date: None,
+                created_at: now,
+                updated_at: now,
+            },
+        };
+
+        valuation.total_quantity += quantity;
+        valuation.total_value += quantity * unit_cost;
+        valuation.current_unit_cost = if valuation.total_quantity > 0 {
+            valuation.total_value / valuation.total_quantity
+        } else {
+            unit_cost
+        };
+        valuation.last_receipt_cost = unit_cost;
+        valuation.last_receipt_date = Some(now);
+        valuation.updated_at = now;
+
+        self.repo.update_valuation(pool, valuation).await?;
+
+        Ok(())
+    }
+
+    pub async fn issue_inventory_fifo(
+        &self,
+        pool: &SqlitePool,
+        product_id: Uuid,
+        warehouse_id: Uuid,
+        quantity_to_issue: i64,
+    ) -> Result<i64> {
+        let mut layers = self.repo.get_cost_layers(pool, product_id, warehouse_id).await?;
+        let mut remaining_to_issue = quantity_to_issue;
+        let mut total_issued_cost = 0i64;
+
+        for layer in &mut layers {
+            if remaining_to_issue <= 0 {
+                break;
+            }
+
+            let issue_qty = layer.remaining_quantity.min(remaining_to_issue);
+            let cost = issue_qty * layer.unit_cost;
+            
+            total_issued_cost += cost;
+            let new_remaining = layer.remaining_quantity - issue_qty;
+            remaining_to_issue -= issue_qty;
+
+            // Update layer in DB
+            sqlx::query("UPDATE inventory_cost_layers SET remaining_quantity = ? WHERE id = ?")
+                .bind(new_remaining)
+                .bind(layer.id.to_string())
+                .execute(pool)
+                .await
+                .map_err(Error::Database)?;
+        }
+
+        if remaining_to_issue > 0 {
+            return Err(Error::validation(format!("Insufficient stock to issue {} units. Missing {} units.", quantity_to_issue, remaining_to_issue)));
+        }
+
+        // Update overall product valuation
+        let mut valuation = self.repo.get_valuation(pool, product_id, warehouse_id).await?;
+        valuation.total_quantity -= quantity_to_issue;
+        valuation.total_value -= total_issued_cost;
+        valuation.last_issue_cost = if quantity_to_issue > 0 { total_issued_cost / quantity_to_issue } else { 0 };
+        valuation.last_issue_date = Some(Utc::now());
+        valuation.updated_at = Utc::now();
+
+        self.repo.update_valuation(pool, valuation).await?;
+
+        Ok(total_issued_cost)
+    }
+}
+
