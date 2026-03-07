@@ -1,21 +1,38 @@
 use crate::models::*;
 use crate::repository::*;
-use erp_core::{Error, Result};
+use erp_core::{BaseEntity, Error, Result};
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
-pub struct PaymentService {
-    repo: PaymentRepository,
-    refund_repo: RefundRepository,
+pub struct PaymentService<
+    P: PaymentRepository = SqlitePaymentRepository,
+    R: RefundRepository = SqliteRefundRepository,
+> {
+    repo: P,
+    refund_repo: R,
     pool: SqlitePool,
 }
 
-impl PaymentService {
+impl PaymentService<SqlitePaymentRepository, SqliteRefundRepository> {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
-            repo: PaymentRepository::new(pool.clone()),
-            refund_repo: RefundRepository::new(pool.clone()),
+            repo: SqlitePaymentRepository::new(pool.clone()),
+            refund_repo: SqliteRefundRepository::new(pool.clone()),
+            pool,
+        }
+    }
+}
+
+impl<P, R> PaymentService<P, R>
+where
+    P: PaymentRepository,
+    R: RefundRepository,
+{
+    pub fn with_repos(repo: P, refund_repo: R, pool: SqlitePool) -> Self {
+        Self {
+            repo,
+            refund_repo,
             pool,
         }
     }
@@ -25,7 +42,13 @@ impl PaymentService {
         let payment_number = format!("PAY-{}", now.format("%Y%m%d%H%M%S"));
         
         let payment = Payment {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: user_id,
+                updated_by: None,
+            },
             payment_number,
             gateway_id: req.gateway_id,
             invoice_id: req.invoice_id,
@@ -46,13 +69,11 @@ impl PaymentService {
             processing_fee: 0,
             notes: req.notes,
             paid_at: Some(now),
-            created_at: now,
-            created_by: user_id,
         };
         self.repo.create(payment.clone()).await?;
         
         if let Some(invoice_id) = req.invoice_id {
-            self.allocate_to_invoice(payment.id, invoice_id, req.amount).await?;
+            self.allocate_to_invoice(payment.base.id, invoice_id, req.amount).await?;
         }
         
         Ok(payment)
@@ -93,7 +114,13 @@ impl PaymentService {
         let refund_number = format!("RFD-{}", now.format("%Y%m%d%H%M%S"));
         
         let refund = Refund {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: user_id,
+                updated_by: None,
+            },
             refund_number,
             payment_id: req.payment_id,
             amount: req.amount,
@@ -102,8 +129,6 @@ impl PaymentService {
             status: "Completed".to_string(),
             gateway_refund_id: None,
             processed_at: Some(now),
-            created_at: now,
-            created_by: user_id,
         };
         self.refund_repo.create(refund.clone()).await?;
         
@@ -127,17 +152,34 @@ impl PaymentService {
     }
 }
 
-pub struct GatewayService {
-    repo: GatewayRepository,
-    payment_repo: PaymentRepository,
+pub struct GatewayService<
+    G: GatewayRepository = SqliteGatewayRepository,
+    P: PaymentRepository = SqlitePaymentRepository,
+> {
+    repo: G,
+    payment_repo: P,
     pool: SqlitePool,
 }
 
-impl GatewayService {
+impl GatewayService<SqliteGatewayRepository, SqlitePaymentRepository> {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
-            repo: GatewayRepository::new(pool.clone()),
-            payment_repo: PaymentRepository::new(pool.clone()),
+            repo: SqliteGatewayRepository::new(pool.clone()),
+            payment_repo: SqlitePaymentRepository::new(pool.clone()),
+            pool,
+        }
+    }
+}
+
+impl<G, P> GatewayService<G, P>
+where
+    G: GatewayRepository,
+    P: PaymentRepository,
+{
+    pub fn with_repos(repo: G, payment_repo: P, pool: SqlitePool) -> Self {
+        Self {
+            repo,
+            payment_repo,
             pool,
         }
     }
@@ -145,7 +187,13 @@ impl GatewayService {
     pub async fn create(&self, code: String, name: String, gateway_type: String, supported_methods: Vec<String>) -> Result<PaymentGateway> {
         let now = Utc::now();
         let gateway = PaymentGateway {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
             code,
             name,
             gateway_type,
@@ -157,8 +205,6 @@ impl GatewayService {
             is_active: true,
             supported_methods: serde_json::to_string(&supported_methods)
                 .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to serialize supported methods: {}", e)))?,
-            created_at: now,
-            updated_at: now,
         };
         self.repo.create(gateway.clone()).await?;
         Ok(gateway)
@@ -170,7 +216,7 @@ impl GatewayService {
 
     pub async fn process_payment(&self, req: ProcessPaymentRequest) -> Result<Payment> {
         let _gateway = self.repo.list_active().await?
-            .into_iter().find(|g| g.id == req.gateway_id)
+            .into_iter().find(|g| g.base.id == req.gateway_id)
             .ok_or_else(|| Error::not_found("Gateway", &req.gateway_id.to_string()))?;
         
         let now = Utc::now();
@@ -178,7 +224,13 @@ impl GatewayService {
         let processing_fee = (req.amount as f64 * 0.029 + 30.0) as i64;
         
         let payment = Payment {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
             payment_number,
             gateway_id: Some(req.gateway_id),
             invoice_id: req.invoice_id,
@@ -199,8 +251,6 @@ impl GatewayService {
             processing_fee,
             notes: req.description,
             paid_at: Some(now),
-            created_at: now,
-            created_by: None,
         };
         self.payment_repo.create(payment.clone()).await?;
         
@@ -210,7 +260,7 @@ impl GatewayService {
                    VALUES (?, ?, ?, ?, ?)"#
             )
             .bind(Uuid::new_v4())
-            .bind(payment.id)
+            .bind(payment.base.id)
             .bind(invoice_id)
             .bind(req.amount)
             .bind(now)
@@ -222,21 +272,38 @@ impl GatewayService {
 }
 
 
-pub struct CustomerPaymentMethodService {
-    repo: CustomerPaymentMethodRepository,
+pub struct CustomerPaymentMethodService<
+    R: CustomerPaymentMethodRepository = SqliteCustomerPaymentMethodRepository,
+> {
+    repo: R,
 }
 
-impl CustomerPaymentMethodService {
+impl CustomerPaymentMethodService<SqliteCustomerPaymentMethodRepository> {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
-            repo: CustomerPaymentMethodRepository::new(pool),
+            repo: SqliteCustomerPaymentMethodRepository::new(pool),
         }
+    }
+}
+
+impl<R> CustomerPaymentMethodService<R>
+where
+    R: CustomerPaymentMethodRepository,
+{
+    pub fn with_repo(repo: R) -> Self {
+        Self { repo }
     }
 
     pub async fn save(&self, customer_id: Uuid, payment_method: PaymentMethod, gateway_token: String, card_last_four: Option<String>, card_brand: Option<String>) -> Result<CustomerPaymentMethod> {
         let now = Utc::now();
         let method = CustomerPaymentMethod {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
             customer_id,
             payment_method,
             is_default: false,
@@ -249,7 +316,6 @@ impl CustomerPaymentMethodService {
             bank_account_type: None,
             gateway_token: Some(gateway_token),
             nickname: None,
-            created_at: now,
         };
         self.repo.create(method).await
     }

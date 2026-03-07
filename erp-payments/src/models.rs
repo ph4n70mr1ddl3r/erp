@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -31,7 +32,8 @@ pub enum PaymentMethod {
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct PaymentGateway {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub code: String,
     pub name: String,
     pub gateway_type: String,
@@ -42,13 +44,12 @@ pub struct PaymentGateway {
     pub is_live: bool,
     pub is_active: bool,
     pub supported_methods: String,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Payment {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub payment_number: String,
     pub gateway_id: Option<Uuid>,
     pub invoice_id: Option<Uuid>,
@@ -69,22 +70,21 @@ pub struct Payment {
     pub processing_fee: i64,
     pub notes: Option<String>,
     pub paid_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub created_by: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct PaymentAllocation {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub payment_id: Uuid,
     pub invoice_id: Uuid,
     pub amount: i64,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Refund {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub refund_number: String,
     pub payment_id: Uuid,
     pub amount: i64,
@@ -93,13 +93,12 @@ pub struct Refund {
     pub status: String,
     pub gateway_refund_id: Option<String>,
     pub processed_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub created_by: Option<Uuid>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct CustomerPaymentMethod {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub customer_id: Uuid,
     pub payment_method: PaymentMethod,
     pub is_default: bool,
@@ -112,12 +111,12 @@ pub struct CustomerPaymentMethod {
     pub bank_account_type: Option<String>,
     pub gateway_token: Option<String>,
     pub nickname: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct PaymentBatch {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub batch_number: String,
     pub gateway_id: Uuid,
     pub total_amount: i64,
@@ -126,7 +125,6 @@ pub struct PaymentBatch {
     pub status: String,
     pub settled_at: Option<DateTime<Utc>>,
     pub settlement_reference: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -166,7 +164,8 @@ pub struct CreateRefundRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct StripePaymentIntent {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub stripe_intent_id: String,
     pub customer_id: Uuid,
     pub invoice_id: Option<Uuid>,
@@ -176,13 +175,12 @@ pub struct StripePaymentIntent {
     pub client_secret: Option<String>,
     pub description: Option<String>,
     pub metadata: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct StripeCheckoutSession {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub stripe_session_id: String,
     pub customer_id: Uuid,
     pub invoice_id: Option<Uuid>,
@@ -195,19 +193,18 @@ pub struct StripeCheckoutSession {
     pub payment_intent_id: Option<String>,
     pub expires_at: Option<DateTime<Utc>>,
     pub completed_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct StripeWebhookEvent {
-    pub id: Uuid,
+    #[sqlx(flatten)]
+    pub base: BaseEntity,
     pub stripe_event_id: String,
     pub event_type: String,
     pub payload: String,
     pub processed: bool,
     pub processed_at: Option<DateTime<Utc>>,
     pub error_message: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
 

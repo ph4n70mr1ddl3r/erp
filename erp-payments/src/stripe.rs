@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::repository::*;
-use erp_core::{Error, Result};
+use erp_core::{BaseEntity, Error, Result};
 use chrono::Utc;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -40,15 +40,18 @@ impl StripeConfig {
     }
 }
 
-pub struct StripeService {
+pub struct StripeService<
+    S: StripeRepository = SqliteStripeRepository,
+    P: PaymentRepository = SqlitePaymentRepository,
+> {
     client: Client,
     config: StripeConfig,
-    repo: StripeRepository,
-    payment_repo: PaymentRepository,
+    repo: S,
+    payment_repo: P,
     pool: SqlitePool,
 }
 
-impl StripeService {
+impl StripeService<SqliteStripeRepository, SqlitePaymentRepository> {
     pub fn new(config: StripeConfig, pool: SqlitePool) -> Result<Self> {
         let client = Client::builder()
             .timeout(Duration::from_secs(STRIPE_API_TIMEOUT_SECS))
@@ -57,10 +60,26 @@ impl StripeService {
         Ok(Self { 
             client, 
             config, 
-            repo: StripeRepository::new(pool.clone()),
-            payment_repo: PaymentRepository::new(pool.clone()),
+            repo: SqliteStripeRepository::new(pool.clone()),
+            payment_repo: SqlitePaymentRepository::new(pool.clone()),
             pool,
         })
+    }
+}
+
+impl<S, P> StripeService<S, P>
+where
+    S: StripeRepository,
+    P: PaymentRepository,
+{
+    pub fn with_repos(client: Client, config: StripeConfig, repo: S, payment_repo: P, pool: SqlitePool) -> Self {
+        Self {
+            client,
+            config,
+            repo,
+            payment_repo,
+            pool,
+        }
     }
     
     pub async fn create_payment_intent(
@@ -106,7 +125,13 @@ impl StripeService {
         
         let now = Utc::now();
         let payment_intent = StripePaymentIntent {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
             stripe_intent_id: stripe_response.id.clone(),
             customer_id: req.customer_id,
             invoice_id: req.invoice_id,
@@ -116,14 +141,12 @@ impl StripeService {
             client_secret: stripe_response.client_secret.clone(),
             description: req.description,
             metadata: req.metadata.and_then(|m| serde_json::to_string(&m).ok()),
-            created_at: now,
-            updated_at: now,
         };
         
         self.repo.create_payment_intent(payment_intent.clone()).await?;
         
         Ok(PaymentIntentResponse {
-            id: payment_intent.id,
+            id: payment_intent.base.id,
             stripe_intent_id: payment_intent.stripe_intent_id,
             client_secret: stripe_response.client_secret.unwrap_or_default(),
             amount: payment_intent.amount,
@@ -179,7 +202,13 @@ impl StripeService {
         
         let now = Utc::now();
         let checkout_session = StripeCheckoutSession {
-            id: Uuid::new_v4(),
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
             stripe_session_id: stripe_response.id.clone(),
             customer_id: req.customer_id,
             invoice_id: req.invoice_id,
@@ -192,13 +221,12 @@ impl StripeService {
             payment_intent_id: stripe_response.payment_intent,
             expires_at: None,
             completed_at: None,
-            created_at: now,
         };
         
         self.repo.create_checkout_session(checkout_session.clone()).await?;
         
         Ok(CheckoutSessionResponse {
-            id: checkout_session.id,
+            id: checkout_session.base.id,
             stripe_session_id: checkout_session.stripe_session_id,
             checkout_url: stripe_response.url.unwrap_or_default(),
             amount: checkout_session.amount,
@@ -277,7 +305,7 @@ impl StripeService {
             if let Some(intent_id) = &refund_response.payment_intent {
                 if let Ok(Some(mut payment_intent)) = self.repo.get_payment_intent_by_stripe_id(intent_id).await {
                     payment_intent.status = "refunded".to_string();
-                    payment_intent.updated_at = Utc::now();
+                    payment_intent.base.updated_at = Utc::now();
                     if let Err(e) = self.repo.update_payment_intent_status(&payment_intent).await {
                         tracing::warn!("Failed to update payment intent status after refund: {}", e);
                     }
@@ -349,14 +377,19 @@ impl StripeService {
         let event_id = Uuid::new_v4();
         
         let webhook_event = StripeWebhookEvent {
-            id: event_id,
+            base: BaseEntity {
+                id: event_id,
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
             stripe_event_id: webhook.id.clone(),
             event_type: webhook.event_type.clone(),
             payload: serde_json::to_string(&webhook).unwrap_or_default(),
             processed: false,
             processed_at: None,
             error_message: None,
-            created_at: now,
         };
         
         self.repo.create_webhook_event(&webhook_event).await?;
@@ -392,11 +425,17 @@ impl StripeService {
                     if let Some(intent_id) = data.get("id").and_then(|v| v.as_str()) {
                         if let Ok(Some(mut payment_intent)) = self.repo.get_payment_intent_by_stripe_id(intent_id).await {
                             payment_intent.status = "succeeded".to_string();
-                            payment_intent.updated_at = Utc::now();
+                            payment_intent.base.updated_at = Utc::now();
                             self.repo.update_payment_intent_status(&payment_intent).await?;
                             
                             let payment = Payment {
-                                id: Uuid::new_v4(),
+                                base: BaseEntity {
+                                    id: Uuid::new_v4(),
+                                    created_at: Utc::now(),
+                                    updated_at: Utc::now(),
+                                    created_by: None,
+                                    updated_by: None,
+                                },
                                 payment_number: format!("PAY-{}", Utc::now().format("%Y%m%d%H%M%S")),
                                 gateway_id: None,
                                 invoice_id: payment_intent.invoice_id,
@@ -417,8 +456,6 @@ impl StripeService {
                                 processing_fee: data.get("charges").and_then(|c| c.get("data")).and_then(|d| d.get(0)).and_then(|c| c.get("balance_transaction")).and_then(|b| b.get("fee")).and_then(|v| v.as_i64()).unwrap_or(0),
                                 notes: payment_intent.description.clone(),
                                 paid_at: Some(Utc::now()),
-                                created_at: Utc::now(),
-                                created_by: None,
                             };
                             
                             self.payment_repo.create(payment).await?;
@@ -431,7 +468,7 @@ impl StripeService {
                     if let Some(intent_id) = data.get("id").and_then(|v| v.as_str()) {
                         if let Ok(Some(mut payment_intent)) = self.repo.get_payment_intent_by_stripe_id(intent_id).await {
                             payment_intent.status = "failed".to_string();
-                            payment_intent.updated_at = Utc::now();
+                            payment_intent.base.updated_at = Utc::now();
                             self.repo.update_payment_intent_status(&payment_intent).await?;
                         }
                     }
