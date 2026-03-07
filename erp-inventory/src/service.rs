@@ -3048,3 +3048,81 @@ impl InventoryValuationService {
     }
 }
 
+pub struct StockTransferService {
+    repo: SqliteStockTransferRepository,
+}
+
+impl Default for StockTransferService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl StockTransferService {
+    pub fn new() -> Self {
+        Self { repo: SqliteStockTransferRepository }
+    }
+
+    pub async fn create_transfer(
+        &self,
+        pool: &SqlitePool,
+        from_warehouse_id: Uuid,
+        to_warehouse_id: Uuid,
+        notes: Option<String>,
+    ) -> Result<StockTransfer> {
+        let now = Utc::now();
+        let transfer = StockTransfer {
+            base: BaseEntity::new_with_id(Uuid::new_v4()),
+            transfer_number: format!("ST-{}", now.format("%Y%m%d%H%M%S")),
+            from_warehouse_id,
+            to_warehouse_id,
+            shipment_date: None,
+            expected_arrival: None,
+            status: StockTransferStatus::Draft,
+            carrier: None,
+            tracking_number: None,
+            notes,
+        };
+        self.repo.create(pool, transfer).await
+    }
+
+    pub async fn add_line(
+        &self,
+        pool: &SqlitePool,
+        transfer_id: Uuid,
+        product_id: Uuid,
+        quantity: i64,
+        lot_id: Option<Uuid>,
+    ) -> Result<StockTransferLine> {
+        let line = StockTransferLine {
+            id: Uuid::new_v4(),
+            transfer_id,
+            product_id,
+            quantity,
+            quantity_received: 0,
+            lot_id,
+            status: StockTransferStatus::Draft,
+        };
+        self.repo.create_line(pool, line).await
+    }
+
+    pub async fn ship_transfer(
+        &self,
+        pool: &SqlitePool,
+        id: Uuid,
+        carrier: Option<String>,
+        tracking: Option<String>,
+    ) -> Result<()> {
+        let mut transfer = self.repo.find_by_id(pool, id).await?;
+        if transfer.status != StockTransferStatus::Draft {
+            return Err(Error::validation("Only draft transfers can be shipped"));
+        }
+        transfer.status = StockTransferStatus::InTransit;
+        transfer.shipment_date = Some(Utc::now());
+        transfer.carrier = carrier;
+        transfer.tracking_number = tracking;
+        // In a real system, we'd decrease stock in 'from' warehouse here.
+        self.repo.update_status(pool, id, transfer.status).await
+    }
+}
+

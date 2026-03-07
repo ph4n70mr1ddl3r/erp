@@ -1095,3 +1095,39 @@ pub enum CycleCountLineStatus {
     Verified,
     Adjusted,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum StockTransferStatus {
+    Draft,
+    Pending,
+    InTransit,
+    PartiallyReceived,
+    Received,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StockTransfer {
+    pub base: BaseEntity,
+    pub transfer_number: String,
+    pub from_warehouse_id: Uuid,
+    pub to_warehouse_id: Uuid,
+    pub shipment_date: Option<DateTime<Utc>>,
+    pub expected_arrival: Option<DateTime<Utc>>,
+    pub status: StockTransferStatus,
+    pub carrier: Option<String>,
+    pub tracking_number: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StockTransferLine {
+    pub id: Uuid,
+    pub transfer_id: Uuid,
+    pub product_id: Uuid,
+    pub quantity: i64,
+    pub quantity_received: i64,
+    pub lot_id: Option<Uuid>,
+    pub status: StockTransferStatus,
+}

@@ -883,3 +883,194 @@ impl CostLayerRow {
         })
     }
 }
+
+#[async_trait]
+pub trait StockTransferRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<StockTransfer>;
+    async fn find_all(&self, pool: &SqlitePool) -> Result<Vec<StockTransfer>>;
+    async fn create(&self, pool: &SqlitePool, transfer: StockTransfer) -> Result<StockTransfer>;
+    async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: StockTransferStatus) -> Result<()>;
+    async fn find_lines(&self, pool: &SqlitePool, transfer_id: Uuid) -> Result<Vec<StockTransferLine>>;
+    async fn create_line(&self, pool: &SqlitePool, line: StockTransferLine) -> Result<StockTransferLine>;
+}
+
+pub struct SqliteStockTransferRepository;
+
+#[async_trait]
+impl StockTransferRepository for SqliteStockTransferRepository {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<StockTransfer> {
+        let row = sqlx::query_as::<_, StockTransferRow>(
+            "SELECT id, transfer_number, from_warehouse_id, to_warehouse_id, shipment_date, expected_arrival, status, carrier, tracking_number, notes, created_at, updated_at, created_by, updated_by
+             FROM stock_transfers WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| Error::not_found("StockTransfer", &id.to_string()))?;
+        
+        Ok(row.into_transfer()?)
+    }
+
+    async fn find_all(&self, pool: &SqlitePool) -> Result<Vec<StockTransfer>> {
+        let rows = sqlx::query_as::<_, StockTransferRow>(
+            "SELECT id, transfer_number, from_warehouse_id, to_warehouse_id, shipment_date, expected_arrival, status, carrier, tracking_number, notes, created_at, updated_at, created_by, updated_by
+             FROM stock_transfers ORDER BY created_at DESC"
+        )
+        .fetch_all(pool)
+        .await?;
+        
+        Ok(rows.into_iter().map(|r| r.into_transfer()).collect::<Result<Vec<_>>>()?)
+    }
+
+    async fn create(&self, pool: &SqlitePool, transfer: StockTransfer) -> Result<StockTransfer> {
+        sqlx::query(
+            "INSERT INTO stock_transfers (id, transfer_number, from_warehouse_id, to_warehouse_id, shipment_date, expected_arrival, status, carrier, tracking_number, notes, created_at, updated_at, created_by, updated_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(transfer.base.id.to_string())
+        .bind(&transfer.transfer_number)
+        .bind(transfer.from_warehouse_id.to_string())
+        .bind(transfer.to_warehouse_id.to_string())
+        .bind(transfer.shipment_date.map(|d| d.to_rfc3339()))
+        .bind(transfer.expected_arrival.map(|d| d.to_rfc3339()))
+        .bind(format!("{:?}", transfer.status))
+        .bind(&transfer.carrier)
+        .bind(&transfer.tracking_number)
+        .bind(&transfer.notes)
+        .bind(transfer.base.created_at.to_rfc3339())
+        .bind(transfer.base.updated_at.to_rfc3339())
+        .bind(transfer.base.created_by.map(|id| id.to_string()))
+        .bind(transfer.base.updated_by.map(|id| id.to_string()))
+        .execute(pool)
+        .await?;
+        
+        Ok(transfer)
+    }
+
+    async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: StockTransferStatus) -> Result<()> {
+        sqlx::query("UPDATE stock_transfers SET status = ?, updated_at = ? WHERE id = ?")
+            .bind(format!("{:?}", status))
+            .bind(Utc::now().to_rfc3339())
+            .bind(id.to_string())
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn find_lines(&self, pool: &SqlitePool, transfer_id: Uuid) -> Result<Vec<StockTransferLine>> {
+        let rows = sqlx::query_as::<_, StockTransferLineRow>(
+            "SELECT id, transfer_id, product_id, quantity, quantity_received, lot_id, status
+             FROM stock_transfer_lines WHERE transfer_id = ?"
+        )
+        .bind(transfer_id.to_string())
+        .fetch_all(pool)
+        .await?;
+        
+        Ok(rows.into_iter().map(|r| r.into_line()).collect::<Result<Vec<_>>>()?)
+    }
+
+    async fn create_line(&self, pool: &SqlitePool, line: StockTransferLine) -> Result<StockTransferLine> {
+        sqlx::query(
+            "INSERT INTO stock_transfer_lines (id, transfer_id, product_id, quantity, quantity_received, lot_id, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(line.id.to_string())
+        .bind(line.transfer_id.to_string())
+        .bind(line.product_id.to_string())
+        .bind(line.quantity)
+        .bind(line.quantity_received)
+        .bind(line.lot_id.map(|id| id.to_string()))
+        .bind(format!("{:?}", line.status))
+        .execute(pool)
+        .await?;
+        
+        Ok(line)
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct StockTransferRow {
+    id: String,
+    transfer_number: String,
+    from_warehouse_id: String,
+    to_warehouse_id: String,
+    shipment_date: Option<String>,
+    expected_arrival: Option<String>,
+    status: String,
+    carrier: Option<String>,
+    tracking_number: Option<String>,
+    notes: Option<String>,
+    created_at: String,
+    updated_at: String,
+    created_by: Option<String>,
+    updated_by: Option<String>,
+}
+
+impl StockTransferRow {
+    fn into_transfer(self) -> Result<StockTransfer> {
+        let id = Uuid::parse_str(&self.id)
+            .map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.id, e)))?;
+        
+        Ok(StockTransfer {
+            base: BaseEntity {
+                id,
+                created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at)
+                    .map(|d| d.with_timezone(&Utc))
+                    .map_err(|e| Error::internal(format!("Invalid date {}: {}", self.created_at, e)))?,
+                updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at)
+                    .map(|d| d.with_timezone(&Utc))
+                    .map_err(|e| Error::internal(format!("Invalid date {}: {}", self.updated_at, e)))?,
+                created_by: self.created_by.and_then(|s| Uuid::parse_str(&s).ok()),
+                updated_by: self.updated_by.and_then(|s| Uuid::parse_str(&s).ok()),
+            },
+            transfer_number: self.transfer_number,
+            from_warehouse_id: Uuid::parse_str(&self.from_warehouse_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.from_warehouse_id, e)))?,
+            to_warehouse_id: Uuid::parse_str(&self.to_warehouse_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.to_warehouse_id, e)))?,
+            shipment_date: self.shipment_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)),
+            expected_arrival: self.expected_arrival.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)),
+            status: match self.status.as_str() {
+                "Pending" => StockTransferStatus::Pending,
+                "InTransit" => StockTransferStatus::InTransit,
+                "PartiallyReceived" => StockTransferStatus::PartiallyReceived,
+                "Received" => StockTransferStatus::Received,
+                "Cancelled" => StockTransferStatus::Cancelled,
+                _ => StockTransferStatus::Draft,
+            },
+            carrier: self.carrier,
+            tracking_number: self.tracking_number,
+            notes: self.notes,
+        })
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct StockTransferLineRow {
+    id: String,
+    transfer_id: String,
+    product_id: String,
+    quantity: i64,
+    quantity_received: i64,
+    lot_id: Option<String>,
+    status: String,
+}
+
+impl StockTransferLineRow {
+    fn into_line(self) -> Result<StockTransferLine> {
+        Ok(StockTransferLine {
+            id: Uuid::parse_str(&self.id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.id, e)))?,
+            transfer_id: Uuid::parse_str(&self.transfer_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.transfer_id, e)))?,
+            product_id: Uuid::parse_str(&self.product_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.product_id, e)))?,
+            quantity: self.quantity,
+            quantity_received: self.quantity_received,
+            lot_id: self.lot_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            status: match self.status.as_str() {
+                "Pending" => StockTransferStatus::Pending,
+                "InTransit" => StockTransferStatus::InTransit,
+                "PartiallyReceived" => StockTransferStatus::PartiallyReceived,
+                "Received" => StockTransferStatus::Received,
+                "Cancelled" => StockTransferStatus::Cancelled,
+                _ => StockTransferStatus::Draft,
+            },
+        })
+    }
+}
