@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
 use chrono::Utc;
+use std::str::FromStr;
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status, Money, Currency, Address, ContactInfo};
 use crate::models::*;
 
@@ -181,6 +182,149 @@ impl PurchaseOrderRepository for SqlitePurchaseOrderRepository {
     }
 }
 
+pub struct SqliteLandedCostRepository;
+
+#[async_trait]
+impl LandedCostRepository for SqliteLandedCostRepository {
+    async fn find_voucher_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<LandedCostVoucher> {
+        let row = sqlx::query_as::<_, LandedCostVoucherRow>(
+            "SELECT id, voucher_number, voucher_date, reference_type, reference_id, total_landed_cost, currency, status, created_at, updated_at FROM landed_cost_vouchers WHERE id = ?"
+        ).bind(id.to_string()).fetch_optional(pool).await?.ok_or_else(|| Error::not_found("LandedCostVoucher", &id.to_string()))?;
+        
+        let lines = sqlx::query_as::<_, LandedCostLineRow>(
+            "SELECT id, voucher_id, category_id, description, amount FROM landed_cost_lines WHERE voucher_id = ?"
+        ).bind(id.to_string()).fetch_all(pool).await?;
+        
+        Ok(LandedCostVoucher {
+            base: BaseEntity {
+                id: Uuid::parse_str(&row.id).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None, updated_by: None,
+            },
+            voucher_number: row.voucher_number,
+            voucher_date: chrono::DateTime::parse_from_rfc3339(&row.voucher_date).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+            reference_type: match row.reference_type.as_str() {
+                "PurchaseOrder" => LandedCostReferenceType::PurchaseOrder,
+                _ => LandedCostReferenceType::GoodsReceipt,
+            },
+            reference_id: Uuid::parse_str(&row.reference_id).unwrap_or_default(),
+            total_landed_cost: Money::new(row.total_landed_cost, Currency::from_str(&row.currency).unwrap_or(Currency::USD)),
+            status: match row.status.as_str() {
+                "Posted" => Status::Posted,
+                "Cancelled" => Status::Cancelled,
+                _ => Status::Draft,
+            },
+            lines: lines.into_iter().map(|l| LandedCostLine {
+                id: Uuid::parse_str(&l.id).unwrap_or_default(),
+                voucher_id: Uuid::parse_str(&l.voucher_id).unwrap_or_default(),
+                category_id: Uuid::parse_str(&l.category_id).unwrap_or_default(),
+                description: l.description,
+                amount: Money::new(l.amount, Currency::USD),
+            }).collect(),
+        })
+    }
+
+    async fn find_categories(&self, pool: &SqlitePool) -> Result<Vec<LandedCostCategory>> {
+        let rows = sqlx::query_as::<_, LandedCostCategoryRow>(
+            "SELECT id, code, name, description, allocation_method, status, created_at, updated_at FROM landed_cost_categories WHERE status = 'Active'"
+        ).fetch_all(pool).await?;
+        
+        Ok(rows.into_iter().map(|r| LandedCostCategory {
+            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            code: r.code, name: r.name, description: r.description,
+            allocation_method: match r.allocation_method.as_str() {
+                "Weight" => LandedCostAllocationMethod::ByWeight,
+                "Volume" => LandedCostAllocationMethod::ByVolume,
+                "Quantity" => LandedCostAllocationMethod::ByQuantity,
+                _ => LandedCostAllocationMethod::ByValue,
+            },
+            status: Status::Active,
+        }).collect())
+    }
+
+    async fn create_voucher(&self, pool: &SqlitePool, voucher: LandedCostVoucher) -> Result<LandedCostVoucher> {
+        let now = Utc::now();
+        let mut tx = pool.begin().await?;
+        
+        sqlx::query(
+            "INSERT INTO landed_cost_vouchers (id, voucher_number, voucher_date, reference_type, reference_id, total_landed_cost, currency, status, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(voucher.base.id.to_string())
+        .bind(&voucher.voucher_number)
+        .bind(voucher.voucher_date.to_rfc3339())
+        .bind(format!("{:?}", voucher.reference_type))
+        .bind(voucher.reference_id.to_string())
+        .bind(voucher.total_landed_cost.amount)
+        .bind(format!("{:?}", voucher.total_landed_cost.currency))
+        .bind(format!("{:?}", voucher.status))
+        .bind(voucher.base.created_at.to_rfc3339())
+        .bind(now.to_rfc3339())
+        .execute(&mut *tx).await?;
+        
+        for line in &voucher.lines {
+            sqlx::query(
+                "INSERT INTO landed_cost_lines (id, voucher_id, category_id, description, amount) 
+                 VALUES (?, ?, ?, ?, ?)"
+            )
+            .bind(line.id.to_string())
+            .bind(voucher.base.id.to_string())
+            .bind(line.category_id.to_string())
+            .bind(&line.description)
+            .bind(line.amount.amount)
+            .execute(&mut *tx).await?;
+        }
+        
+        tx.commit().await?;
+        Ok(voucher)
+    }
+
+    async fn update_voucher_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()> {
+        sqlx::query("UPDATE landed_cost_vouchers SET status = ?, updated_at = ? WHERE id = ?")
+            .bind(format!("{:?}", status)).bind(Utc::now().to_rfc3339()).bind(id.to_string()).execute(pool).await?;
+        Ok(())
+    }
+
+    async fn save_allocations(&self, pool: &SqlitePool, allocations: Vec<LandedCostAllocation>) -> Result<()> {
+        let now = Utc::now();
+        let mut tx = pool.begin().await?;
+        
+        for allocation in allocations {
+            sqlx::query(
+                "INSERT INTO landed_cost_allocations (id, voucher_id, item_id, allocated_amount, allocation_factor, created_at) 
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            )
+            .bind(allocation.id.to_string())
+            .bind(allocation.voucher_id.to_string())
+            .bind(allocation.item_id.to_string())
+            .bind(allocation.allocated_amount.amount)
+            .bind(allocation.allocation_factor)
+            .bind(now.to_rfc3339())
+            .execute(&mut *tx).await?;
+        }
+        
+        tx.commit().await?;
+        Ok(())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct LandedCostVoucherRow {
+    id: String, voucher_number: String, voucher_date: String, reference_type: String, 
+    reference_id: String, total_landed_cost: i64, currency: String, status: String, created_at: String, updated_at: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct LandedCostLineRow {
+    id: String, voucher_id: String, category_id: String, description: String, amount: i64,
+}
+
+#[derive(sqlx::FromRow)]
+struct LandedCostCategoryRow {
+    id: String, code: String, name: String, description: Option<String>, allocation_method: String, status: String, created_at: String, updated_at: String,
+}
+
 #[async_trait]
 pub trait VendorRepository: Send + Sync {
     async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Vendor>;
@@ -195,4 +339,13 @@ pub trait PurchaseOrderRepository: Send + Sync {
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<PurchaseOrder>>;
     async fn create(&self, pool: &SqlitePool, order: PurchaseOrder) -> Result<PurchaseOrder>;
     async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()>;
+}
+
+#[async_trait]
+pub trait LandedCostRepository: Send + Sync {
+    async fn find_voucher_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<LandedCostVoucher>;
+    async fn find_categories(&self, pool: &SqlitePool) -> Result<Vec<LandedCostCategory>>;
+    async fn create_voucher(&self, pool: &SqlitePool, voucher: LandedCostVoucher) -> Result<LandedCostVoucher>;
+    async fn update_voucher_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()>;
+    async fn save_allocations(&self, pool: &SqlitePool, allocations: Vec<LandedCostAllocation>) -> Result<()>;
 }

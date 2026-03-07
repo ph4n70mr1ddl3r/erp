@@ -219,10 +219,85 @@ impl SupplierScorecardService {
     }
 }
 
-pub struct LandedCostService;
+use erp_inventory::ValuationService;
+
+pub struct LandedCostService {
+    repo: SqliteLandedCostRepository,
+    po_repo: SqlitePurchaseOrderRepository,
+    inventory_service: ValuationService,
+}
+
+impl Default for LandedCostService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl LandedCostService {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self {
+            repo: SqliteLandedCostRepository,
+            po_repo: SqlitePurchaseOrderRepository,
+            inventory_service: ValuationService::new(),
+        }
+    }
+
+    pub async fn create_voucher(
+        &self,
+        pool: &SqlitePool,
+        voucher_number: &str,
+        reference_type: LandedCostReferenceType,
+        reference_id: Uuid,
+        lines: Vec<LandedCostLine>,
+    ) -> Result<LandedCostVoucher> {
+        let total_amount = lines.iter().map(|l| l.amount.amount).sum();
+        let voucher = LandedCostVoucher {
+            base: BaseEntity::new(),
+            voucher_number: voucher_number.to_string(),
+            voucher_date: Utc::now(),
+            reference_type,
+            reference_id,
+            total_landed_cost: Money::new(total_amount, Currency::USD),
+            status: Status::Draft,
+            lines,
+        };
+        
+        self.repo.create_voucher(pool, voucher).await
+    }
+
+    pub async fn post_voucher(&self, pool: &SqlitePool, voucher_id: Uuid) -> Result<()> {
+        let voucher = self.repo.find_voucher_by_id(pool, voucher_id).await?;
+        if voucher.status == Status::Posted {
+            return Err(Error::business_rule("Voucher already posted"));
+        }
+
+        let order = self.po_repo.find_by_id(pool, voucher.reference_id).await?;
+        let categories = self.repo.find_categories(pool).await?;
+        
+        let allocations = self.calculate_allocations(&voucher, &order, &categories)?;
+        
+        // Persist allocations
+        self.repo.save_allocations(pool, allocations.clone()).await?;
+
+        // Update inventory costs
+        for allocation in allocations {
+            // Find a warehouse for the product (simple approach: take the first one or use PO details if available)
+            // For now, we'll assume a default warehouse or lookup
+            let warehouse_id = Uuid::nil(); // Placeholder - in a real system we'd get this from the GR
+            
+            self.inventory_service.apply_landed_costs(
+                pool,
+                allocation.item_id,
+                warehouse_id,
+                allocation.allocated_amount.amount,
+                &voucher.voucher_number,
+            ).await?;
+        }
+
+        self.repo.update_voucher_status(pool, voucher_id, Status::Posted).await?;
+        
+        Ok(())
+    }
 
     pub fn calculate_allocations(
         &self,

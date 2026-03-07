@@ -2828,3 +2828,94 @@ impl CycleCountService {
         Ok(())
     }
 }
+
+pub struct ValuationService {
+    repo: SqliteValuationRepository,
+}
+
+impl Default for ValuationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ValuationService {
+    pub fn new() -> Self {
+        Self { repo: SqliteValuationRepository }
+    }
+
+    pub async fn apply_landed_costs(
+        &self,
+        pool: &SqlitePool,
+        product_id: Uuid,
+        warehouse_id: Uuid,
+        additional_cost: i64,
+        reference: &str,
+    ) -> Result<()> {
+        let mut valuation = self.repo.get_valuation(pool, product_id, warehouse_id).await
+            .unwrap_or_else(|_| ProductValuation {
+                id: Uuid::new_v4(),
+                product_id,
+                warehouse_id,
+                valuation_method: ValuationMethod::MovingAverage,
+                standard_cost: 0,
+                current_unit_cost: 0,
+                total_quantity: 0,
+                total_value: 0,
+                last_receipt_cost: 0,
+                last_receipt_date: None,
+                last_issue_cost: 0,
+                last_issue_date: None,
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            });
+
+        let old_unit_cost = valuation.current_unit_cost;
+        let old_total_value = valuation.total_value;
+
+        if valuation.total_quantity > 0 {
+            valuation.total_value += additional_cost;
+            valuation.current_unit_cost = valuation.total_value / valuation.total_quantity;
+        } else {
+            // If no stock, we still record the value change but unit cost stays 0 or we handle differently
+            // In many ERPs, landed costs without stock are posted to a variance account, 
+            // but for simplicity here we just update total value.
+            valuation.total_value += additional_cost;
+        }
+
+        valuation.updated_at = Utc::now();
+        self.repo.update_valuation(pool, valuation.clone()).await?;
+
+        // Create cost adjustment record
+        let adj = CostAdjustment {
+            id: Uuid::new_v4(),
+            adjustment_number: format!("LC-ADJ-{}", Utc::now().format("%Y%m%d%H%M%S")),
+            adjustment_type: CostAdjustmentType::Revaluation,
+            adjustment_date: Utc::now(),
+            reason: format!("Landed Cost Allocation: {}", reference),
+            status: CostAdjustmentStatus::Posted,
+            approved_by: None,
+            approved_at: None,
+            journal_entry_id: None,
+            created_by: None,
+            created_at: Utc::now(),
+        };
+
+        let line = CostAdjustmentLine {
+            id: Uuid::new_v4(),
+            adjustment_id: adj.id,
+            product_id,
+            warehouse_id,
+            quantity: valuation.total_quantity,
+            old_unit_cost,
+            new_unit_cost: valuation.current_unit_cost,
+            old_total_value,
+            new_total_value: valuation.total_value,
+            value_change: additional_cost,
+        };
+
+        self.repo.create_cost_adjustment(pool, adj, vec![line]).await?;
+
+        Ok(())
+    }
+}

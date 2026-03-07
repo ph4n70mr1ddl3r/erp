@@ -459,6 +459,15 @@ pub trait CycleCountRepository: Send + Sync {
     async fn update_line_status(&self, pool: &SqlitePool, id: Uuid, status: CycleCountLineStatus) -> Result<()>;
 }
 
+#[async_trait]
+pub trait ValuationRepository: Send + Sync {
+    async fn get_valuation(&self, pool: &SqlitePool, product_id: Uuid, warehouse_id: Uuid) -> Result<ProductValuation>;
+    async fn update_valuation(&self, pool: &SqlitePool, valuation: ProductValuation) -> Result<()>;
+    async fn add_cost_layer(&self, pool: &SqlitePool, layer: InventoryCostLayer) -> Result<()>;
+    async fn get_cost_layers(&self, pool: &SqlitePool, product_id: Uuid, warehouse_id: Uuid) -> Result<Vec<InventoryCostLayer>>;
+    async fn create_cost_adjustment(&self, pool: &SqlitePool, adj: CostAdjustment, lines: Vec<CostAdjustmentLine>) -> Result<()>;
+}
+
 pub struct SqliteCycleCountRepository;
 
 #[async_trait]
@@ -659,4 +668,218 @@ struct CycleCountLineRow {
     adjustment_qty: Option<i64>,
     status: String,
     notes: Option<String>,
+}
+
+pub struct SqliteValuationRepository;
+
+#[async_trait]
+impl ValuationRepository for SqliteValuationRepository {
+    async fn get_valuation(&self, pool: &SqlitePool, product_id: Uuid, warehouse_id: Uuid) -> Result<ProductValuation> {
+        let row = sqlx::query_as::<_, ValuationRow>(
+            "SELECT id, product_id, warehouse_id, valuation_method, standard_cost, current_unit_cost, 
+                    total_quantity, total_value, last_receipt_cost, last_receipt_date, 
+                    last_issue_cost, last_issue_date, created_at, updated_at
+             FROM product_valuations WHERE product_id = ? AND warehouse_id = ?"
+        )
+        .bind(product_id.to_string())
+        .bind(warehouse_id.to_string())
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| Error::not_found("ProductValuation", &format!("{}/{}", product_id, warehouse_id)))?;
+        
+        Ok(row.into_valuation()?)
+    }
+
+    async fn update_valuation(&self, pool: &SqlitePool, v: ProductValuation) -> Result<()> {
+        let now = Utc::now();
+        sqlx::query(
+            "INSERT INTO product_valuations (id, product_id, warehouse_id, valuation_method, standard_cost, 
+                    current_unit_cost, total_quantity, total_value, last_receipt_cost, last_receipt_date, 
+                    last_issue_cost, last_issue_date, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(product_id, warehouse_id) DO UPDATE SET
+                current_unit_cost = excluded.current_unit_cost,
+                total_quantity = excluded.total_quantity,
+                total_value = excluded.total_value,
+                last_receipt_cost = excluded.last_receipt_cost,
+                last_receipt_date = excluded.last_receipt_date,
+                updated_at = excluded.updated_at"
+        )
+        .bind(v.id.to_string())
+        .bind(v.product_id.to_string())
+        .bind(v.warehouse_id.to_string())
+        .bind(format!("{:?}", v.valuation_method))
+        .bind(v.standard_cost)
+        .bind(v.current_unit_cost)
+        .bind(v.total_quantity)
+        .bind(v.total_value)
+        .bind(v.last_receipt_cost)
+        .bind(v.last_receipt_date.map(|d| d.to_rfc3339()))
+        .bind(v.last_issue_cost)
+        .bind(v.last_issue_date.map(|d| d.to_rfc3339()))
+        .bind(v.created_at.to_rfc3339())
+        .bind(now.to_rfc3339())
+        .execute(pool)
+        .await?;
+        
+        Ok(())
+    }
+
+    async fn add_cost_layer(&self, pool: &SqlitePool, layer: InventoryCostLayer) -> Result<()> {
+        sqlx::query(
+            "INSERT INTO inventory_cost_layers (id, product_id, warehouse_id, layer_date, receipt_reference, 
+                    receipt_id, quantity, unit_cost, remaining_quantity, total_value, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(layer.id.to_string())
+        .bind(layer.product_id.to_string())
+        .bind(layer.warehouse_id.to_string())
+        .bind(layer.layer_date.to_rfc3339())
+        .bind(&layer.receipt_reference)
+        .bind(layer.receipt_id.map(|id| id.to_string()))
+        .bind(layer.quantity)
+        .bind(layer.unit_cost)
+        .bind(layer.remaining_quantity)
+        .bind(layer.total_value)
+        .bind(layer.created_at.to_rfc3339())
+        .execute(pool)
+        .await?;
+        
+        Ok(())
+    }
+
+    async fn get_cost_layers(&self, pool: &SqlitePool, product_id: Uuid, warehouse_id: Uuid) -> Result<Vec<InventoryCostLayer>> {
+        let rows = sqlx::query_as::<_, CostLayerRow>(
+            "SELECT id, product_id, warehouse_id, layer_date, receipt_reference, receipt_id, 
+                    quantity, unit_cost, remaining_quantity, total_value, created_at
+             FROM inventory_cost_layers 
+             WHERE product_id = ? AND warehouse_id = ? AND remaining_quantity > 0
+             ORDER BY layer_date ASC"
+        )
+        .bind(product_id.to_string())
+        .bind(warehouse_id.to_string())
+        .fetch_all(pool)
+        .await?;
+        
+        Ok(rows.into_iter().map(|r| r.into_layer()).collect::<Result<Vec<_>>>()?)
+    }
+
+    async fn create_cost_adjustment(&self, pool: &SqlitePool, adj: CostAdjustment, lines: Vec<CostAdjustmentLine>) -> Result<()> {
+        let mut tx = pool.begin().await?;
+        
+        sqlx::query(
+            "INSERT INTO cost_adjustments (id, adjustment_number, adjustment_type, adjustment_date, reason, status, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(adj.id.to_string())
+        .bind(&adj.adjustment_number)
+        .bind(format!("{:?}", adj.adjustment_type))
+        .bind(adj.adjustment_date.to_rfc3339())
+        .bind(&adj.reason)
+        .bind(format!("{:?}", adj.status))
+        .bind(adj.created_at.to_rfc3339())
+        .execute(&mut *tx)
+        .await?;
+        
+        for line in lines {
+            sqlx::query(
+                "INSERT INTO cost_adjustment_lines (id, adjustment_id, product_id, warehouse_id, quantity, 
+                        old_unit_cost, new_unit_cost, old_total_value, new_total_value, value_change)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            )
+            .bind(line.id.to_string())
+            .bind(adj.id.to_string())
+            .bind(line.product_id.to_string())
+            .bind(line.warehouse_id.to_string())
+            .bind(line.quantity)
+            .bind(line.old_unit_cost)
+            .bind(line.new_unit_cost)
+            .bind(line.old_total_value)
+            .bind(line.new_total_value)
+            .bind(line.value_change)
+            .execute(&mut *tx)
+            .await?;
+        }
+        
+        tx.commit().await?;
+        Ok(())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct ValuationRow {
+    id: String,
+    product_id: String,
+    warehouse_id: String,
+    valuation_method: String,
+    standard_cost: i64,
+    current_unit_cost: i64,
+    total_quantity: i64,
+    total_value: i64,
+    last_receipt_cost: i64,
+    last_receipt_date: Option<String>,
+    last_issue_cost: i64,
+    last_issue_date: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+impl ValuationRow {
+    fn into_valuation(self) -> Result<ProductValuation> {
+        Ok(ProductValuation {
+            id: Uuid::parse_str(&self.id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.id, e)))?,
+            product_id: Uuid::parse_str(&self.product_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.product_id, e)))?,
+            warehouse_id: Uuid::parse_str(&self.warehouse_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.warehouse_id, e)))?,
+            valuation_method: match self.valuation_method.as_str() {
+                "FIFO" => ValuationMethod::FIFO,
+                "LIFO" => ValuationMethod::LIFO,
+                "WeightedAverage" => ValuationMethod::WeightedAverage,
+                "StandardCost" => ValuationMethod::StandardCost,
+                _ => ValuationMethod::MovingAverage,
+            },
+            standard_cost: self.standard_cost,
+            current_unit_cost: self.current_unit_cost,
+            total_quantity: self.total_quantity,
+            total_value: self.total_value,
+            last_receipt_cost: self.last_receipt_cost,
+            last_receipt_date: self.last_receipt_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)),
+            last_issue_cost: self.last_issue_cost,
+            last_issue_date: self.last_issue_date.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)),
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).map_err(|e| Error::internal(format!("Invalid date {}: {}", self.created_at, e)))?,
+            updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at).map(|d| d.with_timezone(&Utc)).map_err(|e| Error::internal(format!("Invalid date {}: {}", self.updated_at, e)))?,
+        })
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CostLayerRow {
+    id: String,
+    product_id: String,
+    warehouse_id: String,
+    layer_date: String,
+    receipt_reference: String,
+    receipt_id: Option<String>,
+    quantity: i64,
+    unit_cost: i64,
+    remaining_quantity: i64,
+    total_value: i64,
+    created_at: String,
+}
+
+impl CostLayerRow {
+    fn into_layer(self) -> Result<InventoryCostLayer> {
+        Ok(InventoryCostLayer {
+            id: Uuid::parse_str(&self.id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.id, e)))?,
+            product_id: Uuid::parse_str(&self.product_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.product_id, e)))?,
+            warehouse_id: Uuid::parse_str(&self.warehouse_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.warehouse_id, e)))?,
+            layer_date: chrono::DateTime::parse_from_rfc3339(&self.layer_date).map(|d| d.with_timezone(&Utc)).map_err(|e| Error::internal(format!("Invalid date {}: {}", self.layer_date, e)))?,
+            receipt_reference: self.receipt_reference,
+            receipt_id: self.receipt_id.and_then(|id| Uuid::parse_str(&id).ok()),
+            quantity: self.quantity,
+            unit_cost: self.unit_cost,
+            remaining_quantity: self.remaining_quantity,
+            total_value: self.total_value,
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).map_err(|e| Error::internal(format!("Invalid date {}: {}", self.created_at, e)))?,
+        })
+    }
 }

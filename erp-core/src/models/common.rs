@@ -14,6 +14,8 @@ pub enum Status {
     Rejected,
     Completed,
     Cancelled,
+    Posted,
+    Deleted,
 }
 
 impl std::str::FromStr for Status {
@@ -28,6 +30,8 @@ impl std::str::FromStr for Status {
             "rejected" => Ok(Status::Rejected),
             "completed" => Ok(Status::Completed),
             "cancelled" | "canceled" => Ok(Status::Cancelled),
+            "posted" => Ok(Status::Posted),
+            "deleted" => Ok(Status::Deleted),
             _ => Err(format!("Invalid status: {}", s)),
         }
     }
