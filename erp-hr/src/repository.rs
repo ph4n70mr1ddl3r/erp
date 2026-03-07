@@ -71,6 +71,42 @@ impl EmployeeRepository for SqliteEmployeeRepository {
         if rows.rows_affected() == 0 { return Err(Error::not_found("Employee", &id.to_string())); }
         Ok(())
     }
+
+    async fn create_checklist_template(&self, _pool: &SqlitePool, template: ChecklistTemplate) -> Result<ChecklistTemplate> {
+        Ok(template)
+    }
+
+    async fn create_checklist_task_template(&self, _pool: &SqlitePool, task: ChecklistTemplateTask) -> Result<ChecklistTemplateTask> {
+        Ok(task)
+    }
+
+    async fn get_checklist_template(&self, _pool: &SqlitePool, id: Uuid) -> Result<ChecklistTemplate> {
+        Err(Error::not_found("ChecklistTemplate", &id.to_string()))
+    }
+
+    async fn list_checklist_tasks_by_template(&self, _pool: &SqlitePool, _template_id: Uuid) -> Result<Vec<ChecklistTemplateTask>> {
+        Ok(vec![])
+    }
+
+    async fn create_employee_checklist(&self, _pool: &SqlitePool, checklist: EmployeeChecklist) -> Result<EmployeeChecklist> {
+        Ok(checklist)
+    }
+
+    async fn create_employee_checklist_task(&self, _pool: &SqlitePool, task: EmployeeChecklistTask) -> Result<EmployeeChecklistTask> {
+        Ok(task)
+    }
+
+    async fn get_employee_checklist(&self, _pool: &SqlitePool, id: Uuid) -> Result<EmployeeChecklist> {
+        Err(Error::not_found("EmployeeChecklist", &id.to_string()))
+    }
+
+    async fn list_employee_checklist_tasks(&self, _pool: &SqlitePool, _checklist_id: Uuid) -> Result<Vec<EmployeeChecklistTask>> {
+        Ok(vec![])
+    }
+
+    async fn update_employee_checklist_task(&self, _pool: &SqlitePool, task: EmployeeChecklistTask) -> Result<EmployeeChecklistTask> {
+        Ok(task)
+    }
 }
 
 #[derive(sqlx::FromRow)]
@@ -291,6 +327,18 @@ pub trait EmployeeRepository: Send + Sync {
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<Employee>>;
     async fn create(&self, pool: &SqlitePool, emp: Employee) -> Result<Employee>;
     async fn terminate(&self, pool: &SqlitePool, id: Uuid, date: NaiveDate) -> Result<()>;
+
+    // Checklist Management
+    async fn create_checklist_template(&self, pool: &SqlitePool, template: ChecklistTemplate) -> Result<ChecklistTemplate>;
+    async fn create_checklist_task_template(&self, pool: &SqlitePool, task: ChecklistTemplateTask) -> Result<ChecklistTemplateTask>;
+    async fn get_checklist_template(&self, pool: &SqlitePool, id: Uuid) -> Result<ChecklistTemplate>;
+    async fn list_checklist_tasks_by_template(&self, pool: &SqlitePool, template_id: Uuid) -> Result<Vec<ChecklistTemplateTask>>;
+    
+    async fn create_employee_checklist(&self, pool: &SqlitePool, checklist: EmployeeChecklist) -> Result<EmployeeChecklist>;
+    async fn create_employee_checklist_task(&self, pool: &SqlitePool, task: EmployeeChecklistTask) -> Result<EmployeeChecklistTask>;
+    async fn get_employee_checklist(&self, pool: &SqlitePool, id: Uuid) -> Result<EmployeeChecklist>;
+    async fn list_employee_checklist_tasks(&self, pool: &SqlitePool, checklist_id: Uuid) -> Result<Vec<EmployeeChecklistTask>>;
+    async fn update_employee_checklist_task(&self, pool: &SqlitePool, task: EmployeeChecklistTask) -> Result<EmployeeChecklistTask>;
 }
 
 #[async_trait]

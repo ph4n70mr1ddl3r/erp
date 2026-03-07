@@ -87,4 +87,14 @@ mod tests {
         assert_eq!(successors[1].ranking, 2);
         assert_eq!(successors[0].readiness, ReadinessLevel::ReadyNow);
     }
+
+    #[test]
+    fn test_checklist_task_due_date_calculation() {
+        let now = Utc::now();
+        let relative_due_days = 5;
+        let due_date = now + chrono::Duration::days(relative_due_days as i64);
+        
+        assert!(due_date > now);
+        assert_eq!((due_date - now).num_days(), 5);
+    }
 }

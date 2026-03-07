@@ -809,3 +809,98 @@ pub enum ReadinessLevel {
     Ready3To5Years,
     EmergencyCoverage,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ChecklistType {
+    Onboarding,
+    Offboarding,
+    Promotion,
+    Transfer,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChecklistTemplate {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub checklist_type: ChecklistType,
+    pub department_id: Option<Uuid>,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChecklistTemplateTask {
+    pub id: Uuid,
+    pub template_id: Uuid,
+    pub task_name: String,
+    pub description: Option<String>,
+    pub assignee_role: Option<String>,
+    pub relative_due_days: i32,
+    pub is_required: bool,
+    pub sort_order: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmployeeChecklist {
+    pub id: Uuid,
+    pub employee_id: Uuid,
+    pub template_id: Uuid,
+    pub checklist_type: ChecklistType,
+    pub status: ChecklistStatus,
+    pub started_at: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ChecklistStatus {
+    InProgress,
+    Completed,
+    OnHold,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmployeeChecklistTask {
+    pub id: Uuid,
+    pub employee_checklist_id: Uuid,
+    pub task_name: String,
+    pub description: Option<String>,
+    pub assigned_to: Option<Uuid>,
+    pub due_date: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub completed_by: Option<Uuid>,
+    pub status: ChecklistTaskStatus,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ChecklistTaskStatus {
+    Pending,
+    Completed,
+    NotApplicable,
+    Blocked,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateChecklistTemplateRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub checklist_type: ChecklistType,
+    pub department_id: Option<Uuid>,
+    pub tasks: Vec<CreateChecklistTemplateTaskRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateChecklistTemplateTaskRequest {
+    pub task_name: String,
+    pub description: Option<String>,
+    pub assignee_role: Option<String>,
+    pub relative_due_days: i32,
+    pub is_required: bool,
+    pub sort_order: i32,
+}

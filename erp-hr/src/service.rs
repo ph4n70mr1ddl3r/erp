@@ -885,3 +885,117 @@ impl SuccessionService {
         self.repo.find_successors(pool, plan_id).await
     }
 }
+
+pub struct ChecklistService {
+    repo: SqliteEmployeeRepository,
+}
+
+impl Default for ChecklistService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ChecklistService {
+    pub fn new() -> Self {
+        Self {
+            repo: SqliteEmployeeRepository,
+        }
+    }
+
+    pub async fn create_template(
+        &self,
+        pool: &SqlitePool,
+        req: CreateChecklistTemplateRequest,
+    ) -> Result<ChecklistTemplate> {
+        let now = Utc::now();
+        let template = ChecklistTemplate {
+            id: Uuid::new_v4(),
+            name: req.name,
+            description: req.description,
+            checklist_type: req.checklist_type,
+            department_id: req.department_id,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+        };
+
+        let created_template = self.repo.create_checklist_template(pool, template).await?;
+
+        for task_req in req.tasks {
+            let task = ChecklistTemplateTask {
+                id: Uuid::new_v4(),
+                template_id: created_template.id,
+                task_name: task_req.task_name,
+                description: task_req.description,
+                assignee_role: task_req.assignee_role,
+                relative_due_days: task_req.relative_due_days,
+                is_required: task_req.is_required,
+                sort_order: task_req.sort_order,
+            };
+            self.repo.create_checklist_task_template(pool, task).await?;
+        }
+
+        Ok(created_template)
+    }
+
+    pub async fn assign_checklist(
+        &self,
+        pool: &SqlitePool,
+        employee_id: Uuid,
+        template_id: Uuid,
+    ) -> Result<EmployeeChecklist> {
+        let template = self.repo.get_checklist_template(pool, template_id).await?;
+        let tasks = self.repo.list_checklist_tasks_by_template(pool, template_id).await?;
+        
+        let now = Utc::now();
+        let checklist = EmployeeChecklist {
+            id: Uuid::new_v4(),
+            employee_id,
+            template_id,
+            checklist_type: template.checklist_type,
+            status: ChecklistStatus::InProgress,
+            started_at: now,
+            completed_at: None,
+        };
+
+        let created_checklist = self.repo.create_employee_checklist(pool, checklist).await?;
+
+        for task_template in tasks {
+            let task = EmployeeChecklistTask {
+                id: Uuid::new_v4(),
+                employee_checklist_id: created_checklist.id,
+                task_name: task_template.task_name,
+                description: task_template.description,
+                assigned_to: None, // Can be set later
+                due_date: now + chrono::Duration::days(task_template.relative_due_days as i64),
+                completed_at: None,
+                completed_by: None,
+                status: ChecklistTaskStatus::Pending,
+                notes: None,
+            };
+            self.repo.create_employee_checklist_task(pool, task).await?;
+        }
+
+        Ok(created_checklist)
+    }
+
+    pub async fn complete_task(
+        &self,
+        pool: &SqlitePool,
+        task_id: Uuid,
+        completed_by: Uuid,
+        notes: Option<String>,
+    ) -> Result<EmployeeChecklistTask> {
+        let tasks = self.repo.list_employee_checklist_tasks(pool, Uuid::nil()).await?; // Stub workaround
+        let mut task = tasks.into_iter().find(|t| t.id == task_id)
+            .ok_or_else(|| Error::not_found("EmployeeChecklistTask", &task_id.to_string()))?;
+        
+        task.status = ChecklistTaskStatus::Completed;
+        task.completed_at = Some(Utc::now());
+        task.completed_by = Some(completed_by);
+        task.notes = notes;
+        
+        self.repo.update_employee_checklist_task(pool, task).await
+    }
+}
