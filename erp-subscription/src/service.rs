@@ -174,4 +174,54 @@ impl SubscriptionService {
         .execute(pool).await?;
         Ok(usage)
     }
+
+    pub async fn calculate_proration(
+        pool: &SqlitePool,
+        subscription_id: Uuid,
+        new_plan_id: Uuid,
+        new_quantity: i32,
+    ) -> Result<ProrationResult> {
+        let rows = sqlx::query("SELECT id, customer_id, plan_id, status, quantity, price_override, current_period_start, current_period_end, trial_start, trial_end, cancelled_at, cancel_at_period_end, metadata, created_at, updated_at FROM subscriptions WHERE id = ?")
+            .bind(subscription_id.to_string())
+            .fetch_all(pool).await?;
+        let sub = SubscriptionRepository::row_to_sub(&rows[0])?;
+        
+        let plans = SubscriptionPlanRepository::list_active(pool).await?;
+        let old_plan = plans.iter().find(|p| p.id == sub.plan_id)
+            .ok_or_else(|| anyhow::anyhow!("Old plan not found"))?;
+        let new_plan = plans.iter().find(|p| p.id == new_plan_id)
+            .ok_or_else(|| anyhow::anyhow!("New plan not found"))?;
+
+        let now = Utc::now();
+        if now < sub.current_period_start || now > sub.current_period_end {
+            return Err(anyhow::anyhow!("Current date is outside subscription period"));
+        }
+
+        let total_period_duration = sub.current_period_end - sub.current_period_start;
+        let remaining_duration = sub.current_period_end - now;
+        
+        let total_days = total_period_duration.num_days().max(1);
+        let remaining_days = remaining_duration.num_days();
+
+        // Calculate unused portion of old subscription
+        let old_price = sub.price_override.unwrap_or(old_plan.price);
+        let old_total_amount = old_price * sub.quantity as i64;
+        let unused_amount = (old_total_amount as f64 * (remaining_days as f64 / total_days as f64)) as i64;
+
+        // Calculate cost of new plan for remaining period
+        let new_price = new_plan.price;
+        let new_total_amount = new_price * new_quantity as i64;
+        let prorated_new_amount = (new_total_amount as f64 * (remaining_days as f64 / total_days as f64)) as i64;
+
+        Ok(ProrationResult {
+            subscription_id,
+            unused_amount,
+            remaining_period_days: remaining_days,
+            total_period_days: total_days,
+            new_amount: prorated_new_amount,
+            proration_date: now,
+            net_amount: prorated_new_amount - unused_amount,
+            currency: new_plan.currency.clone(),
+        })
+    }
 }

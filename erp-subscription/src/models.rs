@@ -133,3 +133,15 @@ pub struct CreateSubscriptionRequest {
     pub trial_days: Option<i32>,
     pub metadata: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProrationResult {
+    pub subscription_id: Uuid,
+    pub unused_amount: i64,
+    pub remaining_period_days: i64,
+    pub total_period_days: i64,
+    pub new_amount: i64,
+    pub proration_date: DateTime<Utc>,
+    pub net_amount: i64, // Positive for charge, negative for credit
+    pub currency: String,
+}
