@@ -97,10 +97,6 @@ async fn make_request(app: &axum::Router, method: Method, uri: &str, body: Optio
     (status, body_json)
 }
 
-fn with_auth(token: &str) -> String {
-    format!("Bearer {}", token)
-}
-
 #[tokio::test]
 async fn test_health_check() {
     init_test_env();
@@ -543,7 +539,7 @@ async fn test_inventory_adjustments_workflow() {
 
     let submit_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/inventory-adjustments/{}/submit", adj_id))
+        .uri(format!("/api/v1/inventory-adjustments/{}/submit", adj_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
 
@@ -552,7 +548,7 @@ async fn test_inventory_adjustments_workflow() {
 
     let approve_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/inventory-adjustments/{}/approve", adj_id))
+        .uri(format!("/api/v1/inventory-adjustments/{}/approve", adj_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
 
@@ -642,7 +638,7 @@ async fn test_expense_report_workflow() {
 
     let submit_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/expense-reports/{}/submit", report_id))
+        .uri(format!("/api/v1/expense-reports/{}/submit", report_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let submit_response = app.clone().oneshot(submit_request).await.unwrap();
@@ -653,7 +649,7 @@ async fn test_expense_report_workflow() {
 
     let approve_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/expense-reports/{}/approve", report_id))
+        .uri(format!("/api/v1/expense-reports/{}/approve", report_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let approve_response = app.clone().oneshot(approve_request).await.unwrap();
@@ -736,14 +732,14 @@ async fn test_expense_report_rejection() {
 
     let submit_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/expense-reports/{}/submit", report_id))
+        .uri(format!("/api/v1/expense-reports/{}/submit", report_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let _ = app.clone().oneshot(submit_request).await.unwrap();
 
     let reject_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/expense-reports/{}/reject", report_id))
+        .uri(format!("/api/v1/expense-reports/{}/reject", report_id))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::from(serde_json::to_string(&json!({
@@ -817,7 +813,7 @@ async fn test_stock_transfer_workflow() {
 
     let submit_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/stock-transfers/{}/submit", transfer_id))
+        .uri(format!("/api/v1/stock-transfers/{}/submit", transfer_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let submit_response = app.clone().oneshot(submit_request).await.unwrap();
@@ -828,7 +824,7 @@ async fn test_stock_transfer_workflow() {
 
     let approve_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/stock-transfers/{}/approve", transfer_id))
+        .uri(format!("/api/v1/stock-transfers/{}/approve", transfer_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let approve_response = app.clone().oneshot(approve_request).await.unwrap();
@@ -839,7 +835,7 @@ async fn test_stock_transfer_workflow() {
 
     let ship_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/stock-transfers/{}/ship", transfer_id))
+        .uri(format!("/api/v1/stock-transfers/{}/ship", transfer_id))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::from(serde_json::to_string(&json!({
@@ -856,7 +852,7 @@ async fn test_stock_transfer_workflow() {
 
     let receive_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/stock-transfers/{}/receive", transfer_id))
+        .uri(format!("/api/v1/stock-transfers/{}/receive", transfer_id))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::from(serde_json::to_string(&json!({
@@ -933,7 +929,7 @@ async fn test_vendor_bills_crud() {
 
     let submit_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/vendor-bills/{}/submit", bill_id))
+        .uri(format!("/api/v1/vendor-bills/{}/submit", bill_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let submit_response = app.clone().oneshot(submit_request).await.unwrap();
@@ -944,7 +940,7 @@ async fn test_vendor_bills_crud() {
 
     let approve_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/vendor-bills/{}/approve", bill_id))
+        .uri(format!("/api/v1/vendor-bills/{}/approve", bill_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let approve_response = app.clone().oneshot(approve_request).await.unwrap();
@@ -962,7 +958,7 @@ async fn test_vendor_bills_crud() {
     assert_eq!(list_response.status(), StatusCode::OK);
     let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
     let list: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
-    assert!(list["items"].as_array().unwrap().len() > 0);
+    assert!(!list["items"].as_array().unwrap().is_empty());
 }
 
 #[tokio::test]
@@ -1043,7 +1039,7 @@ async fn test_budgets_crud() {
     assert_eq!(list_response.status(), StatusCode::OK);
     let list_body_bytes = list_response.into_body().collect().await.unwrap().to_bytes();
     let budgets: serde_json::Value = serde_json::from_slice(&list_body_bytes).unwrap();
-    assert!(budgets.as_array().unwrap().len() > 0);
+    assert!(!budgets.as_array().unwrap().is_empty());
     
     let first_budget = &budgets.as_array().unwrap()[0];
     assert_eq!(first_budget["name"], format!("FY {} Operating Budget", now.year()));
@@ -1101,7 +1097,7 @@ async fn test_vendor_scorecards() {
 
     let list_request = Request::builder()
         .method(Method::GET)
-        .uri(&format!("/api/v1/scorecards/{}", vendor_id))
+        .uri(format!("/api/v1/scorecards/{}", vendor_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let list_response = app.clone().oneshot(list_request).await.unwrap();
@@ -1168,7 +1164,7 @@ async fn test_performance_management() {
 
     let activate_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/hr/performance-cycles/{}/activate", cycle_id))
+        .uri(format!("/api/v1/hr/performance-cycles/{}/activate", cycle_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let activate_response = app.clone().oneshot(activate_request).await.unwrap();
@@ -1201,7 +1197,7 @@ async fn test_performance_management() {
 
     let rating_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/hr/performance-goals/{}/rating", goal_id))
+        .uri(format!("/api/v1/hr/performance-goals/{}/rating", goal_id))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::from(serde_json::to_string(&json!({
@@ -1237,7 +1233,7 @@ async fn test_performance_management() {
 
     let submit_review_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/hr/performance-reviews/{}/submit", review_id))
+        .uri(format!("/api/v1/hr/performance-reviews/{}/submit", review_id))
         .header("Content-Type", "application/json")
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::from(serde_json::to_string(&json!({
@@ -1262,11 +1258,11 @@ async fn test_performance_management() {
     assert_eq!(list_cycles_response.status(), StatusCode::OK);
     let list_cycles_body = list_cycles_response.into_body().collect().await.unwrap().to_bytes();
     let cycles: serde_json::Value = serde_json::from_slice(&list_cycles_body).unwrap();
-    assert!(cycles.as_array().unwrap().len() >= 1);
+    assert!(!cycles.as_array().unwrap().is_empty());
 
     let close_request = Request::builder()
         .method(Method::POST)
-        .uri(&format!("/api/v1/hr/performance-cycles/{}/close", cycle_id))
+        .uri(format!("/api/v1/hr/performance-cycles/{}/close", cycle_id))
         .header("Authorization", format!("Bearer {}", token))
         .body(Body::empty()).unwrap();
     let close_response = app.clone().oneshot(close_request).await.unwrap();
