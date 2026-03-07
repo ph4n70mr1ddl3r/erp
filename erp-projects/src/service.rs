@@ -1,6 +1,6 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{Utc, DateTime};
 use erp_core::{Error, Result, Pagination, Paginated};
 use crate::models::*;
 use crate::repository::*;
@@ -10,6 +10,7 @@ pub struct ProjectService {
     task_repo: SqliteProjectTaskRepository,
     milestone_repo: SqliteProjectMilestoneRepository,
     expense_repo: SqliteProjectExpenseRepository,
+    template_repo: SqliteProjectTemplateRepository,
 }
 
 impl Default for ProjectService {
@@ -25,6 +26,7 @@ impl ProjectService {
             task_repo: SqliteProjectTaskRepository,
             milestone_repo: SqliteProjectMilestoneRepository,
             expense_repo: SqliteProjectExpenseRepository,
+            template_repo: SqliteProjectTemplateRepository,
         }
     }
 
@@ -45,6 +47,77 @@ impl ProjectService {
         project.project_number = format!("PRJ-{}", chrono::Utc::now().format("%Y%m%d%H%M%S"));
         project.created_at = Utc::now();
         self.repo.create(pool, project).await
+    }
+
+    pub async fn create_project_from_template(
+        &self,
+        pool: &SqlitePool,
+        template_id: Uuid,
+        name: String,
+        customer_id: Option<Uuid>,
+        start_date: DateTime<Utc>,
+    ) -> Result<Project> {
+        let template = self.template_repo.find_by_id(pool, template_id).await?;
+        
+        let project = Project {
+            id: Uuid::new_v4(),
+            project_number: format!("PRJ-{}", chrono::Utc::now().format("%Y%m%d%H%M%S")),
+            name,
+            description: template.description,
+            customer_id,
+            project_type: template.project_type,
+            start_date,
+            end_date: None,
+            budget: 0,
+            billable: template.billable,
+            billing_method: template.billing_method,
+            project_manager: None,
+            status: ProjectStatus::Planning,
+            percent_complete: 0,
+            created_at: Utc::now(),
+        };
+
+        let created_project = self.repo.create(pool, project).await?;
+
+        // Create tasks from template
+        for t_task in template.tasks {
+            let task = ProjectTask {
+                id: Uuid::new_v4(),
+                project_id: created_project.id,
+                task_number: 0, // Should be incremented
+                name: t_task.name,
+                description: t_task.description,
+                parent_task_id: None,
+                assigned_to: None,
+                start_date: start_date + chrono::Duration::days(t_task.relative_start_day as i64),
+                end_date: Some(start_date + chrono::Duration::days((t_task.relative_start_day + t_task.duration_days) as i64)),
+                estimated_hours: t_task.estimated_hours,
+                actual_hours: 0.0,
+                percent_complete: 0,
+                priority: t_task.priority,
+                status: TaskStatus::NotStarted,
+                billable: t_task.billable,
+            };
+            self.task_repo.create(pool, task).await?;
+        }
+
+        // Create milestones from template
+        for t_milestone in template.milestones {
+            let milestone = ProjectMilestone {
+                id: Uuid::new_v4(),
+                project_id: created_project.id,
+                name: t_milestone.name,
+                description: t_milestone.description,
+                planned_date: start_date + chrono::Duration::days(t_milestone.relative_day as i64),
+                actual_date: None,
+                billing_amount: t_milestone.billing_amount,
+                billing_status: BillingStatus::NotBilled,
+                status: MilestoneStatus::Planned,
+            };
+            self.milestone_repo.create(pool, milestone).await?;
+        }
+
+        Ok(created_project)
     }
 
     pub async fn update_project(&self, pool: &SqlitePool, project: Project) -> Result<Project> {
@@ -546,5 +619,45 @@ impl ResourceService {
 
     pub async fn list_allocations_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<ResourceAllocation>> {
         self.allocation_repo.find_by_employee(pool, employee_id).await
+    }
+}
+
+pub struct ProjectTemplateService {
+    repo: SqliteProjectTemplateRepository,
+}
+
+impl Default for ProjectTemplateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ProjectTemplateService {
+    pub fn new() -> Self {
+        Self { repo: SqliteProjectTemplateRepository }
+    }
+
+    pub async fn get_template(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectTemplate> {
+        self.repo.find_by_id(pool, id).await
+    }
+
+    pub async fn list_templates(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<ProjectTemplate>> {
+        self.repo.find_all(pool, pagination).await
+    }
+
+    pub async fn create_template(&self, pool: &SqlitePool, mut template: ProjectTemplate) -> Result<ProjectTemplate> {
+        template.id = Uuid::new_v4();
+        template.created_at = Utc::now();
+        template.updated_at = Utc::now();
+        self.repo.create(pool, template).await
+    }
+
+    pub async fn update_template(&self, pool: &SqlitePool, mut template: ProjectTemplate) -> Result<ProjectTemplate> {
+        template.updated_at = Utc::now();
+        self.repo.update(pool, template).await
+    }
+
+    pub async fn delete_template(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+        self.repo.delete(pool, id).await
     }
 }

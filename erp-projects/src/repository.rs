@@ -397,3 +397,37 @@ impl ResourceAllocationRepository for SqliteResourceAllocationRepository {
         Err(Error::not_found("ResourceAllocation", &id.to_string()))
     }
 }
+
+#[async_trait]
+pub trait ProjectTemplateRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ProjectTemplate>;
+    async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<ProjectTemplate>>;
+    async fn create(&self, pool: &SqlitePool, template: ProjectTemplate) -> Result<ProjectTemplate>;
+    async fn update(&self, pool: &SqlitePool, template: ProjectTemplate) -> Result<ProjectTemplate>;
+    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
+}
+
+pub struct SqliteProjectTemplateRepository;
+
+#[async_trait]
+impl ProjectTemplateRepository for SqliteProjectTemplateRepository {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ProjectTemplate> {
+        Err(Error::not_found("ProjectTemplate", &id.to_string()))
+    }
+
+    async fn find_all(&self, _pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<ProjectTemplate>> {
+        Ok(Paginated::new(vec![], 0, pagination))
+    }
+
+    async fn create(&self, _pool: &SqlitePool, template: ProjectTemplate) -> Result<ProjectTemplate> {
+        Ok(template)
+    }
+
+    async fn update(&self, _pool: &SqlitePool, template: ProjectTemplate) -> Result<ProjectTemplate> {
+        Ok(template)
+    }
+
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
+        Err(Error::not_found("ProjectTemplate", &id.to_string()))
+    }
+}

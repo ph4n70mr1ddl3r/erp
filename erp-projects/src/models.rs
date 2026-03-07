@@ -281,3 +281,41 @@ pub struct ResourceAllocation {
     pub billable_rate: Option<i64>,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectTemplate {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub project_type: ProjectType,
+    pub billing_method: BillingMethod,
+    pub billable: bool,
+    pub tasks: Vec<ProjectTemplateTask>,
+    pub milestones: Vec<ProjectTemplateMilestone>,
+    pub status: erp_core::Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectTemplateTask {
+    pub id: Uuid,
+    pub template_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub relative_start_day: i32,
+    pub duration_days: i32,
+    pub estimated_hours: Option<f64>,
+    pub priority: TaskPriority,
+    pub billable: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProjectTemplateMilestone {
+    pub id: Uuid,
+    pub template_id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub relative_day: i32,
+    pub billing_amount: i64,
+}
