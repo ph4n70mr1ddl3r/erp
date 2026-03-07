@@ -1,5 +1,5 @@
 use crate::models::*;
-use anyhow::{Result, Context};
+use erp_core::{Error, Result};
 use sqlx::{SqlitePool, Row};
 use uuid::Uuid;
 
@@ -71,16 +71,25 @@ impl StripeRepository {
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
         
-        rows.iter().map(Self::row_to_payment_intent).collect()
+        let mut intents = Vec::new();
+        for row in rows {
+            intents.push(Self::row_to_payment_intent(&row)?);
+        }
+        Ok(intents)
     }
     
     fn row_to_payment_intent(r: &sqlx::sqlite::SqliteRow) -> Result<StripePaymentIntent> {
+        let id_str: String = r.get("id");
+        let customer_id_str: String = r.get("customer_id");
+        let created_at_str: String = r.get("created_at");
+        let updated_at_str: String = r.get("updated_at");
+
         Ok(StripePaymentIntent {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
-                .context("Failed to parse payment intent id")?,
+            id: Uuid::parse_str(&id_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse payment intent id: {}", e)))?,
             stripe_intent_id: r.get("stripe_intent_id"),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
-                .context("Failed to parse customer_id")?,
+            customer_id: Uuid::parse_str(&customer_id_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse customer_id: {}", e)))?,
             invoice_id: r.get::<Option<String>, _>("invoice_id")
                 .and_then(|s| Uuid::parse_str(&s).ok()),
             amount: r.get("amount"),
@@ -89,11 +98,11 @@ impl StripeRepository {
             client_secret: r.get("client_secret"),
             description: r.get("description"),
             metadata: r.get("metadata"),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
-                .context("Failed to parse created_at")?
+            created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
                 .with_timezone(&chrono::Utc),
-            updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
-                .context("Failed to parse updated_at")?
+            updated_at: chrono::DateTime::parse_from_rfc3339(&updated_at_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse updated_at: {}", e)))?
                 .with_timezone(&chrono::Utc),
         })
     }
@@ -159,12 +168,16 @@ impl StripeRepository {
     }
     
     fn row_to_checkout_session(r: &sqlx::sqlite::SqliteRow) -> Result<StripeCheckoutSession> {
+        let id_str: String = r.get("id");
+        let customer_id_str: String = r.get("customer_id");
+        let created_at_str: String = r.get("created_at");
+
         Ok(StripeCheckoutSession {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
-                .context("Failed to parse checkout session id")?,
+            id: Uuid::parse_str(&id_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse checkout session id: {}", e)))?,
             stripe_session_id: r.get("stripe_session_id"),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
-                .context("Failed to parse customer_id")?,
+            customer_id: Uuid::parse_str(&customer_id_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse customer_id: {}", e)))?,
             invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
             amount: r.get("amount"),
             currency: r.get("currency"),
@@ -175,8 +188,8 @@ impl StripeRepository {
             payment_intent_id: r.get("payment_intent_id"),
             expires_at: r.get::<Option<String>, _>("expires_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
             completed_at: r.get::<Option<String>, _>("completed_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
-                .context("Failed to parse created_at")?
+            created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
                 .with_timezone(&chrono::Utc),
         })
     }
@@ -252,18 +265,27 @@ impl PaymentRepository {
         )
         .bind(customer_id.to_string())
         .fetch_all(pool).await?;
-        rows.iter().map(Self::row_to_payment).collect()
+        
+        let mut payments = Vec::new();
+        for row in rows {
+            payments.push(Self::row_to_payment(&row)?);
+        }
+        Ok(payments)
     }
 
     fn row_to_payment(r: &sqlx::sqlite::SqliteRow) -> Result<Payment> {
+        let id_str: String = r.get("id");
+        let customer_id_str: String = r.get("customer_id");
+        let created_at_str: String = r.get("created_at");
+
         Ok(Payment {
-            id: Uuid::parse_str(r.get::<String, _>("id").as_str())
-                .context("Failed to parse payment id")?,
+            id: Uuid::parse_str(&id_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse payment id: {}", e)))?,
             payment_number: r.get("payment_number"),
             gateway_id: r.get::<Option<String>, _>("gateway_id").and_then(|s| Uuid::parse_str(&s).ok()),
             invoice_id: r.get::<Option<String>, _>("invoice_id").and_then(|s| Uuid::parse_str(&s).ok()),
-            customer_id: Uuid::parse_str(r.get::<String, _>("customer_id").as_str())
-                .context("Failed to parse customer_id")?,
+            customer_id: Uuid::parse_str(&customer_id_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse customer_id: {}", e)))?,
             amount: r.get("amount"),
             currency: r.get("currency"),
             payment_method: match r.get::<String, _>("payment_method").as_str() {
@@ -299,8 +321,8 @@ impl PaymentRepository {
             processing_fee: r.get("processing_fee"),
             notes: r.get("notes"),
             paid_at: r.get::<Option<String>, _>("paid_at").and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
-                .context("Failed to parse created_at")?
+            created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
                 .with_timezone(&chrono::Utc),
             created_by: r.get::<Option<String>, _>("created_by").and_then(|s| Uuid::parse_str(&s).ok()),
         })
@@ -361,27 +383,34 @@ impl GatewayRepository {
             r#"SELECT id, code, name, gateway_type, api_key, api_secret, merchant_id, webhook_secret, is_live, is_active, supported_methods, created_at, updated_at FROM payment_gateways WHERE is_active = 1"#
         )
         .fetch_all(pool).await?;
-        rows.iter().map(|r| {
-            Ok(PaymentGateway {
-                id: Uuid::parse_str(r.get::<String, _>("id").as_str())
-                    .context("Failed to parse gateway id")?,
-                code: r.get("code"),
-                name: r.get("name"),
-                gateway_type: r.get("gateway_type"),
-                api_key: r.get("api_key"),
-                api_secret: r.get("api_secret"),
-                merchant_id: r.get("merchant_id"),
-                webhook_secret: r.get("webhook_secret"),
-                is_live: r.get("is_live"),
-                is_active: r.get("is_active"),
-                supported_methods: r.get("supported_methods"),
-                created_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("created_at"))
-                    .context("Failed to parse created_at")?
+        
+        let mut gateways = Vec::new();
+        for row in rows {
+            let id_str: String = row.get("id");
+            let created_at_str: String = row.get("created_at");
+            let updated_at_str: String = row.get("updated_at");
+
+            gateways.push(PaymentGateway {
+                id: Uuid::parse_str(&id_str)
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse gateway id: {}", e)))?,
+                code: row.get("code"),
+                name: row.get("name"),
+                gateway_type: row.get("gateway_type"),
+                api_key: row.get("api_key"),
+                api_secret: row.get("api_secret"),
+                merchant_id: row.get("merchant_id"),
+                webhook_secret: row.get("webhook_secret"),
+                is_live: row.get("is_live"),
+                is_active: row.get("is_active"),
+                supported_methods: row.get("supported_methods"),
+                created_at: chrono::DateTime::parse_from_rfc3339(&created_at_str)
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse created_at: {}", e)))?
                     .with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(&r.get::<String, _>("updated_at"))
-                    .context("Failed to parse updated_at")?
+                updated_at: chrono::DateTime::parse_from_rfc3339(&updated_at_str)
+                    .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse updated_at: {}", e)))?
                     .with_timezone(&chrono::Utc),
-            })
-        }).collect()
+            });
+        }
+        Ok(gateways)
     }
 }

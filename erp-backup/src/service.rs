@@ -6,42 +6,46 @@ use erp_core::{BaseEntity, Result};
 use crate::models::*;
 use crate::repository::{BackupRepository, SqliteBackupRepository};
 
-pub struct BackupService {
-    repo: SqliteBackupRepository,
+pub struct BackupService<R: BackupRepository = SqliteBackupRepository> {
+    repo: R,
+    pool: SqlitePool,
 }
 
-impl Default for BackupService {
-    fn default() -> Self {
-        Self::new()
+impl BackupService<SqliteBackupRepository> {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self {
+            repo: SqliteBackupRepository::new(pool.clone()),
+            pool,
+        }
     }
 }
 
-impl BackupService {
-    pub fn new() -> Self {
-        Self { repo: SqliteBackupRepository }
+impl<R: BackupRepository> BackupService<R> {
+    pub fn with_repo(repo: R, pool: SqlitePool) -> Self {
+        Self { repo, pool }
     }
 
-    pub async fn create_schedule(&self, pool: &SqlitePool, schedule: BackupSchedule) -> Result<BackupSchedule> {
-        self.repo.create_schedule(pool, schedule).await
+    pub async fn create_schedule(&self, schedule: BackupSchedule) -> Result<BackupSchedule> {
+        self.repo.create_schedule(schedule).await
     }
 
-    pub async fn list_schedules(&self, pool: &SqlitePool) -> Result<Vec<BackupSchedule>> {
-        self.repo.list_schedules(pool).await
+    pub async fn list_schedules(&self) -> Result<Vec<BackupSchedule>> {
+        self.repo.list_schedules().await
     }
 
-    pub async fn get_schedule(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<BackupSchedule>> {
-        self.repo.get_schedule(pool, id).await
+    pub async fn get_schedule(&self, id: Uuid) -> Result<Option<BackupSchedule>> {
+        self.repo.get_schedule(id).await
     }
 
-    pub async fn update_schedule(&self, pool: &SqlitePool, schedule: BackupSchedule) -> Result<BackupSchedule> {
-        self.repo.update_schedule(pool, schedule).await
+    pub async fn update_schedule(&self, schedule: BackupSchedule) -> Result<BackupSchedule> {
+        self.repo.update_schedule(schedule).await
     }
 
-    pub async fn delete_schedule(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
-        self.repo.delete_schedule(pool, id).await
+    pub async fn delete_schedule(&self, id: Uuid) -> Result<()> {
+        self.repo.delete_schedule(id).await
     }
 
-    pub async fn execute_backup(&self, pool: &SqlitePool, schedule_id: Option<Uuid>) -> Result<BackupRecord> {
+    pub async fn execute_backup(&self, schedule_id: Option<Uuid>) -> Result<BackupRecord> {
         let started_at = Utc::now();
         
         let backup = BackupRecord {
@@ -65,26 +69,26 @@ impl BackupService {
             is_restorable: false,
         };
         
-        let mut backup = self.repo.create_backup(pool, backup).await?;
+        let mut backup = self.repo.create_backup(backup).await?;
         
-        match self.do_backup(pool, &mut backup).await {
+        match self.do_backup(&mut backup).await {
             Ok(_) => {
                 backup.status = BackupStatus::Completed;
                 backup.completed_at = Some(Utc::now());
                 backup.duration_seconds = Some((Utc::now() - started_at).num_seconds());
                 backup.is_restorable = true;
-                self.repo.update_backup(pool, backup.clone()).await
+                self.repo.update_backup(backup.clone()).await
             }
             Err(e) => {
                 backup.status = BackupStatus::Failed;
                 backup.error_message = Some(e.to_string());
                 backup.completed_at = Some(Utc::now());
-                self.repo.update_backup(pool, backup.clone()).await
+                self.repo.update_backup(backup.clone()).await
             }
         }
     }
 
-    async fn do_backup(&self, pool: &SqlitePool, backup: &mut BackupRecord) -> Result<()> {
+    async fn do_backup(&self, backup: &mut BackupRecord) -> Result<()> {
         let timestamp = Utc::now().format("%Y%m%d_%H%M%S");
         let filename = format!("backup_{}.db", timestamp);
         let backup_dir = PathBuf::from("./backups");
@@ -105,36 +109,37 @@ impl BackupService {
         backup.file_size_bytes = metadata.len() as i64;
         
         let tables: Vec<String> = sqlx::query_scalar("SELECT name FROM sqlite_master WHERE type='table'")
-            .fetch_all(pool).await?;
+            .fetch_all(&self.pool).await?;
         backup.tables_included = Some(tables.join(","));
         
+        // Use COALESCE for safer record count calculation
         let total_records: i64 = sqlx::query_scalar(
-            "SELECT SUM(cnt) FROM (SELECT COUNT(*) as cnt FROM users UNION ALL SELECT COUNT(*) FROM products UNION ALL SELECT COUNT(*) FROM customers)"
-        ).fetch_optional(pool).await?.unwrap_or(Some(0)).unwrap_or(0);
+            "SELECT COALESCE(SUM(cnt), 0) FROM (SELECT COUNT(*) as cnt FROM users UNION ALL SELECT COUNT(*) FROM products UNION ALL SELECT COUNT(*) FROM customers)"
+        ).fetch_one(&self.pool).await?;
         backup.records_count = Some(total_records);
         
         Ok(())
     }
 
-    pub async fn list_backups(&self, pool: &SqlitePool, limit: i32) -> Result<Vec<BackupRecord>> {
-        self.repo.list_backups(pool, limit).await
+    pub async fn list_backups(&self, limit: i32) -> Result<Vec<BackupRecord>> {
+        self.repo.list_backups(limit).await
     }
 
-    pub async fn get_backup(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<BackupRecord>> {
-        self.repo.get_backup(pool, id).await
+    pub async fn get_backup(&self, id: Uuid) -> Result<Option<BackupRecord>> {
+        self.repo.get_backup(id).await
     }
 
-    pub async fn delete_backup(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
-        if let Some(backup) = self.repo.get_backup(pool, id).await? {
+    pub async fn delete_backup(&self, id: Uuid) -> Result<()> {
+        if let Some(backup) = self.repo.get_backup(id).await? {
             if !backup.file_path.is_empty() {
                 let _ = tokio::fs::remove_file(&backup.file_path).await;
             }
         }
-        self.repo.delete_backup(pool, id).await
+        self.repo.delete_backup(id).await
     }
 
-    pub async fn restore_backup(&self, pool: &SqlitePool, backup_id: Uuid, initiated_by: Option<Uuid>) -> Result<RestoreOperation> {
-        let backup = self.repo.get_backup(pool, backup_id).await?
+    pub async fn restore_backup(&self, backup_id: Uuid, initiated_by: Option<Uuid>) -> Result<RestoreOperation> {
+        let backup = self.repo.get_backup(backup_id).await?
             .ok_or_else(|| anyhow::anyhow!("Backup not found"))?;
         
         if !backup.is_restorable {
@@ -156,7 +161,7 @@ impl BackupService {
             backup_before_restore: None,
         };
         
-        let mut restore = self.repo.create_restore(pool, restore).await?;
+        let mut restore = self.repo.create_restore(restore).await?;
         
         match self.do_restore(&backup).await {
             Ok(records) => {
@@ -164,13 +169,13 @@ impl BackupService {
                 restore.completed_at = Some(Utc::now());
                 restore.duration_seconds = Some((Utc::now() - restore.started_at).num_seconds());
                 restore.records_restored = Some(records);
-                self.repo.update_restore(pool, restore.clone()).await
+                self.repo.update_restore(restore.clone()).await
             }
             Err(e) => {
                 restore.status = RestoreStatus::Failed;
                 restore.error_message = Some(e.to_string());
                 restore.completed_at = Some(Utc::now());
-                self.repo.update_restore(pool, restore.clone()).await
+                self.repo.update_restore(restore.clone()).await
             }
         }
     }
@@ -187,8 +192,8 @@ impl BackupService {
         Ok(backup.records_count.unwrap_or(0))
     }
 
-    pub async fn verify_backup(&self, pool: &SqlitePool, backup_id: Uuid) -> Result<BackupVerification> {
-        let backup = self.repo.get_backup(pool, backup_id).await?
+    pub async fn verify_backup(&self, backup_id: Uuid) -> Result<BackupVerification> {
+        let backup = self.repo.get_backup(backup_id).await?
             .ok_or_else(|| anyhow::anyhow!("Backup not found"))?;
         
         let mut verification = BackupVerification {
@@ -215,32 +220,32 @@ impl BackupService {
             verification.error_details = Some("Backup file not found".to_string());
         }
         
-        self.repo.create_verification(pool, verification.clone()).await?;
+        self.repo.create_verification(verification.clone()).await?;
         
         let mut backup = backup;
         backup.verification_status = Some(verification.status.clone());
         backup.verified_at = Some(Utc::now());
-        self.repo.update_backup(pool, backup).await?;
+        self.repo.update_backup(backup).await?;
         
         Ok(verification)
     }
 
-    pub async fn list_restores(&self, pool: &SqlitePool, limit: i32) -> Result<Vec<RestoreOperation>> {
-        self.repo.list_restores(pool, limit).await
+    pub async fn list_restores(&self, limit: i32) -> Result<Vec<RestoreOperation>> {
+        self.repo.list_restores(limit).await
     }
 
-    pub async fn get_storage_stats(&self, pool: &SqlitePool) -> Result<BackupStorageStats> {
-        self.repo.get_storage_stats(pool).await
+    pub async fn get_storage_stats(&self) -> Result<BackupStorageStats> {
+        self.repo.get_storage_stats().await
     }
 
-    pub async fn cleanup_old_backups(&self, pool: &SqlitePool, retention_days: i32) -> Result<i32> {
+    pub async fn cleanup_old_backups(&self, retention_days: i32) -> Result<i32> {
         let cutoff = Utc::now() - chrono::Duration::days(retention_days as i64);
-        let backups = self.repo.list_backups(pool, 1000).await?;
+        let backups = self.repo.list_backups(1000).await?;
         let mut deleted = 0;
         
         for backup in backups {
             if backup.started_at < cutoff {
-                self.delete_backup(pool, backup.base.id).await?;
+                self.delete_backup(backup.base.id).await?;
                 deleted += 1;
             }
         }

@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::repository::*;
-use anyhow::Result;
+use erp_core::{Error, Result};
 use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -71,10 +71,10 @@ impl PaymentService {
 
     pub async fn refund(pool: &SqlitePool, req: CreateRefundRequest, user_id: Option<Uuid>) -> Result<Refund> {
         let payment = PaymentRepository::get_by_id(pool, req.payment_id).await?
-            .ok_or_else(|| anyhow::anyhow!("Payment not found"))?;
+            .ok_or_else(|| Error::not_found("Payment", &req.payment_id.to_string()))?;
         
         if req.amount > payment.amount - payment.refunded_amount {
-            return Err(anyhow::anyhow!("Refund amount exceeds available balance"));
+            return Err(Error::business_rule("Refund amount exceeds available balance"));
         }
         
         let now = Utc::now();
@@ -131,7 +131,8 @@ impl GatewayService {
             webhook_secret: None,
             is_live: false,
             is_active: true,
-            supported_methods: serde_json::to_string(&supported_methods)?,
+            supported_methods: serde_json::to_string(&supported_methods)
+                .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to serialize supported methods: {}", e)))?,
             created_at: now,
             updated_at: now,
         };
@@ -146,7 +147,7 @@ impl GatewayService {
     pub async fn process_payment(pool: &SqlitePool, req: ProcessPaymentRequest) -> Result<Payment> {
         let _gateway = GatewayRepository::list_active(pool).await?
             .into_iter().find(|g| g.id == req.gateway_id)
-            .ok_or_else(|| anyhow::anyhow!("Gateway not found"))?;
+            .ok_or_else(|| Error::not_found("Gateway", &req.gateway_id.to_string()))?;
         
         let now = Utc::now();
         let payment_number = format!("PAY-{}", now.format("%Y%m%d%H%M%S"));
@@ -195,6 +196,7 @@ impl GatewayService {
         Ok(payment)
     }
 }
+
 
 pub struct CustomerPaymentMethodService;
 

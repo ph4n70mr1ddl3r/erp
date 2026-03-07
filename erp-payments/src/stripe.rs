@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::repository::*;
-use anyhow::{Context, Result};
+use erp_core::{Error, Result};
 use chrono::Utc;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -20,11 +20,11 @@ pub struct StripeConfig {
 impl StripeConfig {
     pub fn from_env() -> Result<Self> {
         let secret_key = std::env::var("STRIPE_SECRET_KEY")
-            .context("STRIPE_SECRET_KEY environment variable must be set")?;
+            .map_err(|_| Error::internal("STRIPE_SECRET_KEY environment variable must be set"))?;
         let webhook_secret = std::env::var("STRIPE_WEBHOOK_SECRET")
-            .context("STRIPE_WEBHOOK_SECRET environment variable must be set")?;
+            .map_err(|_| Error::internal("STRIPE_WEBHOOK_SECRET environment variable must be set"))?;
         let publishable_key = std::env::var("STRIPE_PUBLISHABLE_KEY")
-            .context("STRIPE_PUBLISHABLE_KEY environment variable must be set")?;
+            .map_err(|_| Error::internal("STRIPE_PUBLISHABLE_KEY environment variable must be set"))?;
         let is_live = std::env::var("STRIPE_LIVE").unwrap_or_else(|_| "false".to_string()) == "true";
         
         Ok(Self {
@@ -50,7 +50,7 @@ impl StripeService {
         let client = Client::builder()
             .timeout(Duration::from_secs(STRIPE_API_TIMEOUT_SECS))
             .build()
-            .context("Failed to create HTTP client")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to create HTTP client: {}", e)))?;
         Ok(Self { client, config })
     }
     
@@ -88,17 +88,17 @@ impl StripeService {
             .form(&form_data)
             .send()
             .await
-            .context("Failed to send request to Stripe")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to send request to Stripe: {}", e)))?;
         
         if !response.status().is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            anyhow::bail!("Stripe API error: {}", error_text);
+            return Err(Error::Internal(anyhow::anyhow!("Stripe API error: {}", error_text)));
         }
         
         let stripe_response: StripePaymentIntentResponse = response
             .json()
             .await
-            .context("Failed to parse Stripe response")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse Stripe response: {}", e)))?;
         
         let now = Utc::now();
         let payment_intent = StripePaymentIntent {
@@ -111,7 +111,7 @@ impl StripeService {
             status: stripe_response.status.clone(),
             client_secret: stripe_response.client_secret.clone(),
             description: req.description,
-            metadata: req.metadata.map(|m| serde_json::to_string(&m).unwrap_or_default()),
+            metadata: req.metadata.and_then(|m| serde_json::to_string(&m).ok()),
             created_at: now,
             updated_at: now,
         };
@@ -162,17 +162,17 @@ impl StripeService {
             .form(&form_data)
             .send()
             .await
-            .context("Failed to send request to Stripe")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to send request to Stripe: {}", e)))?;
         
         if !response.status().is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            anyhow::bail!("Stripe API error: {}", error_text);
+            return Err(Error::Internal(anyhow::anyhow!("Stripe API error: {}", error_text)));
         }
         
         let stripe_response: StripeCheckoutSessionResponse = response
             .json()
             .await
-            .context("Failed to parse Stripe response")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse Stripe response: {}", e)))?;
         
         let now = Utc::now();
         let checkout_session = StripeCheckoutSession {
@@ -210,14 +210,14 @@ impl StripeService {
             .basic_auth(&self.config.secret_key, Some(""))
             .send()
             .await
-            .context("Failed to retrieve payment intent from Stripe")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to retrieve payment intent from Stripe: {}", e)))?;
         
         if !response.status().is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            anyhow::bail!("Stripe API error: {}", error_text);
+            return Err(Error::Internal(anyhow::anyhow!("Stripe API error: {}", error_text)));
         }
         
-        response.json().await.context("Failed to parse Stripe response")
+        response.json().await.map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse Stripe response: {}", e)))
     }
     
     pub async fn cancel_payment_intent(&self, payment_intent_id: &str) -> Result<StripePaymentIntentResponse> {
@@ -226,14 +226,14 @@ impl StripeService {
             .basic_auth(&self.config.secret_key, Some(""))
             .send()
             .await
-            .context("Failed to cancel payment intent")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to cancel payment intent: {}", e)))?;
         
         if !response.status().is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            anyhow::bail!("Stripe API error: {}", error_text);
+            return Err(Error::Internal(anyhow::anyhow!("Stripe API error: {}", error_text)));
         }
         
-        response.json().await.context("Failed to parse Stripe response")
+        response.json().await.map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse Stripe response: {}", e)))
     }
     
     pub async fn create_refund(
@@ -259,17 +259,17 @@ impl StripeService {
             .form(&form_data)
             .send()
             .await
-            .context("Failed to create refund with Stripe")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to create refund with Stripe: {}", e)))?;
         
         if !response.status().is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            anyhow::bail!("Stripe API error: {}", error_text);
+            return Err(Error::Internal(anyhow::anyhow!("Stripe API error: {}", error_text)));
         }
         
         let refund_response: StripeRefundResponse = response
             .json()
             .await
-            .context("Failed to parse Stripe response")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse Stripe response: {}", e)))?;
         
         if refund_response.status == "succeeded" {
             if let Some(intent_id) = &refund_response.payment_intent {
@@ -306,35 +306,35 @@ impl StripeService {
         }
         
         if signature_value.is_empty() || timestamp.is_empty() {
-            anyhow::bail!("Invalid webhook signature format");
+            return Err(Error::Validation("Invalid webhook signature format".to_string()));
         }
         
         let timestamp_secs: u64 = timestamp.parse()
-            .context("Invalid timestamp in signature")?;
+            .map_err(|_| Error::Validation("Invalid timestamp in signature".to_string()))?;
         
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .context("System time error")?
+            .map_err(|e| Error::Internal(anyhow::anyhow!("System time error: {}", e)))?
             .as_secs();
         
         const TOLERANCE_SECS: u64 = 300;
         if now.abs_diff(timestamp_secs) > TOLERANCE_SECS {
-            anyhow::bail!("Webhook timestamp outside tolerance window");
+            return Err(Error::Validation("Webhook timestamp outside tolerance window".to_string()));
         }
         
         let signed_payload = format!("{}.{}", timestamp, String::from_utf8_lossy(payload));
         let mut mac = HmacSha256::new_from_slice(self.config.webhook_secret.as_bytes())
-            .context("Invalid webhook secret")?;
+            .map_err(|_| Error::internal("Invalid webhook secret"))?;
         mac.update(signed_payload.as_bytes());
         let expected = hex::encode(mac.finalize().into_bytes());
         
         if !constant_time_eq(&expected, signature_value) {
-            anyhow::bail!("Webhook signature verification failed");
+            return Err(Error::Validation("Webhook signature verification failed".to_string()));
         }
         
         let payload_str = String::from_utf8_lossy(payload);
         let webhook: StripeWebhookPayload = serde_json::from_str(&payload_str)
-            .context("Failed to parse webhook payload")?;
+            .map_err(|e| Error::Internal(anyhow::anyhow!("Failed to parse webhook payload: {}", e)))?;
         
         Ok(webhook)
     }

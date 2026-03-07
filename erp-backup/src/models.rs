@@ -3,8 +3,9 @@ use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct BackupSchedule {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub name: String,
     pub backup_type: BackupType,
@@ -40,8 +41,9 @@ pub enum BackupStorageType {
     SFTP,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct BackupRecord {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub schedule_id: Option<Uuid>,
     pub backup_type: BackupType,
@@ -80,8 +82,9 @@ pub enum VerificationStatus {
     Failed,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct RestoreOperation {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub backup_id: Uuid,
     pub status: RestoreStatus,
@@ -114,8 +117,9 @@ pub enum RestoreType {
     PointInTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct BackupVerification {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub backup_id: Uuid,
     pub status: VerificationStatus,
@@ -127,8 +131,9 @@ pub struct BackupVerification {
     pub error_details: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct BackupStorageStats {
+    #[sqlx(flatten)]
     pub base: BaseEntity,
     pub storage_type: BackupStorageType,
     pub total_size_bytes: i64,
