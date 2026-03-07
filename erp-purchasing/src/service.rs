@@ -459,6 +459,73 @@ impl ThreeWayMatchService {
     }
 }
 
+pub struct SubcontractService;
+
+impl SubcontractService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_order(
+        &self,
+        pool: &SqlitePool,
+        vendor_id: Uuid,
+        product_id: Uuid,
+        quantity: i64,
+        service_cost: Money,
+        warehouse_id: Uuid,
+        components: Vec<SubcontractComponent>,
+    ) -> Result<SubcontractOrder> {
+        let order = SubcontractOrder {
+            base: BaseEntity::new(),
+            order_number: format!("SCO-{}", Utc::now().format("%Y%m%d%H%M%S")),
+            vendor_id,
+            product_id,
+            quantity,
+            service_cost,
+            status: SubcontractOrderStatus::Draft,
+            components,
+            warehouse_id,
+        };
+
+        sqlx::query(
+            "INSERT INTO subcontract_orders (id, order_number, vendor_id, product_id, quantity, service_cost_amount, service_cost_currency, status, warehouse_id, created_at, updated_at) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(order.base.id.to_string())
+        .bind(&order.order_number)
+        .bind(order.vendor_id.to_string())
+        .bind(order.product_id.to_string())
+        .bind(order.quantity)
+        .bind(order.service_cost.amount)
+        .bind(order.service_cost.currency.to_string())
+        .bind(format!("{:?}", order.status))
+        .bind(order.warehouse_id.to_string())
+        .bind(order.base.created_at.to_rfc3339())
+        .bind(order.base.updated_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(Error::Database)?;
+
+        for mut component in order.components.clone() {
+            component.id = Uuid::new_v4();
+            sqlx::query(
+                "INSERT INTO subcontract_components (id, order_id, product_id, quantity, sent_quantity, consumed_quantity) 
+                 VALUES (?, ?, ?, ?, ?, ?)"
+            )
+            .bind(component.id.to_string())
+            .bind(order.base.id.to_string())
+            .bind(component.product_id.to_string())
+            .bind(component.quantity)
+            .bind(component.sent_quantity)
+            .bind(component.consumed_quantity)
+            .execute(pool)
+            .await
+            .map_err(Error::Database)?;
+        }
+
+        Ok(order)
+    }
+}
+
 #[derive(sqlx::FromRow)]
 struct ScorecardRow {
 

@@ -212,3 +212,34 @@ pub enum MatchStatus {
     Rejected,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubcontractOrder {
+    pub base: BaseEntity,
+    pub order_number: String,
+    pub vendor_id: Uuid,
+    pub product_id: Uuid, // Finished Good to be received
+    pub quantity: i64,
+    pub service_cost: Money,
+    pub status: SubcontractOrderStatus,
+    pub components: Vec<SubcontractComponent>,
+    pub warehouse_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum SubcontractOrderStatus {
+    Draft,
+    MaterialSent,
+    InProgress,
+    Received,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubcontractComponent {
+    pub id: Uuid,
+    pub product_id: Uuid, // Raw material
+    pub quantity: i64,
+    pub sent_quantity: i64,
+    pub consumed_quantity: i64,
+}
