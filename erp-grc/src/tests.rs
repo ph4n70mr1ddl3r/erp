@@ -3,7 +3,7 @@ mod tests {
     use crate::models::*;
     use crate::repository::*;
     use crate::service::GRCService;
-    use anyhow::Result;
+    use erp_core::Result;
     use async_trait::async_trait;
     use uuid::Uuid;
 

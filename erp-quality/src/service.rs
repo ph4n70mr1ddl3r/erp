@@ -1,13 +1,12 @@
 use crate::models::*;
 use crate::repository::{QualityRepository, SqliteQualityRepository};
-use anyhow::Result;
 use chrono::Utc;
-use erp_core::BaseEntity;
+use erp_core::{BaseEntity, Result, Error};
 use sqlx::SqlitePool;
 use tracing::info;
 use uuid::Uuid;
 
-pub struct QualityService<R: QualityRepository> {
+pub struct QualityService<R: QualityRepository = SqliteQualityRepository> {
     repo: R,
 }
 
@@ -26,7 +25,7 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn create_inspection(&self, req: CreateInspectionRequest, created_by: Option<Uuid>) -> Result<QualityInspectionWithItems> {
         if req.items.is_empty() {
-            anyhow::bail!("At least one inspection item is required");
+            return Err(Error::validation("At least one inspection item is required"));
         }
 
         let inspection_number = self.repo.get_next_inspection_number().await?;
@@ -88,10 +87,10 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn start_inspection(&self, id: Uuid) -> Result<QualityInspection> {
         let mut inspection = self.repo.get_inspection(id).await?
-            .ok_or_else(|| anyhow::anyhow!("Inspection not found"))?;
+            .ok_or_else(|| Error::not_found("Inspection", &id.to_string()))?;
 
         if inspection.status != InspectionStatus::Pending {
-            anyhow::bail!("Only pending inspections can be started");
+            return Err(Error::business_rule("Only pending inspections can be started"));
         }
 
         inspection.status = InspectionStatus::InProgress;
@@ -101,15 +100,15 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn complete_inspection(&self, id: Uuid) -> Result<QualityInspection> {
         let mut inspection = self.repo.get_inspection(id).await?
-            .ok_or_else(|| anyhow::anyhow!("Inspection not found"))?;
+            .ok_or_else(|| Error::not_found("Inspection", &id.to_string()))?;
 
         if inspection.status != InspectionStatus::InProgress && inspection.status != InspectionStatus::Pending {
-            anyhow::bail!("Only pending or in-progress inspections can be completed");
+            return Err(Error::business_rule("Only pending or in-progress inspections can be completed"));
         }
 
         let items = self.repo.get_inspection_items(id).await?;
         if items.iter().any(|i| i.pass_fail.is_none()) {
-            anyhow::bail!("All inspection items must be evaluated before completing");
+            return Err(Error::validation("All inspection items must be evaluated before completing"));
         }
 
         let all_passed = items.iter().all(|i| i.pass_fail == Some(true));
@@ -127,10 +126,10 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn cancel_inspection(&self, id: Uuid) -> Result<QualityInspection> {
         let mut inspection = self.repo.get_inspection(id).await?
-            .ok_or_else(|| anyhow::anyhow!("Inspection not found"))?;
+            .ok_or_else(|| Error::not_found("Inspection", &id.to_string()))?;
 
         if inspection.status == InspectionStatus::Passed || inspection.status == InspectionStatus::Failed {
-            anyhow::bail!("Completed inspections cannot be cancelled");
+            return Err(Error::business_rule("Completed inspections cannot be cancelled"));
         }
 
         inspection.status = InspectionStatus::Cancelled;
@@ -140,10 +139,10 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn delete_inspection(&self, id: Uuid) -> Result<()> {
         let inspection = self.repo.get_inspection(id).await?
-            .ok_or_else(|| anyhow::anyhow!("Inspection not found"))?;
+            .ok_or_else(|| Error::not_found("Inspection", &id.to_string()))?;
 
         if inspection.status != InspectionStatus::Pending && inspection.status != InspectionStatus::Cancelled {
-            anyhow::bail!("Only pending or cancelled inspections can be deleted");
+            return Err(Error::business_rule("Only pending or cancelled inspections can be deleted"));
         }
 
         self.repo.delete_inspection(id).await?;
@@ -153,29 +152,35 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn update_inspection_item(&self, inspection_id: Uuid, item_id: Uuid, req: UpdateInspectionItemRequest) -> Result<InspectionItem> {
         let inspection = self.repo.get_inspection(inspection_id).await?
-            .ok_or_else(|| anyhow::anyhow!("Inspection not found"))?;
+            .ok_or_else(|| Error::not_found("Inspection", &inspection_id.to_string()))?;
 
         if inspection.status != InspectionStatus::Pending && inspection.status != InspectionStatus::InProgress {
-            anyhow::bail!("Can only update items on pending or in-progress inspections");
+            return Err(Error::business_rule("Can only update items on pending or in-progress inspections"));
         }
 
         let mut items = self.repo.get_inspection_items(inspection_id).await?;
         let item = items.iter_mut().find(|i| i.id == item_id)
-            .ok_or_else(|| anyhow::anyhow!("Item not found"))?;
+            .ok_or_else(|| Error::not_found("InspectionItem", &item_id.to_string()))?;
 
-        item.actual_value = req.actual_value;
-        item.pass_fail = req.pass_fail;
-        item.notes = req.notes;
+        if let Some(actual_value) = req.actual_value {
+            item.actual_value = Some(actual_value);
+        }
+        if let Some(pass_fail) = req.pass_fail {
+            item.pass_fail = Some(pass_fail);
+        }
+        if let Some(notes) = req.notes {
+            item.notes = Some(notes);
+        }
 
         self.repo.update_inspection_item(item).await
     }
 
     pub async fn add_inspection_item(&self, inspection_id: Uuid, req: CreateInspectionItemRequest) -> Result<InspectionItem> {
         let inspection = self.repo.get_inspection(inspection_id).await?
-            .ok_or_else(|| anyhow::anyhow!("Inspection not found"))?;
+            .ok_or_else(|| Error::not_found("Inspection", &inspection_id.to_string()))?;
 
         if inspection.status != InspectionStatus::Pending && inspection.status != InspectionStatus::InProgress {
-            anyhow::bail!("Can only add items to pending or in-progress inspections");
+            return Err(Error::business_rule("Can only add items to pending or in-progress inspections"));
         }
 
         let item = InspectionItem {
@@ -237,7 +242,7 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn update_ncr(&self, id: Uuid, req: UpdateNCRRequest) -> Result<NonConformanceReport> {
         let mut ncr = self.repo.get_ncr(id).await?
-            .ok_or_else(|| anyhow::anyhow!("NCR not found"))?;
+            .ok_or_else(|| Error::not_found("NCR", &id.to_string()))?;
 
         if let Some(root_cause) = req.root_cause {
             ncr.root_cause = Some(root_cause);
@@ -261,14 +266,10 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn close_ncr(&self, id: Uuid) -> Result<NonConformanceReport> {
         let mut ncr = self.repo.get_ncr(id).await?
-            .ok_or_else(|| anyhow::anyhow!("NCR not found"))?;
+            .ok_or_else(|| Error::not_found("NCR", &id.to_string()))?;
 
         if ncr.status == NCRStatus::Closed || ncr.status == NCRStatus::Cancelled {
-            anyhow::bail!("NCR is already closed or cancelled");
-        }
-
-        if ncr.corrective_action.is_none() {
-            anyhow::bail!("Corrective action must be specified before closing");
+            return Err(Error::business_rule("NCR is already closed or cancelled"));
         }
 
         ncr.status = NCRStatus::Closed;
@@ -281,10 +282,10 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn delete_ncr(&self, id: Uuid) -> Result<()> {
         let ncr = self.repo.get_ncr(id).await?
-            .ok_or_else(|| anyhow::anyhow!("NCR not found"))?;
+            .ok_or_else(|| Error::not_found("NCR", &id.to_string()))?;
 
         if ncr.status != NCRStatus::Open {
-            anyhow::bail!("Only open NCRs can be deleted");
+            return Err(Error::business_rule("Only open NCRs can be deleted"));
         }
 
         self.repo.delete_ncr(id).await?;
@@ -358,7 +359,7 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn calibrate_device(&self, device_id: Uuid, readings: Vec<CalibrationReading>, calibrated_by: Option<Uuid>) -> Result<CalibrationRecordWithReadings> {
         let mut device = self.repo.get_calibration_device(device_id).await?
-            .ok_or_else(|| anyhow::anyhow!("Device not found"))?;
+            .ok_or_else(|| Error::not_found("CalibrationDevice", &device_id.to_string()))?;
         
         let record_number = self.repo.get_next_calibration_record_number().await?;
         let now = Utc::now();
@@ -457,7 +458,7 @@ impl<R: QualityRepository> QualityService<R> {
 
     pub async fn update_capa(&self, id: Uuid, req: UpdateCAPARequest) -> Result<CAPA> {
         let mut capa = self.repo.get_capa(id).await?
-            .ok_or_else(|| anyhow::anyhow!("CAPA not found"))?;
+            .ok_or_else(|| Error::not_found("CAPA", &id.to_string()))?;
 
         if let Some(title) = req.title { capa.title = title; }
         if let Some(description) = req.description { capa.description = description; }
@@ -493,7 +494,7 @@ impl<R: QualityRepository> QualityService<R> {
     pub async fn update_capa_action(&self, capa_id: Uuid, action_id: Uuid, status: CAPAActionStatus, evidence: Option<String>) -> Result<CAPAAction> {
         let actions = self.repo.list_capa_actions(capa_id).await?;
         let mut action = actions.into_iter().find(|a| a.id == action_id)
-            .ok_or_else(|| anyhow::anyhow!("CAPA action not found"))?;
+            .ok_or_else(|| Error::not_found("CAPAAction", &action_id.to_string()))?;
 
         action.status = status.clone();
         if status == CAPAActionStatus::Completed {

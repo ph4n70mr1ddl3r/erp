@@ -1,10 +1,10 @@
 use crate::models::*;
 use crate::repository::{GRCRepository, SqliteGRCRepository};
 use chrono::Utc;
-use erp_core::{BaseEntity, Status};
+use erp_core::{BaseEntity, Status, Result};
 use uuid::Uuid;
 
-pub struct GRCService<R: GRCRepository> {
+pub struct GRCService<R: GRCRepository = SqliteGRCRepository> {
     repo: R,
 }
 
@@ -13,7 +13,7 @@ impl<R: GRCRepository> GRCService<R> {
         Self { repo }
     }
 
-    pub async fn create_hs_code(&self, req: CreateHSCodeRequest) -> anyhow::Result<HSCode> {
+    pub async fn create_hs_code(&self, req: CreateHSCodeRequest) -> Result<HSCode> {
         let hs_code = HSCode {
             id: Uuid::new_v4(),
             code: req.code,
@@ -31,11 +31,11 @@ impl<R: GRCRepository> GRCService<R> {
         Ok(hs_code)
     }
 
-    pub async fn get_hs_code(&self, id: Uuid) -> anyhow::Result<Option<HSCode>> {
+    pub async fn get_hs_code(&self, id: Uuid) -> Result<Option<HSCode>> {
         self.repo.get_hs_code(id).await
     }
 
-    pub async fn set_product_trade_data(&self, product_id: Uuid, req: UpdateProductTradeDataRequest) -> anyhow::Result<ProductTradeData> {
+    pub async fn set_product_trade_data(&self, product_id: Uuid, req: UpdateProductTradeDataRequest) -> Result<ProductTradeData> {
         let existing = self.repo.get_product_trade_data(product_id).await?;
         let now = Utc::now();
         
@@ -69,7 +69,7 @@ impl<R: GRCRepository> GRCService<R> {
         Ok(data)
     }
 
-    pub async fn screening_entity(&self, entity_id: Uuid, entity_type: String) -> anyhow::Result<ScreeningResult> {
+    pub async fn screening_entity(&self, entity_id: Uuid, entity_type: String) -> Result<ScreeningResult> {
         // In a real system, this would call an external API (like Dow Jones or LexisNexis)
         let result = ScreeningResult {
             id: Uuid::new_v4(),
@@ -86,7 +86,7 @@ impl<R: GRCRepository> GRCService<R> {
         Ok(result)
     }
 
-    pub async fn create_dsar_request(&self, req: CreateDSARRequest) -> anyhow::Result<DSARRequest> {
+    pub async fn create_dsar_request(&self, req: CreateDSARRequest) -> Result<DSARRequest> {
         let now = Utc::now();
         let request_number = format!("DSAR-{}", now.format("%Y%m%d%H%M%S"));
         let request = DSARRequest {
@@ -124,11 +124,11 @@ impl<R: GRCRepository> GRCService<R> {
         Ok(request)
     }
 
-    pub async fn get_dsar_request(&self, id: Uuid) -> anyhow::Result<Option<DSARRequest>> {
+    pub async fn get_dsar_request(&self, id: Uuid) -> Result<Option<DSARRequest>> {
         self.repo.get_dsar_request(id).await
     }
 
-    pub async fn list_dsar_tasks(&self, request_id: Uuid) -> anyhow::Result<Vec<DSARTask>> {
+    pub async fn list_dsar_tasks(&self, request_id: Uuid) -> Result<Vec<DSARTask>> {
         self.repo.list_dsar_tasks(request_id).await
     }
 }

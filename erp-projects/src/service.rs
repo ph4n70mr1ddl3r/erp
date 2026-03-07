@@ -5,12 +5,18 @@ use erp_core::{Error, Result, Pagination, Paginated};
 use crate::models::*;
 use crate::repository::*;
 
-pub struct ProjectService {
-    repo: SqliteProjectRepository,
-    task_repo: SqliteProjectTaskRepository,
-    milestone_repo: SqliteProjectMilestoneRepository,
-    expense_repo: SqliteProjectExpenseRepository,
-    template_repo: SqliteProjectTemplateRepository,
+pub struct ProjectService<
+    P: ProjectRepository = SqliteProjectRepository,
+    T: ProjectTaskRepository = SqliteProjectTaskRepository,
+    M: ProjectMilestoneRepository = SqliteProjectMilestoneRepository,
+    E: ProjectExpenseRepository = SqliteProjectExpenseRepository,
+    TP: ProjectTemplateRepository = SqliteProjectTemplateRepository,
+> {
+    repo: P,
+    task_repo: T,
+    milestone_repo: M,
+    expense_repo: E,
+    template_repo: TP,
 }
 
 impl Default for ProjectService {
@@ -27,6 +33,25 @@ impl ProjectService {
             milestone_repo: SqliteProjectMilestoneRepository,
             expense_repo: SqliteProjectExpenseRepository,
             template_repo: SqliteProjectTemplateRepository,
+        }
+    }
+}
+
+impl<P, T, M, E, TP> ProjectService<P, T, M, E, TP>
+where
+    P: ProjectRepository,
+    T: ProjectTaskRepository,
+    M: ProjectMilestoneRepository,
+    E: ProjectExpenseRepository,
+    TP: ProjectTemplateRepository,
+{
+    pub fn with_repos(repo: P, task_repo: T, milestone_repo: M, expense_repo: E, template_repo: TP) -> Self {
+        Self {
+            repo,
+            task_repo,
+            milestone_repo,
+            expense_repo,
+            template_repo,
         }
     }
 

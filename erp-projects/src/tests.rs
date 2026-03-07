@@ -167,10 +167,117 @@ mod tests {
         Ok(())
     }
 
+    struct MockProjectRepository {
+        projects: Mutex<Vec<Project>>,
+    }
+    #[async_trait]
+    impl ProjectRepository for MockProjectRepository {
+        async fn find_by_id(&self, _: &SqlitePool, id: Uuid) -> erp_core::Result<Project> {
+            self.projects.lock().unwrap().iter().find(|p| p.id == id).cloned()
+                .ok_or_else(|| erp_core::Error::not_found("Project", &id.to_string()))
+        }
+        async fn find_by_number(&self, _: &SqlitePool, number: &str) -> erp_core::Result<Project> {
+            self.projects.lock().unwrap().iter().find(|p| p.project_number == number).cloned()
+                .ok_or_else(|| erp_core::Error::not_found("Project", number))
+        }
+        async fn find_all(&self, _: &SqlitePool, p: Pagination) -> erp_core::Result<Paginated<Project>> {
+            let projects = self.projects.lock().unwrap().clone();
+            let total = projects.len() as u64;
+            Ok(Paginated::new(projects, total, p))
+        }
+        async fn create(&self, _: &SqlitePool, p: Project) -> erp_core::Result<Project> {
+            self.projects.lock().unwrap().push(p.clone());
+            Ok(p)
+        }
+        async fn update(&self, _: &SqlitePool, p: Project) -> erp_core::Result<Project> {
+            let mut projs = self.projects.lock().unwrap();
+            if let Some(pos) = projs.iter().position(|x| x.id == p.id) {
+                projs[pos] = p.clone();
+            }
+            Ok(p)
+        }
+        async fn delete(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<()> { Ok(()) }
+    }
+
+    struct MockProjectTaskRepository;
+    #[async_trait]
+    impl ProjectTaskRepository for MockProjectTaskRepository {
+        async fn find_by_id(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<ProjectTask> { todo!() }
+        async fn find_by_project(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<Vec<ProjectTask>> { Ok(vec![]) }
+        async fn create(&self, _: &SqlitePool, t: ProjectTask) -> erp_core::Result<ProjectTask> { Ok(t) }
+        async fn update(&self, _: &SqlitePool, t: ProjectTask) -> erp_core::Result<ProjectTask> { Ok(t) }
+        async fn delete(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<()> { Ok(()) }
+    }
+
+    struct MockProjectMilestoneRepository;
+    #[async_trait]
+    impl ProjectMilestoneRepository for MockProjectMilestoneRepository {
+        async fn find_by_id(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<ProjectMilestone> { todo!() }
+        async fn find_by_project(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<Vec<ProjectMilestone>> { Ok(vec![]) }
+        async fn create(&self, _: &SqlitePool, m: ProjectMilestone) -> erp_core::Result<ProjectMilestone> { Ok(m) }
+        async fn update(&self, _: &SqlitePool, m: ProjectMilestone) -> erp_core::Result<ProjectMilestone> { Ok(m) }
+        async fn delete(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<()> { Ok(()) }
+    }
+
+    struct MockProjectExpenseRepository;
+    #[async_trait]
+    impl ProjectExpenseRepository for MockProjectExpenseRepository {
+        async fn find_by_id(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<ProjectExpense> { todo!() }
+        async fn find_by_project(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<Vec<ProjectExpense>> { Ok(vec![]) }
+        async fn create(&self, _: &SqlitePool, e: ProjectExpense) -> erp_core::Result<ProjectExpense> { Ok(e) }
+        async fn update(&self, _: &SqlitePool, e: ProjectExpense) -> erp_core::Result<ProjectExpense> { Ok(e) }
+        async fn delete(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<()> { Ok(()) }
+    }
+
+    struct MockProjectTemplateRepository;
+    #[async_trait]
+    impl ProjectTemplateRepository for MockProjectTemplateRepository {
+        async fn find_by_id(&self, _: &SqlitePool, id: Uuid) -> erp_core::Result<ProjectTemplate> {
+            Ok(ProjectTemplate {
+                id,
+                name: "Test Template".to_string(),
+                description: None,
+                project_type: ProjectType::Internal,
+                billable: true,
+                billing_method: BillingMethod::FixedPrice,
+                tasks: vec![],
+                milestones: vec![],
+                status: erp_core::Status::Active,
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            })
+        }
+        async fn find_all(&self, _: &SqlitePool, p: Pagination) -> erp_core::Result<Paginated<ProjectTemplate>> {
+            Ok(Paginated::new(vec![], 0, p))
+        }
+        async fn create(&self, _: &SqlitePool, t: ProjectTemplate) -> erp_core::Result<ProjectTemplate> { Ok(t) }
+        async fn update(&self, _: &SqlitePool, t: ProjectTemplate) -> erp_core::Result<ProjectTemplate> { Ok(t) }
+        async fn delete(&self, _: &SqlitePool, _id: Uuid) -> erp_core::Result<()> { Ok(()) }
+    }
+
     #[tokio::test]
     async fn test_create_project_from_template_logic() -> Result<()> {
         use crate::service::ProjectService;
-        let _service = ProjectService::new();
+        let pool = SqlitePool::connect("sqlite::memory:").await?;
+        let service = ProjectService::with_repos(
+            MockProjectRepository { projects: Mutex::new(Vec::new()) },
+            MockProjectTaskRepository,
+            MockProjectMilestoneRepository,
+            MockProjectExpenseRepository,
+            MockProjectTemplateRepository,
+        );
+
+        let project = service.create_project_from_template(
+            &pool,
+            Uuid::new_v4(),
+            "New Project".to_string(),
+            None,
+            Utc::now(),
+        ).await?;
+
+        assert_eq!(project.name, "New Project");
+        assert_eq!(project.status, ProjectStatus::Planning);
+        
         Ok(())
     }
 }

@@ -3,10 +3,9 @@ mod tests {
     use crate::models::*;
     use crate::repository::QualityRepository;
     use crate::service::QualityService;
-    use anyhow::Result;
     use async_trait::async_trait;
     use chrono::Utc;
-    use erp_core::BaseEntity;
+    use erp_core::{BaseEntity, Result};
     use uuid::Uuid;
     use std::sync::Arc;
     use tokio::sync::Mutex;
