@@ -36,6 +36,19 @@ pub trait WarrantyRepository: Send + Sync {
     async fn list_extensions(&self, warranty_id: Uuid) -> Result<Vec<WarrantyExtension>, sqlx::Error>;
 
     async fn get_analytics(&self) -> Result<WarrantyAnalytics, sqlx::Error>;
+
+    // Product Recall Management
+    async fn create_recall(&self, recall: &ProductRecall) -> Result<(), sqlx::Error>;
+    async fn get_recall(&self, id: Uuid) -> Result<Option<ProductRecall>, sqlx::Error>;
+    async fn list_recalls(&self, status: Option<RecallStatus>) -> Result<Vec<ProductRecall>, sqlx::Error>;
+    async fn update_recall(&self, recall: &ProductRecall) -> Result<(), sqlx::Error>;
+    
+    async fn create_recall_item(&self, item: &RecallAffectedItem) -> Result<(), sqlx::Error>;
+    async fn list_recall_items(&self, recall_id: Uuid) -> Result<Vec<RecallAffectedItem>, sqlx::Error>;
+    async fn update_recall_item(&self, item: &RecallAffectedItem) -> Result<(), sqlx::Error>;
+    
+    async fn create_recall_notification(&self, notification: &RecallNotification) -> Result<(), sqlx::Error>;
+    async fn list_recall_notifications(&self, recall_id: Uuid) -> Result<Vec<RecallNotification>, sqlx::Error>;
 }
 
 pub struct SqliteWarrantyRepository;
@@ -164,5 +177,42 @@ impl WarrantyRepository for SqliteWarrantyRepository {
             claims_by_category: serde_json::json!({}),
             claims_by_month: serde_json::json!({}),
         })
+    }
+
+    // Product Recall Management
+    async fn create_recall(&self, _recall: &ProductRecall) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn get_recall(&self, _id: Uuid) -> Result<Option<ProductRecall>, sqlx::Error> {
+        Ok(None)
+    }
+
+    async fn list_recalls(&self, _status: Option<RecallStatus>) -> Result<Vec<ProductRecall>, sqlx::Error> {
+        Ok(Vec::new())
+    }
+
+    async fn update_recall(&self, _recall: &ProductRecall) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn create_recall_item(&self, _item: &RecallAffectedItem) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn list_recall_items(&self, _recall_id: Uuid) -> Result<Vec<RecallAffectedItem>, sqlx::Error> {
+        Ok(Vec::new())
+    }
+
+    async fn update_recall_item(&self, _item: &RecallAffectedItem) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn create_recall_notification(&self, _notification: &RecallNotification) -> Result<(), sqlx::Error> {
+        Ok(())
+    }
+
+    async fn list_recall_notifications(&self, _recall_id: Uuid) -> Result<Vec<RecallNotification>, sqlx::Error> {
+        Ok(Vec::new())
     }
 }

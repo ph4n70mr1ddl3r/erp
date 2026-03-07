@@ -268,3 +268,89 @@ pub struct ExtendWarrantyRequest {
     pub cost: i64,
     pub invoice_id: Option<Uuid>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum RecallSeverity {
+    Critical, // Immediate safety risk (Class I)
+    High,     // Potential health hazard (Class II)
+    Medium,   // Low risk, non-compliance (Class III)
+    Low,      // Quality issue, non-safety
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum RecallStatus {
+    Draft,
+    Active,
+    OnHold,
+    Completed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProductRecall {
+    pub base: BaseEntity,
+    pub recall_number: String,
+    pub title: String,
+    pub description: String,
+    pub reason: String,
+    pub severity: RecallSeverity,
+    pub status: RecallStatus,
+    pub recall_date: DateTime<Utc>,
+    pub closing_date: Option<DateTime<Utc>>,
+    pub product_id: Uuid,
+    pub affected_lots: Option<String>, // Comma-separated or JSON list
+    pub affected_serial_ranges: Option<String>,
+    pub estimated_cost: i64,
+    pub actual_cost: i64,
+    pub regulatory_agency: Option<String>,
+    pub regulatory_reference: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecallAffectedItem {
+    pub id: Uuid,
+    pub recall_id: Uuid,
+    pub product_warranty_id: Option<Uuid>,
+    pub customer_id: Uuid,
+    pub serial_number: Option<String>,
+    pub lot_number: Option<String>,
+    pub status: RecallItemStatus,
+    pub action_taken: Option<String>, // e.g., "Returned", "Repaired", "Replaced"
+    pub completion_date: Option<DateTime<Utc>>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum RecallItemStatus {
+    Identified,
+    Notified,
+    Acknowledged,
+    InTransit,
+    Received,
+    Processed,
+    Closed,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RecallNotification {
+    pub id: Uuid,
+    pub recall_id: Uuid,
+    pub customer_id: Uuid,
+    pub notification_date: DateTime<Utc>,
+    pub channel: String, // Email, Letter, Phone
+    pub status: String, // Sent, Delivered, Failed
+    pub tracking_number: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRecallRequest {
+    pub title: String,
+    pub description: String,
+    pub reason: String,
+    pub severity: RecallSeverity,
+    pub product_id: Uuid,
+    pub affected_lots: Option<String>,
+}

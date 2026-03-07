@@ -363,6 +363,80 @@ impl<R: WarrantyRepository> WarrantyService<R> {
         self.repo.get_analytics().await.map_err(|e| e.to_string())
     }
 
+    pub async fn create_recall(&self, req: CreateRecallRequest) -> Result<ProductRecall, String> {
+        let recall_number = format!("RCL-{}", Utc::now().format("%Y%m%d%H%M%S"));
+        let recall = ProductRecall {
+            base: BaseEntity::new(),
+            recall_number,
+            title: req.title,
+            description: req.description,
+            reason: req.reason,
+            severity: req.severity,
+            status: RecallStatus::Draft,
+            recall_date: Utc::now(),
+            closing_date: None,
+            product_id: req.product_id,
+            affected_lots: req.affected_lots,
+            affected_serial_ranges: None,
+            estimated_cost: 0,
+            actual_cost: 0,
+            regulatory_agency: None,
+            regulatory_reference: None,
+        };
+
+        self.repo.create_recall(&recall).await.map_err(|e| e.to_string())?;
+        Ok(recall)
+    }
+
+    pub async fn identify_affected_items(&self, recall_id: Uuid) -> Result<Vec<RecallAffectedItem>, String> {
+        let recall = self.repo.get_recall(recall_id).await
+            .map_err(|e| e.to_string())?
+            .ok_or("Recall not found")?;
+
+        let warranties = self.repo.list_product_warranties(None, Some(recall.product_id), None)
+            .await.map_err(|e| e.to_string())?;
+
+        let mut affected_items = Vec::new();
+        let affected_lots: Vec<&str> = recall.affected_lots.as_deref().unwrap_or("").split(',').map(|s| s.trim()).collect();
+
+        for wty in warranties {
+            let is_affected = if affected_lots.is_empty() || affected_lots.contains(&"") {
+                true // All lots affected if none specified
+            } else if let Some(lot) = &wty.lot_number {
+                affected_lots.contains(&lot.as_str())
+            } else {
+                false
+            };
+
+            if is_affected {
+                let item = RecallAffectedItem {
+                    id: Uuid::new_v4(),
+                    recall_id,
+                    product_warranty_id: Some(wty.base.id),
+                    customer_id: wty.customer_id,
+                    serial_number: wty.serial_number,
+                    lot_number: wty.lot_number,
+                    status: RecallItemStatus::Identified,
+                    action_taken: None,
+                    completion_date: None,
+                    notes: None,
+                };
+                self.repo.create_recall_item(&item).await.map_err(|e| e.to_string())?;
+                affected_items.push(item);
+            }
+        }
+
+        Ok(affected_items)
+    }
+
+    pub async fn get_recall(&self, id: Uuid) -> Result<Option<ProductRecall>, String> {
+        self.repo.get_recall(id).await.map_err(|e| e.to_string())
+    }
+
+    pub async fn list_recall_items(&self, recall_id: Uuid) -> Result<Vec<RecallAffectedItem>, String> {
+        self.repo.list_recall_items(recall_id).await.map_err(|e| e.to_string())
+    }
+
     fn calculate_end_date(&self, start: chrono::DateTime<Utc>, duration_value: i32, unit: &WarrantyDurationUnit) -> chrono::DateTime<Utc> {
         match unit {
             WarrantyDurationUnit::Days => start + Duration::days(duration_value as i64),
