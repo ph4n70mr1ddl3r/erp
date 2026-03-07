@@ -2,10 +2,19 @@ use crate::models::*;
 use crate::repository::{GRCRepository, SqliteGRCRepository};
 use chrono::Utc;
 use erp_core::{BaseEntity, Status, Result};
+use sqlx::SqlitePool;
 use uuid::Uuid;
 
 pub struct GRCService<R: GRCRepository = SqliteGRCRepository> {
     repo: R,
+}
+
+impl GRCService<SqliteGRCRepository> {
+    pub fn new_sqlite(pool: SqlitePool) -> Self {
+        Self {
+            repo: SqliteGRCRepository::new(pool),
+        }
+    }
 }
 
 impl<R: GRCRepository> GRCService<R> {
@@ -15,7 +24,7 @@ impl<R: GRCRepository> GRCService<R> {
 
     pub async fn create_hs_code(&self, req: CreateHSCodeRequest) -> Result<HSCode> {
         let hs_code = HSCode {
-            id: Uuid::new_v4(),
+            base: BaseEntity::new(),
             code: req.code,
             description: req.description,
             section: None,
@@ -24,8 +33,6 @@ impl<R: GRCRepository> GRCService<R> {
             subheading: None,
             general_duty_rate: req.general_duty_rate,
             status: erp_core::Status::Active,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
         };
         self.repo.create_hs_code(&hs_code).await?;
         Ok(hs_code)
@@ -37,7 +44,6 @@ impl<R: GRCRepository> GRCService<R> {
 
     pub async fn set_product_trade_data(&self, product_id: Uuid, req: UpdateProductTradeDataRequest) -> Result<ProductTradeData> {
         let existing = self.repo.get_product_trade_data(product_id).await?;
-        let now = Utc::now();
         
         let data = if let Some(mut data) = existing {
             data.hs_code_id = req.hs_code_id;
@@ -45,12 +51,12 @@ impl<R: GRCRepository> GRCService<R> {
             data.eccn = req.eccn;
             data.export_license_required = req.export_license_required;
             data.import_license_required = req.import_license_required;
-            data.updated_at = now;
+            data.base.updated_at = Utc::now();
             self.repo.update_product_trade_data(&data).await?;
             data
         } else {
             let data = ProductTradeData {
-                id: Uuid::new_v4(),
+                base: BaseEntity::new(),
                 product_id,
                 hs_code_id: req.hs_code_id,
                 country_of_origin: req.country_of_origin,
@@ -59,8 +65,6 @@ impl<R: GRCRepository> GRCService<R> {
                 import_license_required: req.import_license_required,
                 dual_use: false,
                 scheduled_b_number: None,
-                created_at: now,
-                updated_at: now,
             };
             self.repo.create_product_trade_data(&data).await?;
             data
@@ -72,7 +76,7 @@ impl<R: GRCRepository> GRCService<R> {
     pub async fn screening_entity(&self, entity_id: Uuid, entity_type: String) -> Result<ScreeningResult> {
         // In a real system, this would call an external API (like Dow Jones or LexisNexis)
         let result = ScreeningResult {
-            id: Uuid::new_v4(),
+            base: BaseEntity::new(),
             entity_id,
             entity_type,
             screening_date: Utc::now(),
@@ -109,7 +113,7 @@ impl<R: GRCRepository> GRCService<R> {
         let modules = vec!["HR", "Sales", "Finance", "Auth"];
         for module in modules {
             let task = DSARTask {
-                id: Uuid::new_v4(),
+                base: BaseEntity::new(),
                 request_id: request.base.id,
                 module_name: module.to_string(),
                 task_description: format!("Identify and process data for {} in module {}", request.subject_type, module),
@@ -132,3 +136,4 @@ impl<R: GRCRepository> GRCService<R> {
         self.repo.list_dsar_tasks(request_id).await
     }
 }
+

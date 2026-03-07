@@ -2144,6 +2144,7 @@ dependencies = [
  "sqlx",
  "thiserror 1.0.69",
  "tokio",
+ "tracing",
  "uuid 1.21.0",
  "validator",
 ]

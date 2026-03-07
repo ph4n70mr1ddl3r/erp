@@ -1,10 +1,11 @@
 use chrono::{DateTime, Utc};
+use erp_core::BaseEntity;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Project {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub project_number: String,
     pub name: String,
     pub description: Option<String>,
@@ -18,7 +19,6 @@ pub struct Project {
     pub project_manager: Option<Uuid>,
     pub status: ProjectStatus,
     pub percent_complete: i32,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -55,7 +55,7 @@ pub enum ProjectStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectTask {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub project_id: Uuid,
     pub task_number: i32,
     pub name: String,
@@ -93,7 +93,7 @@ pub enum TaskStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectMilestone {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub project_id: Uuid,
     pub name: String,
     pub description: Option<String>,
@@ -123,7 +123,7 @@ pub enum MilestoneStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectExpense {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub project_id: Uuid,
     pub expense_type: ExpenseType,
     pub description: String,
@@ -133,7 +133,6 @@ pub struct ProjectExpense {
     pub invoiced: bool,
     pub invoice_id: Option<Uuid>,
     pub status: ExpenseStatus,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -158,7 +157,7 @@ pub enum ExpenseStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Timesheet {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub timesheet_number: String,
     pub employee_id: Uuid,
     pub period_start: DateTime<Utc>,
@@ -169,7 +168,6 @@ pub struct Timesheet {
     pub submitted_at: Option<DateTime<Utc>>,
     pub approved_at: Option<DateTime<Utc>>,
     pub approved_by: Option<Uuid>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
@@ -183,7 +181,7 @@ pub enum TimesheetStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TimesheetEntry {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub timesheet_id: Uuid,
     pub project_id: Option<Uuid>,
     pub task_id: Option<Uuid>,
@@ -196,7 +194,7 @@ pub struct TimesheetEntry {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectBilling {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub billing_number: String,
     pub project_id: Uuid,
     pub billing_type: ProjectBillingType,
@@ -206,7 +204,6 @@ pub struct ProjectBilling {
     pub amount: i64,
     pub invoice_id: Option<Uuid>,
     pub status: ProjectBillingStatus,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -230,7 +227,7 @@ pub enum ProjectBillingStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Skill {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub name: String,
     pub category: String,
     pub description: Option<String>,
@@ -238,7 +235,7 @@ pub struct Skill {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceSkill {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub employee_id: Uuid,
     pub skill_id: Uuid,
     pub proficiency_level: i32, // 1-5
@@ -256,7 +253,7 @@ pub enum ResourceRequestStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceRequest {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub project_id: Uuid,
     pub task_id: Option<Uuid>,
     pub skill_id: Uuid,
@@ -266,12 +263,11 @@ pub struct ResourceRequest {
     pub hours_required: f64,
     pub status: ResourceRequestStatus,
     pub requested_by: Uuid,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceAllocation {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub request_id: Option<Uuid>,
     pub project_id: Uuid,
     pub employee_id: Uuid,
@@ -279,12 +275,11 @@ pub struct ResourceAllocation {
     pub end_date: DateTime<Utc>,
     pub allocation_percent: i32,
     pub billable_rate: Option<i64>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectTemplate {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub name: String,
     pub description: Option<String>,
     pub project_type: ProjectType,
@@ -293,13 +288,12 @@ pub struct ProjectTemplate {
     pub tasks: Vec<ProjectTemplateTask>,
     pub milestones: Vec<ProjectTemplateMilestone>,
     pub status: erp_core::Status,
-    pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectTemplateTask {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub template_id: Uuid,
     pub name: String,
     pub description: Option<String>,
@@ -312,10 +306,11 @@ pub struct ProjectTemplateTask {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectTemplateMilestone {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub template_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub relative_day: i32,
     pub billing_amount: i64,
 }
+

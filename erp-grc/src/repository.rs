@@ -33,7 +33,6 @@ pub trait GRCRepository: Send + Sync {
     async fn update_dsar_task(&self, task: &DSARTask) -> Result<()>;
 }
 
-#[allow(dead_code)]
 pub struct SqliteGRCRepository {
     pool: SqlitePool,
 }
@@ -119,4 +118,5 @@ impl GRCRepository for SqliteGRCRepository {
         Ok(())
     }
 }
+
 

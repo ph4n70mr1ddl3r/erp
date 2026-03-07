@@ -65,8 +65,6 @@ pub struct Risk {
     pub review_frequency_days: i32,
     pub last_review_date: Option<NaiveDate>,
     pub next_review_date: Option<NaiveDate>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -92,7 +90,6 @@ pub struct RiskAssessment {
     pub score_after: Option<i32>,
     pub assessment_method: String,
     pub notes: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -111,8 +108,6 @@ pub struct Control {
     pub key_control: bool,
     pub automated: bool,
     pub status: Status,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -146,12 +141,11 @@ pub enum ControlFrequency {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RiskControlMapping {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub risk_id: Uuid,
     pub control_id: Uuid,
     pub mapping_type: String,
     pub effectiveness: Option<i32>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -171,7 +165,6 @@ pub struct ControlTest {
     pub remediation_required: bool,
     pub remediation_due_date: Option<NaiveDate>,
     pub status: TestStatus,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -219,8 +212,6 @@ pub struct Policy {
     pub version: String,
     pub document_path: Option<String>,
     pub status: PolicyStatus,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -251,7 +242,7 @@ pub enum PolicyStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PolicyAcknowledgment {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub policy_id: Uuid,
     pub employee_id: Uuid,
     pub acknowledged_at: DateTime<Utc>,
@@ -270,7 +261,6 @@ pub struct ComplianceFramework {
     pub jurisdiction: Option<String>,
     pub effective_date: Option<NaiveDate>,
     pub status: Status,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -296,7 +286,6 @@ pub struct ComplianceRequirement {
     pub testing_required: bool,
     pub frequency: Option<String>,
     pub status: ComplianceStatus,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -321,7 +310,6 @@ pub struct ComplianceAssessment {
     pub remediation_plan: Option<String>,
     pub remediation_due_date: Option<NaiveDate>,
     pub notes: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -347,8 +335,6 @@ pub struct Incident {
     pub status: IncidentStatus,
     pub resolved_date: Option<NaiveDate>,
     pub closure_notes: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -400,8 +386,6 @@ pub struct AuditFinding {
     pub status: FindingStatus,
     pub verified_by: Option<Uuid>,
     pub verified_at: Option<DateTime<Utc>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -445,16 +429,14 @@ pub struct Regulation {
     pub effective_date: Option<NaiveDate>,
     pub compliance_deadline: Option<NaiveDate>,
     pub status: Status,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegulationMapping {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub regulation_id: Uuid,
     pub requirement_id: Uuid,
     pub relevance: String,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -469,8 +451,6 @@ pub struct ThirdPartyRisk {
     pub data_access_level: DataAccessLevel,
     pub business_impact: Option<String>,
     pub status: Status,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -493,12 +473,11 @@ pub enum DataAccessLevel {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RiskHeatmap {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub name: String,
     pub period_start: NaiveDate,
     pub period_end: NaiveDate,
     pub matrix: String,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -518,7 +497,6 @@ pub struct KRIDefinition {
     pub direction: DirectionType,
     pub owner_id: Option<Uuid>,
     pub status: Status,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -531,14 +509,13 @@ pub enum DirectionType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KRIMeasurement {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub kpi_definition_id: Uuid,
     pub measurement_date: NaiveDate,
     pub value: f64,
     pub status: ThresholdStatus,
     pub trend: Option<String>,
     pub notes: Option<String>,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
@@ -551,7 +528,7 @@ pub enum ThresholdStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HSCode {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub code: String,
     pub description: String,
     pub section: Option<String>,
@@ -560,13 +537,11 @@ pub struct HSCode {
     pub subheading: Option<String>,
     pub general_duty_rate: f64,
     pub status: Status,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProductTradeData {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub product_id: Uuid,
     pub hs_code_id: Option<Uuid>,
     pub country_of_origin: String,
@@ -575,13 +550,11 @@ pub struct ProductTradeData {
     pub import_license_required: bool,
     pub dual_use: bool,
     pub scheduled_b_number: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TradeLicense {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub license_number: String,
     pub license_type: TradeLicenseType,
     pub entity_id: Uuid, // Vendor or Customer
@@ -591,8 +564,6 @@ pub struct TradeLicense {
     pub issuing_authority: String,
     pub status: TradeLicenseStatus,
     pub terms: Option<String>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
@@ -616,7 +587,7 @@ pub enum TradeLicenseStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreeningResult {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub entity_id: Uuid,
     pub entity_type: String,
     pub screening_date: DateTime<Utc>,
@@ -693,7 +664,7 @@ pub struct DSARRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DSARTask {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub request_id: Uuid,
     pub module_name: String,
     pub task_description: String,
@@ -710,3 +681,4 @@ pub struct CreateDSARRequest {
     pub request_type: DSARType,
     pub identity_proof_ref: Option<String>,
 }
+
