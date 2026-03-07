@@ -561,3 +561,82 @@ impl From<ScorecardRow> for SupplierScorecard {
         }
     }
 }
+
+pub struct VendorRebateService {
+    repo: SqliteVendorRebateRepository,
+}
+
+impl Default for VendorRebateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl VendorRebateService {
+    pub fn new() -> Self {
+        Self { repo: SqliteVendorRebateRepository }
+    }
+
+    pub async fn create_agreement(&self, pool: &SqlitePool, req: CreateRebateAgreementRequest) -> Result<VendorRebateAgreement> {
+        let agreement = VendorRebateAgreement {
+            base: BaseEntity::new(),
+            agreement_number: format!("VRA-{}", Utc::now().format("%Y%m%d%H%M%S")),
+            vendor_id: req.vendor_id,
+            start_date: req.start_date,
+            end_date: req.end_date,
+            calculation_method: req.calculation_method,
+            currency: req.currency,
+            status: Status::Active,
+            tiers: req.tiers.into_iter().map(|t| RebateAgreementTier {
+                id: Uuid::new_v4(),
+                agreement_id: Uuid::nil(),
+                threshold: t.threshold,
+                rebate_percent: t.rebate_percent,
+                rebate_amount: t.rebate_amount,
+            }).collect(),
+        };
+
+        self.repo.create_agreement(pool, agreement).await
+    }
+
+    pub async fn accrue_rebates_for_order(&self, pool: &SqlitePool, order: &PurchaseOrder) -> Result<Vec<VendorRebateAccrual>> {
+        let active_agreements = self.repo.find_active_agreements(pool, order.vendor_id, order.order_date).await?;
+        let mut accruals = Vec::new();
+
+        for agreement in active_agreements {
+            let base_amount = match agreement.calculation_method {
+                RebateCalculationMethod::ByTotalValue => order.total.amount,
+                RebateCalculationMethod::ByTotalQuantity => order.lines.iter().map(|l| l.quantity).sum(),
+            };
+
+            // Find applicable tier
+            let applicable_tier = agreement.tiers.iter()
+                .filter(|t| base_amount >= t.threshold)
+                .max_by_key(|t| t.threshold);
+
+            if let Some(tier) = applicable_tier {
+                let accrued_amount = if tier.rebate_percent > 0.0 {
+                    (order.total.amount as f64 * (tier.rebate_percent / 100.0)) as i64
+                } else {
+                    tier.rebate_amount
+                };
+
+                if accrued_amount > 0 {
+                    let accrual = VendorRebateAccrual {
+                        id: Uuid::new_v4(),
+                        agreement_id: agreement.base.id,
+                        purchase_order_id: order.base.id,
+                        accrual_date: Utc::now(),
+                        base_amount: order.total.amount,
+                        accrued_amount,
+                        currency: agreement.currency.clone(),
+                        status: Status::Active,
+                    };
+                    accruals.push(self.repo.create_accrual(pool, accrual).await?);
+                }
+            }
+        }
+
+        Ok(accruals)
+    }
+}

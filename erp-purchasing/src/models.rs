@@ -243,3 +243,61 @@ pub struct SubcontractComponent {
     pub sent_quantity: i64,
     pub consumed_quantity: i64,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VendorRebateAgreement {
+    pub base: BaseEntity,
+    pub agreement_number: String,
+    pub vendor_id: Uuid,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub calculation_method: RebateCalculationMethod,
+    pub currency: String,
+    pub status: Status,
+    pub tiers: Vec<RebateAgreementTier>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum RebateCalculationMethod {
+    ByTotalValue,
+    ByTotalQuantity,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RebateAgreementTier {
+    pub id: Uuid,
+    pub agreement_id: Uuid,
+    pub threshold: i64, // Value or Quantity
+    pub rebate_percent: f64,
+    pub rebate_amount: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VendorRebateAccrual {
+    pub id: Uuid,
+    pub agreement_id: Uuid,
+    pub purchase_order_id: Uuid,
+    pub accrual_date: DateTime<Utc>,
+    pub base_amount: i64,
+    pub accrued_amount: i64,
+    pub currency: String,
+    pub status: Status,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRebateAgreementRequest {
+    pub vendor_id: Uuid,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub calculation_method: RebateCalculationMethod,
+    pub currency: String,
+    pub tiers: Vec<CreateRebateTierRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRebateTierRequest {
+    pub threshold: i64,
+    pub rebate_percent: f64,
+    pub rebate_amount: i64,
+}

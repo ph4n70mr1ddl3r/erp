@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{Utc, DateTime};
 use std::str::FromStr;
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status, Money, Currency, Address, ContactInfo};
 use crate::models::*;
@@ -344,6 +344,40 @@ pub trait PurchaseOrderRepository: Send + Sync {
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<PurchaseOrder>>;
     async fn create(&self, pool: &SqlitePool, order: PurchaseOrder) -> Result<PurchaseOrder>;
     async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: Status) -> Result<()>;
+}
+
+#[async_trait]
+pub trait VendorRebateRepository: Send + Sync {
+    async fn create_agreement(&self, pool: &SqlitePool, agreement: VendorRebateAgreement) -> Result<VendorRebateAgreement>;
+    async fn get_agreement(&self, pool: &SqlitePool, id: Uuid) -> Result<VendorRebateAgreement>;
+    async fn find_active_agreements(&self, pool: &SqlitePool, vendor_id: Uuid, date: DateTime<Utc>) -> Result<Vec<VendorRebateAgreement>>;
+    async fn create_accrual(&self, pool: &SqlitePool, accrual: VendorRebateAccrual) -> Result<VendorRebateAccrual>;
+    async fn find_accruals_by_agreement(&self, pool: &SqlitePool, agreement_id: Uuid) -> Result<Vec<VendorRebateAccrual>>;
+}
+
+pub struct SqliteVendorRebateRepository;
+
+#[async_trait]
+impl VendorRebateRepository for SqliteVendorRebateRepository {
+    async fn create_agreement(&self, _pool: &SqlitePool, agreement: VendorRebateAgreement) -> Result<VendorRebateAgreement> {
+        Ok(agreement)
+    }
+
+    async fn get_agreement(&self, _pool: &SqlitePool, id: Uuid) -> Result<VendorRebateAgreement> {
+        Err(Error::not_found("VendorRebateAgreement", &id.to_string()))
+    }
+
+    async fn find_active_agreements(&self, _pool: &SqlitePool, _vendor_id: Uuid, _date: DateTime<Utc>) -> Result<Vec<VendorRebateAgreement>> {
+        Ok(vec![])
+    }
+
+    async fn create_accrual(&self, _pool: &SqlitePool, accrual: VendorRebateAccrual) -> Result<VendorRebateAccrual> {
+        Ok(accrual)
+    }
+
+    async fn find_accruals_by_agreement(&self, _pool: &SqlitePool, _agreement_id: Uuid) -> Result<Vec<VendorRebateAccrual>> {
+        Ok(vec![])
+    }
 }
 
 #[async_trait]
