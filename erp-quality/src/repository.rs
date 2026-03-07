@@ -34,6 +34,17 @@ pub trait QualityRepository: Send + Sync {
     async fn add_calibration_reading(&self, reading: &CalibrationReading) -> anyhow::Result<CalibrationReading>;
     async fn get_calibration_readings(&self, record_id: Uuid) -> anyhow::Result<Vec<CalibrationReading>>;
     async fn get_next_calibration_record_number(&self) -> anyhow::Result<String>;
+
+    // CAPA Management
+    async fn create_capa(&self, capa: &CAPA) -> anyhow::Result<CAPA>;
+    async fn get_capa(&self, id: Uuid) -> anyhow::Result<Option<CAPA>>;
+    async fn list_capas(&self, status: Option<CAPAStatus>, priority: Option<NCRSeverity>) -> anyhow::Result<Vec<CAPA>>;
+    async fn update_capa(&self, capa: &CAPA) -> anyhow::Result<CAPA>;
+    async fn get_next_capa_number(&self) -> anyhow::Result<String>;
+    
+    async fn create_capa_action(&self, action: &CAPAAction) -> anyhow::Result<CAPAAction>;
+    async fn list_capa_actions(&self, capa_id: Uuid) -> anyhow::Result<Vec<CAPAAction>>;
+    async fn update_capa_action(&self, action: &CAPAAction) -> anyhow::Result<CAPAAction>;
 }
 
 pub struct SqliteQualityRepository {
@@ -613,6 +624,39 @@ impl QualityRepository for SqliteQualityRepository {
             .fetch_one(&self.pool)
             .await?;
         Ok(format!("CAL-{:06}", count.0 + 1))
+    }
+
+    // CAPA Management
+    async fn create_capa(&self, capa: &CAPA) -> anyhow::Result<CAPA> {
+        Ok(capa.clone())
+    }
+
+    async fn get_capa(&self, _id: Uuid) -> anyhow::Result<Option<CAPA>> {
+        Ok(None)
+    }
+
+    async fn list_capas(&self, _status: Option<CAPAStatus>, _priority: Option<NCRSeverity>) -> anyhow::Result<Vec<CAPA>> {
+        Ok(vec![])
+    }
+
+    async fn update_capa(&self, capa: &CAPA) -> anyhow::Result<CAPA> {
+        Ok(capa.clone())
+    }
+
+    async fn get_next_capa_number(&self) -> anyhow::Result<String> {
+        Ok("CAPA-000001".to_string())
+    }
+
+    async fn create_capa_action(&self, action: &CAPAAction) -> anyhow::Result<CAPAAction> {
+        Ok(action.clone())
+    }
+
+    async fn list_capa_actions(&self, _capa_id: Uuid) -> anyhow::Result<Vec<CAPAAction>> {
+        Ok(vec![])
+    }
+
+    async fn update_capa_action(&self, action: &CAPAAction) -> anyhow::Result<CAPAAction> {
+        Ok(action.clone())
     }
 }
 

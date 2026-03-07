@@ -174,6 +174,77 @@ pub struct QualityAnalytics {
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[sqlx(type_name = "TEXT")]
+pub enum CAPASource {
+    NCR,
+    Audit,
+    CustomerComplaint,
+    ManagementReview,
+    RiskAssessment,
+    TrendAnalysis,
+    Other,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum CAPAStatus {
+    Draft,
+    Investigation,
+    ActionPlan,
+    Implementation,
+    Verification,
+    EffectivenessReview,
+    Closed,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CAPA {
+    pub base: BaseEntity,
+    pub capa_number: String,
+    pub title: String,
+    pub source_type: CAPASource,
+    pub source_id: Option<Uuid>,
+    pub description: String,
+    pub priority: NCRSeverity, // Reuse NCRSeverity for simplicity
+    pub status: CAPAStatus,
+    pub initiator_id: Uuid,
+    pub owner_id: Option<Uuid>,
+    pub root_cause_analysis: Option<String>,
+    pub action_plan: Option<String>,
+    pub verification_plan: Option<String>,
+    pub effectiveness_criteria: Option<String>,
+    pub target_completion_date: Option<NaiveDate>,
+    pub actual_completion_date: Option<NaiveDate>,
+    pub effectiveness_result: Option<bool>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CAPAAction {
+    pub id: Uuid,
+    pub capa_id: Uuid,
+    pub action_type: String, // Corrective or Preventive
+    pub description: String,
+    pub assigned_to: Option<Uuid>,
+    pub due_date: NaiveDate,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub status: String,
+    pub evidence: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCAPARequest {
+    pub title: String,
+    pub source_type: CAPASource,
+    pub source_id: Option<Uuid>,
+    pub description: String,
+    pub priority: NCRSeverity,
+    pub initiator_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
 pub enum CalibrationStatus {
     Pending,
     InProgress,

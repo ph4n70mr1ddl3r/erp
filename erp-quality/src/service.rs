@@ -411,4 +411,69 @@ impl<R: QualityRepository> QualityService<R> {
         let readings = self.repo.get_calibration_readings(id).await?;
         Ok(Some(CalibrationRecordWithReadings { record, readings }))
     }
+
+    pub async fn create_capa(&self, req: CreateCAPARequest, created_by: Option<Uuid>) -> Result<CAPA> {
+        let capa_number = self.repo.get_next_capa_number().await?;
+        let now = Utc::now();
+
+        let capa = CAPA {
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by,
+                updated_by: None,
+            },
+            capa_number,
+            title: req.title,
+            source_type: req.source_type,
+            source_id: req.source_id,
+            description: req.description,
+            priority: req.priority,
+            status: CAPAStatus::Draft,
+            initiator_id: req.initiator_id,
+            owner_id: None,
+            root_cause_analysis: None,
+            action_plan: None,
+            verification_plan: None,
+            effectiveness_criteria: None,
+            target_completion_date: None,
+            actual_completion_date: None,
+            effectiveness_result: None,
+            created_at: now,
+            updated_at: now,
+        };
+
+        let capa = self.repo.create_capa(&capa).await?;
+        info!("Created CAPA {} from source {:?}", capa.capa_number, capa.source_type);
+        Ok(capa)
+    }
+
+    pub async fn get_capa(&self, id: Uuid) -> Result<Option<CAPA>> {
+        self.repo.get_capa(id).await
+    }
+
+    pub async fn update_capa_status(&self, id: Uuid, status: CAPAStatus) -> Result<CAPA> {
+        let mut capa = self.repo.get_capa(id).await?
+            .ok_or_else(|| anyhow::anyhow!("CAPA not found"))?;
+        
+        capa.status = status;
+        capa.base.updated_at = Utc::now();
+        self.repo.update_capa(&capa).await
+    }
+
+    pub async fn add_capa_action(&self, capa_id: Uuid, description: String, action_type: String, due_date: chrono::NaiveDate, assigned_to: Option<Uuid>) -> Result<CAPAAction> {
+        let action = CAPAAction {
+            id: Uuid::new_v4(),
+            capa_id,
+            action_type,
+            description,
+            assigned_to,
+            due_date,
+            completed_at: None,
+            status: "Pending".to_string(),
+            evidence: None,
+        };
+        self.repo.create_capa_action(&action).await
+    }
 }

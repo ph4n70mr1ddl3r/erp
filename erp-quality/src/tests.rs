@@ -87,6 +87,39 @@ mod tests {
         async fn get_next_calibration_record_number(&self) -> Result<String> {
             Ok("CAL-000001".to_string())
         }
+
+        async fn create_capa(&self, capa: &CAPA) -> Result<CAPA> { Ok(capa.clone()) }
+        async fn get_capa(&self, _id: Uuid) -> Result<Option<CAPA>> { Ok(None) }
+        async fn list_capas(&self, _s: Option<CAPAStatus>, _p: Option<NCRSeverity>) -> Result<Vec<CAPA>> { Ok(vec![]) }
+        async fn update_capa(&self, capa: &CAPA) -> Result<CAPA> { Ok(capa.clone()) }
+        async fn get_next_capa_number(&self) -> Result<String> { Ok("CAPA-000001".to_string()) }
+        async fn create_capa_action(&self, action: &CAPAAction) -> Result<CAPAAction> { Ok(action.clone()) }
+        async fn list_capa_actions(&self, _id: Uuid) -> Result<Vec<CAPAAction>> { Ok(vec![]) }
+        async fn update_capa_action(&self, action: &CAPAAction) -> Result<CAPAAction> { Ok(action.clone()) }
+    }
+
+    #[tokio::test]
+    async fn test_create_capa() -> Result<()> {
+        let repo = MockQualityRepository::new();
+        let service = QualityService::with_repo(repo);
+        let initiator_id = Uuid::new_v4();
+
+        let req = CreateCAPARequest {
+            title: "Material Defect in Part A".to_string(),
+            source_type: CAPASource::NCR,
+            source_id: Some(Uuid::new_v4()),
+            description: "High rate of fractures observed in Part A during final inspection".to_string(),
+            priority: NCRSeverity::Major,
+            initiator_id,
+        };
+
+        let capa = service.create_capa(req, Some(initiator_id)).await?;
+
+        assert_eq!(capa.title, "Material Defect in Part A");
+        assert_eq!(capa.status, CAPAStatus::Draft);
+        assert_eq!(capa.initiator_id, initiator_id);
+        
+        Ok(())
     }
 
     #[tokio::test]
