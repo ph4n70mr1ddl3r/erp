@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 
@@ -443,4 +443,220 @@ impl StockMovementRepository for SqliteStockMovementRepository {
         
         Ok(rows.into_iter().map(|r| r.into_stock_level()).collect::<Result<Vec<_>>>()?)
     }
+}
+
+#[async_trait]
+pub trait CycleCountRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<CycleCount>;
+    async fn find_all(&self, pool: &SqlitePool, warehouse_id: Option<Uuid>) -> Result<Vec<CycleCount>>;
+    async fn create(&self, pool: &SqlitePool, count: CycleCount) -> Result<CycleCount>;
+    async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: CycleCountStatus, completed_at: Option<DateTime<Utc>>) -> Result<()>;
+    
+    async fn find_lines(&self, pool: &SqlitePool, cycle_count_id: Uuid) -> Result<Vec<CycleCountLine>>;
+    async fn find_line_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<CycleCountLine>;
+    async fn create_line(&self, pool: &SqlitePool, line: CycleCountLine) -> Result<CycleCountLine>;
+    async fn update_line_count(&self, pool: &SqlitePool, id: Uuid, actual_qty: i64, adjustment_qty: i64, notes: Option<String>) -> Result<()>;
+    async fn update_line_status(&self, pool: &SqlitePool, id: Uuid, status: CycleCountLineStatus) -> Result<()>;
+}
+
+pub struct SqliteCycleCountRepository;
+
+#[async_trait]
+impl CycleCountRepository for SqliteCycleCountRepository {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<CycleCount> {
+        let row = sqlx::query_as::<_, CycleCountRow>(
+            "SELECT id, count_number, warehouse_id, name, status, planned_date, completed_at, created_by, created_at
+             FROM cycle_counts WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| Error::not_found("CycleCount", &id.to_string()))?;
+        
+        Ok(row.into_cycle_count()?)
+    }
+
+    async fn find_all(&self, pool: &SqlitePool, warehouse_id: Option<Uuid>) -> Result<Vec<CycleCount>> {
+        let rows = match warehouse_id {
+            Some(wid) => sqlx::query_as::<_, CycleCountRow>(
+                "SELECT id, count_number, warehouse_id, name, status, planned_date, completed_at, created_by, created_at
+                 FROM cycle_counts WHERE warehouse_id = ? ORDER BY created_at DESC"
+            )
+            .bind(wid.to_string())
+            .fetch_all(pool)
+            .await?,
+            None => sqlx::query_as::<_, CycleCountRow>(
+                "SELECT id, count_number, warehouse_id, name, status, planned_date, completed_at, created_by, created_at
+                 FROM cycle_counts ORDER BY created_at DESC"
+            )
+            .fetch_all(pool)
+            .await?,
+        };
+        
+        Ok(rows.into_iter().map(|r| r.into_cycle_count()).collect::<Result<Vec<_>>>()?)
+    }
+
+    async fn create(&self, pool: &SqlitePool, count: CycleCount) -> Result<CycleCount> {
+        sqlx::query(
+            "INSERT INTO cycle_counts (id, count_number, warehouse_id, name, status, planned_date, completed_at, created_by, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(count.id.to_string())
+        .bind(&count.count_number)
+        .bind(count.warehouse_id.to_string())
+        .bind(&count.name)
+        .bind(format!("{:?}", count.status))
+        .bind(count.planned_date.to_rfc3339())
+        .bind(count.completed_at.map(|d| d.to_rfc3339()))
+        .bind(count.created_by.map(|id| id.to_string()))
+        .bind(count.created_at.to_rfc3339())
+        .execute(pool)
+        .await?;
+        
+        Ok(count)
+    }
+
+    async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: CycleCountStatus, completed_at: Option<DateTime<Utc>>) -> Result<()> {
+        sqlx::query("UPDATE cycle_counts SET status = ?, completed_at = ? WHERE id = ?")
+            .bind(format!("{:?}", status))
+            .bind(completed_at.map(|d: DateTime<Utc>| d.to_rfc3339()))
+            .bind(id.to_string())
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn find_lines(&self, pool: &SqlitePool, cycle_count_id: Uuid) -> Result<Vec<CycleCountLine>> {
+        let rows = sqlx::query_as::<_, CycleCountLineRow>(
+            "SELECT id, cycle_count_id, product_id, location_id, expected_quantity, actual_quantity, adjustment_qty, status, notes
+             FROM cycle_count_lines WHERE cycle_count_id = ?"
+        )
+        .bind(cycle_count_id.to_string())
+        .fetch_all(pool)
+        .await?;
+        
+        Ok(rows.into_iter().map(|r| r.into_line()).collect::<Result<Vec<_>>>()?)
+    }
+
+    async fn find_line_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<CycleCountLine> {
+        let row = sqlx::query_as::<_, CycleCountLineRow>(
+            "SELECT id, cycle_count_id, product_id, location_id, expected_quantity, actual_quantity, adjustment_qty, status, notes
+             FROM cycle_count_lines WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(pool)
+        .await?
+        .ok_or_else(|| Error::not_found("CycleCountLine", &id.to_string()))?;
+        
+        Ok(row.into_line()?)
+    }
+
+    async fn create_line(&self, pool: &SqlitePool, line: CycleCountLine) -> Result<CycleCountLine> {
+        sqlx::query(
+            "INSERT INTO cycle_count_lines (id, cycle_count_id, product_id, location_id, expected_quantity, actual_quantity, adjustment_qty, status, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(line.id.to_string())
+        .bind(line.cycle_count_id.to_string())
+        .bind(line.product_id.to_string())
+        .bind(line.location_id.to_string())
+        .bind(line.expected_quantity)
+        .bind(line.actual_quantity)
+        .bind(line.adjustment_qty)
+        .bind(format!("{:?}", line.status))
+        .bind(&line.notes)
+        .execute(pool)
+        .await?;
+        
+        Ok(line)
+    }
+
+    async fn update_line_count(&self, pool: &SqlitePool, id: Uuid, actual_qty: i64, adjustment_qty: i64, notes: Option<String>) -> Result<()> {
+        sqlx::query("UPDATE cycle_count_lines SET actual_quantity = ?, adjustment_qty = ?, status = 'Counted', notes = ? WHERE id = ?")
+            .bind(actual_qty)
+            .bind(adjustment_qty)
+            .bind(notes)
+            .bind(id.to_string())
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+
+    async fn update_line_status(&self, pool: &SqlitePool, id: Uuid, status: CycleCountLineStatus) -> Result<()> {
+        sqlx::query("UPDATE cycle_count_lines SET status = ? WHERE id = ?")
+            .bind(format!("{:?}", status))
+            .bind(id.to_string())
+            .execute(pool)
+            .await?;
+        Ok(())
+    }
+}
+
+impl CycleCountRow {
+    fn into_cycle_count(self) -> Result<CycleCount> {
+        Ok(CycleCount {
+            id: Uuid::parse_str(&self.id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.id, e)))?,
+            count_number: self.count_number,
+            warehouse_id: Uuid::parse_str(&self.warehouse_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.warehouse_id, e)))?,
+            name: self.name,
+            status: match self.status.as_str() {
+                "InProgress" => CycleCountStatus::InProgress,
+                "Completed" => CycleCountStatus::Completed,
+                "Adjusted" => CycleCountStatus::Adjusted,
+                "Cancelled" => CycleCountStatus::Cancelled,
+                _ => CycleCountStatus::Draft,
+            },
+            planned_date: chrono::DateTime::parse_from_rfc3339(&self.planned_date).map(|d| d.with_timezone(&Utc)).map_err(|e| Error::internal(format!("Invalid date {}: {}", self.planned_date, e)))?,
+            completed_at: self.completed_at.and_then(|d| chrono::DateTime::parse_from_rfc3339(&d).ok()).map(|d| d.with_timezone(&Utc)),
+            created_by: self.created_by.and_then(|id| Uuid::parse_str(&id).ok()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).map_err(|e| Error::internal(format!("Invalid date {}: {}", self.created_at, e)))?,
+        })
+    }
+}
+
+impl CycleCountLineRow {
+    fn into_line(self) -> Result<CycleCountLine> {
+        Ok(CycleCountLine {
+            id: Uuid::parse_str(&self.id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.id, e)))?,
+            cycle_count_id: Uuid::parse_str(&self.cycle_count_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.cycle_count_id, e)))?,
+            product_id: Uuid::parse_str(&self.product_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.product_id, e)))?,
+            location_id: Uuid::parse_str(&self.location_id).map_err(|e| Error::internal(format!("Invalid UUID {}: {}", self.location_id, e)))?,
+            expected_quantity: self.expected_quantity,
+            actual_quantity: self.actual_quantity,
+            adjustment_qty: self.adjustment_qty,
+            status: match self.status.as_str() {
+                "Counted" => CycleCountLineStatus::Counted,
+                "Verified" => CycleCountLineStatus::Verified,
+                "Adjusted" => CycleCountLineStatus::Adjusted,
+                _ => CycleCountLineStatus::Pending,
+            },
+            notes: self.notes,
+        })
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CycleCountRow {
+    id: String,
+    count_number: String,
+    warehouse_id: String,
+    name: String,
+    status: String,
+    planned_date: String,
+    completed_at: Option<String>,
+    created_by: Option<String>,
+    created_at: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct CycleCountLineRow {
+    id: String,
+    cycle_count_id: String,
+    product_id: String,
+    location_id: String,
+    expected_quantity: i64,
+    actual_quantity: Option<i64>,
+    adjustment_qty: Option<i64>,
+    status: String,
+    notes: Option<String>,
 }
