@@ -24,6 +24,16 @@ pub trait QualityRepository: Send + Sync {
     async fn update_ncr(&self, ncr: &NonConformanceReport) -> anyhow::Result<NonConformanceReport>;
     async fn delete_ncr(&self, id: Uuid) -> anyhow::Result<()>;
     async fn get_next_ncr_number(&self) -> anyhow::Result<String>;
+
+    async fn create_calibration_device(&self, device: &CalibrationDevice) -> anyhow::Result<CalibrationDevice>;
+    async fn get_calibration_device(&self, id: Uuid) -> anyhow::Result<Option<CalibrationDevice>>;
+    async fn list_calibration_devices(&self, status: Option<CalibrationStatus>) -> anyhow::Result<Vec<CalibrationDevice>>;
+    async fn update_calibration_device(&self, device: &CalibrationDevice) -> anyhow::Result<CalibrationDevice>;
+    async fn create_calibration_record(&self, record: &CalibrationRecord) -> anyhow::Result<CalibrationRecord>;
+    async fn get_calibration_record(&self, id: Uuid) -> anyhow::Result<Option<CalibrationRecord>>;
+    async fn add_calibration_reading(&self, reading: &CalibrationReading) -> anyhow::Result<CalibrationReading>;
+    async fn get_calibration_readings(&self, record_id: Uuid) -> anyhow::Result<Vec<CalibrationReading>>;
+    async fn get_next_calibration_record_number(&self) -> anyhow::Result<String>;
 }
 
 pub struct SqliteQualityRepository {
@@ -376,6 +386,234 @@ impl QualityRepository for SqliteQualityRepository {
             .await?;
         Ok(format!("NCR-{:06}", count.0 + 1))
     }
+
+    async fn create_calibration_device(&self, device: &CalibrationDevice) -> anyhow::Result<CalibrationDevice> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            r#"INSERT INTO calibration_devices 
+               (id, device_number, name, description, manufacturer, model, serial_number, 
+                location, calibration_frequency_days, last_calibration_date, next_calibration_date, 
+                status, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(device.base.id.to_string())
+        .bind(&device.device_number)
+        .bind(&device.name)
+        .bind(&device.description)
+        .bind(&device.manufacturer)
+        .bind(&device.model)
+        .bind(&device.serial_number)
+        .bind(&device.location)
+        .bind(device.calibration_frequency_days)
+        .bind(device.last_calibration_date.map(|d| d.to_string()))
+        .bind(device.next_calibration_date.map(|d| d.to_string()))
+        .bind(format!("{:?}", device.status))
+        .bind(&now)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+        Ok(device.clone())
+    }
+
+    async fn get_calibration_device(&self, id: Uuid) -> anyhow::Result<Option<CalibrationDevice>> {
+        let row = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, i32, Option<String>, Option<String>, String, String, String)>(
+            "SELECT id, device_number, name, description, manufacturer, model, serial_number, 
+                    location, calibration_frequency_days, last_calibration_date, next_calibration_date, 
+                    status, created_at, updated_at 
+             FROM calibration_devices WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| CalibrationDevice {
+            base: BaseEntity {
+                id: Uuid::parse_str(&r.0).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&r.12).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&r.13).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None,
+                updated_by: None,
+            },
+            device_number: r.1,
+            name: r.2,
+            description: r.3,
+            manufacturer: r.4,
+            model: r.5,
+            serial_number: r.6,
+            location: r.7,
+            calibration_frequency_days: r.8,
+            last_calibration_date: r.9.and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            next_calibration_date: r.10.and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            status: parse_calibration_status(&r.11),
+        }))
+    }
+
+    async fn list_calibration_devices(&self, status: Option<CalibrationStatus>) -> anyhow::Result<Vec<CalibrationDevice>> {
+        let mut query = "SELECT id, device_number, name, description, manufacturer, model, serial_number, 
+                        location, calibration_frequency_days, last_calibration_date, next_calibration_date, 
+                        status, created_at, updated_at 
+                        FROM calibration_devices WHERE 1=1".to_string();
+        let mut binds: Vec<String> = Vec::new();
+
+        if let Some(s) = status {
+            query.push_str(" AND status = ?");
+            binds.push(format!("{:?}", s));
+        }
+        query.push_str(" ORDER BY created_at DESC");
+
+        let mut sql_query = sqlx::query_as::<_, (String, String, String, Option<String>, Option<String>, Option<String>, Option<String>, Option<String>, i32, Option<String>, Option<String>, String, String, String)>(&query);
+        for bind in binds {
+            sql_query = sql_query.bind(bind);
+        }
+
+        let rows = sql_query.fetch_all(&self.pool).await?;
+        Ok(rows.into_iter().map(|r| CalibrationDevice {
+            base: BaseEntity {
+                id: Uuid::parse_str(&r.0).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&r.12).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&r.13).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None,
+                updated_by: None,
+            },
+            device_number: r.1,
+            name: r.2,
+            description: r.3,
+            manufacturer: r.4,
+            model: r.5,
+            serial_number: r.6,
+            location: r.7,
+            calibration_frequency_days: r.8,
+            last_calibration_date: r.9.and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            next_calibration_date: r.10.and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            status: parse_calibration_status(&r.11),
+        }).collect())
+    }
+
+    async fn update_calibration_device(&self, device: &CalibrationDevice) -> anyhow::Result<CalibrationDevice> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE calibration_devices SET name=?, description=?, manufacturer=?, model=?, serial_number=?, 
+             location=?, calibration_frequency_days=?, last_calibration_date=?, next_calibration_date=?, 
+             status=?, updated_at=? WHERE id=?"
+        )
+        .bind(&device.name)
+        .bind(&device.description)
+        .bind(&device.manufacturer)
+        .bind(&device.model)
+        .bind(&device.serial_number)
+        .bind(&device.location)
+        .bind(device.calibration_frequency_days)
+        .bind(device.last_calibration_date.map(|d| d.to_string()))
+        .bind(device.next_calibration_date.map(|d| d.to_string()))
+        .bind(format!("{:?}", device.status))
+        .bind(&now)
+        .bind(device.base.id.to_string())
+        .execute(&self.pool)
+        .await?;
+        Ok(device.clone())
+    }
+
+    async fn create_calibration_record(&self, record: &CalibrationRecord) -> anyhow::Result<CalibrationRecord> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            r#"INSERT INTO calibration_records 
+               (id, record_number, device_id, calibration_date, calibrated_by, status, 
+                certificate_number, notes, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(record.base.id.to_string())
+        .bind(&record.record_number)
+        .bind(record.device_id.to_string())
+        .bind(record.calibration_date.to_string())
+        .bind(record.calibrated_by.map(|id| id.to_string()))
+        .bind(format!("{:?}", record.status))
+        .bind(&record.certificate_number)
+        .bind(&record.notes)
+        .bind(&now)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
+        Ok(record.clone())
+    }
+
+    async fn get_calibration_record(&self, id: Uuid) -> anyhow::Result<Option<CalibrationRecord>> {
+        let row = sqlx::query_as::<_, (String, String, String, String, Option<String>, String, Option<String>, Option<String>, String, String)>(
+            "SELECT id, record_number, device_id, calibration_date, calibrated_by, status, 
+                    certificate_number, notes, created_at, updated_at 
+             FROM calibration_records WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| CalibrationRecord {
+            base: BaseEntity {
+                id: Uuid::parse_str(&r.0).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&r.8).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&r.9).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None,
+                updated_by: None,
+            },
+            record_number: r.1,
+            device_id: Uuid::parse_str(&r.2).unwrap_or_default(),
+            calibration_date: chrono::NaiveDate::parse_from_str(&r.3, "%Y-%m-%d").unwrap_or_else(|_| chrono::Utc::now().date_naive()),
+            calibrated_by: r.4.and_then(|s| Uuid::parse_str(&s).ok()),
+            status: parse_calibration_status(&r.5),
+            certificate_number: r.6,
+            notes: r.7,
+        }))
+    }
+
+    async fn add_calibration_reading(&self, reading: &CalibrationReading) -> anyhow::Result<CalibrationReading> {
+        sqlx::query(
+            r#"INSERT INTO calibration_readings 
+               (id, record_id, parameter, reference_value, actual_value, tolerance_min, 
+                tolerance_max, pass_fail, uom)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(reading.id.to_string())
+        .bind(reading.record_id.to_string())
+        .bind(&reading.parameter)
+        .bind(reading.reference_value)
+        .bind(reading.actual_value)
+        .bind(reading.tolerance_min)
+        .bind(reading.tolerance_max)
+        .bind(if reading.pass_fail { 1 } else { 0 })
+        .bind(&reading.uom)
+        .execute(&self.pool)
+        .await?;
+        Ok(reading.clone())
+    }
+
+    async fn get_calibration_readings(&self, record_id: Uuid) -> anyhow::Result<Vec<CalibrationReading>> {
+        let rows = sqlx::query_as::<_, (String, String, String, f64, f64, f64, f64, i32, String)>(
+            "SELECT id, record_id, parameter, reference_value, actual_value, tolerance_min, 
+                    tolerance_max, pass_fail, uom 
+             FROM calibration_readings WHERE record_id = ?"
+        )
+        .bind(record_id.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(|r| CalibrationReading {
+            id: Uuid::parse_str(&r.0).unwrap_or_default(),
+            record_id: Uuid::parse_str(&r.1).unwrap_or_default(),
+            parameter: r.2,
+            reference_value: r.3,
+            actual_value: r.4,
+            tolerance_min: r.5,
+            tolerance_max: r.6,
+            pass_fail: r.7 == 1,
+            uom: r.8,
+        }).collect())
+    }
+
+    async fn get_next_calibration_record_number(&self) -> anyhow::Result<String> {
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM calibration_records")
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(format!("CAL-{:06}", count.0 + 1))
+    }
 }
 
 fn parse_inspection_type(s: &str) -> InspectionType {
@@ -440,5 +678,16 @@ fn parse_ncr_status(s: &str) -> NCRStatus {
         "Verification" => NCRStatus::Verification,
         "Closed" => NCRStatus::Closed,
         _ => NCRStatus::Cancelled,
+    }
+}
+
+fn parse_calibration_status(s: &str) -> CalibrationStatus {
+    match s {
+        "Pending" => CalibrationStatus::Pending,
+        "InProgress" => CalibrationStatus::InProgress,
+        "Passed" => CalibrationStatus::Passed,
+        "Failed" => CalibrationStatus::Failed,
+        "Overdue" => CalibrationStatus::Overdue,
+        _ => CalibrationStatus::Cancelled,
     }
 }

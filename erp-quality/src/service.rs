@@ -333,4 +333,82 @@ impl<R: QualityRepository> QualityService<R> {
             inspections_by_type: serde_json::to_value(inspections_by_type).unwrap_or(serde_json::json!({})),
         })
     }
+
+    pub async fn create_calibration_device(&self, device: CalibrationDevice, created_by: Option<Uuid>) -> Result<CalibrationDevice> {
+        let now = Utc::now();
+        let mut device = device;
+        device.base.created_at = now;
+        device.base.updated_at = now;
+        device.base.created_by = created_by;
+        
+        if device.next_calibration_date.is_none() {
+            device.next_calibration_date = Some(Utc::now().date_naive() + chrono::Duration::days(device.calibration_frequency_days as i64));
+        }
+
+        self.repo.create_calibration_device(&device).await
+    }
+
+    pub async fn get_calibration_device(&self, id: Uuid) -> Result<Option<CalibrationDevice>> {
+        self.repo.get_calibration_device(id).await
+    }
+
+    pub async fn list_calibration_devices(&self, status: Option<CalibrationStatus>) -> Result<Vec<CalibrationDevice>> {
+        self.repo.list_calibration_devices(status).await
+    }
+
+    pub async fn calibrate_device(&self, device_id: Uuid, readings: Vec<CalibrationReading>, calibrated_by: Option<Uuid>) -> Result<CalibrationRecordWithReadings> {
+        let mut device = self.repo.get_calibration_device(device_id).await?
+            .ok_or_else(|| anyhow::anyhow!("Device not found"))?;
+        
+        let record_number = self.repo.get_next_calibration_record_number().await?;
+        let now = Utc::now();
+        let record_id = Uuid::new_v4();
+        
+        let mut record = CalibrationRecord {
+            base: BaseEntity {
+                id: record_id,
+                created_at: now,
+                updated_at: now,
+                created_by: calibrated_by,
+                updated_by: None,
+            },
+            record_number,
+            device_id,
+            calibration_date: now.date_naive(),
+            calibrated_by,
+            status: CalibrationStatus::InProgress,
+            certificate_number: None,
+            notes: None,
+        };
+        
+        let all_passed = readings.iter().all(|r| r.pass_fail);
+        record.status = if all_passed { CalibrationStatus::Passed } else { CalibrationStatus::Failed };
+        
+        let record = self.repo.create_calibration_record(&record).await?;
+        
+        let mut saved_readings = Vec::new();
+        for mut reading in readings {
+            reading.id = Uuid::new_v4();
+            reading.record_id = record_id;
+            saved_readings.push(self.repo.add_calibration_reading(&reading).await?);
+        }
+        
+        // Update device
+        device.last_calibration_date = Some(record.calibration_date);
+        device.next_calibration_date = Some(record.calibration_date + chrono::Duration::days(device.calibration_frequency_days as i64));
+        device.status = record.status.clone();
+        device.base.updated_at = now;
+        self.repo.update_calibration_device(&device).await?;
+        
+        Ok(CalibrationRecordWithReadings { record, readings: saved_readings })
+    }
+
+    pub async fn get_calibration_record(&self, id: Uuid) -> Result<Option<CalibrationRecordWithReadings>> {
+        let record = match self.repo.get_calibration_record(id).await? {
+            Some(r) => r,
+            None => return Ok(None),
+        };
+        let readings = self.repo.get_calibration_readings(id).await?;
+        Ok(Some(CalibrationRecordWithReadings { record, readings }))
+    }
 }
