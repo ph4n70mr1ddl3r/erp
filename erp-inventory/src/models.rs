@@ -1050,3 +1050,48 @@ pub enum ReleaseOrderStatus {
     Received,
     Cancelled,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CycleCount {
+    pub id: Uuid,
+    pub count_number: String,
+    pub warehouse_id: Uuid,
+    pub name: String,
+    pub status: CycleCountStatus,
+    pub planned_date: DateTime<Utc>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub created_by: Option<Uuid>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum CycleCountStatus {
+    Draft,
+    InProgress,
+    Completed,
+    Adjusted,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CycleCountLine {
+    pub id: Uuid,
+    pub cycle_count_id: Uuid,
+    pub product_id: Uuid,
+    pub location_id: Uuid,
+    pub expected_quantity: i64,
+    pub actual_quantity: Option<i64>,
+    pub adjustment_qty: Option<i64>,
+    pub status: CycleCountLineStatus,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum CycleCountLineStatus {
+    Pending,
+    Counted,
+    Verified,
+    Adjusted,
+}

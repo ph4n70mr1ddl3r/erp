@@ -1,6 +1,6 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 use crate::repository::*;
@@ -280,6 +280,14 @@ mod tests {
         let number = svc.generate_movement_number();
         
         assert!(number.starts_with("SM-"));
+        assert_eq!(number.len(), 17);
+    }
+
+    #[test]
+    fn test_cycle_count_number_format() {
+        let now = chrono::Utc::now();
+        let number = format!("CC-{}", now.format("%Y%m%d%H%M%S"));
+        assert!(number.starts_with("CC-"));
         assert_eq!(number.len(), 17);
     }
 }
@@ -2661,4 +2669,243 @@ impl From<RFQResponseRow> for RFQResponse {
                 .unwrap_or_else(|_| chrono::Utc::now()),
         }
     }
+}
+
+pub struct CycleCountService;
+
+impl Default for CycleCountService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl CycleCountService {
+    pub fn new() -> Self { Self }
+
+    pub async fn create_cycle_count(
+        pool: &SqlitePool,
+        warehouse_id: Uuid,
+        name: &str,
+        planned_date: DateTime<Utc>,
+    ) -> Result<CycleCount> {
+        let now = Utc::now();
+        let id = Uuid::new_v4();
+        let count_number = format!("CC-{}", now.format("%Y%m%d%H%M%S"));
+        
+        let count = CycleCount {
+            id,
+            count_number: count_number.clone(),
+            warehouse_id,
+            name: name.to_string(),
+            status: CycleCountStatus::Draft,
+            planned_date,
+            completed_at: None,
+            created_by: None,
+            created_at: now,
+        };
+        
+        sqlx::query(
+            "INSERT INTO cycle_counts (id, count_number, warehouse_id, name, status, planned_date, completed_at, created_by, created_at)
+             VALUES (?, ?, ?, ?, 'Draft', ?, NULL, NULL, ?)"
+        )
+        .bind(count.id.to_string())
+        .bind(&count.count_number)
+        .bind(count.warehouse_id.to_string())
+        .bind(&count.name)
+        .bind(count.planned_date.to_rfc3339())
+        .bind(count.created_at.to_rfc3339())
+        .execute(pool)
+        .await
+        .map_err(Error::Database)?;
+        
+        Ok(count)
+    }
+
+    pub async fn add_line(
+        pool: &SqlitePool,
+        cycle_count_id: Uuid,
+        product_id: Uuid,
+        location_id: Uuid,
+        expected_quantity: i64,
+    ) -> Result<CycleCountLine> {
+        let id = Uuid::new_v4();
+        let line = CycleCountLine {
+            id,
+            cycle_count_id,
+            product_id,
+            location_id,
+            expected_quantity,
+            actual_quantity: None,
+            adjustment_qty: None,
+            status: CycleCountLineStatus::Pending,
+            notes: None,
+        };
+        
+        sqlx::query(
+            "INSERT INTO cycle_count_lines (id, cycle_count_id, product_id, location_id, expected_quantity, actual_quantity, adjustment_qty, status, notes)
+             VALUES (?, ?, ?, ?, ?, NULL, NULL, 'Pending', NULL)"
+        )
+        .bind(line.id.to_string())
+        .bind(line.cycle_count_id.to_string())
+        .bind(line.product_id.to_string())
+        .bind(line.location_id.to_string())
+        .bind(line.expected_quantity)
+        .execute(pool)
+        .await
+        .map_err(Error::Database)?;
+        
+        Ok(line)
+    }
+
+    pub async fn record_count(
+        pool: &SqlitePool,
+        line_id: Uuid,
+        actual_quantity: i64,
+        notes: Option<&str>,
+    ) -> Result<()> {
+        let line = sqlx::query_as::<_, CycleCountLineRow>(
+            "SELECT id, cycle_count_id, product_id, location_id, expected_quantity, actual_quantity, adjustment_qty, status, notes
+             FROM cycle_count_lines WHERE id = ?"
+        )
+        .bind(line_id.to_string())
+        .fetch_one(pool)
+        .await
+        .map_err(Error::Database)?;
+
+        let adjustment_qty = actual_quantity - line.expected_quantity;
+        
+        sqlx::query(
+            "UPDATE cycle_count_lines SET actual_quantity = ?, adjustment_qty = ?, status = 'Counted', notes = ? WHERE id = ?"
+        )
+        .bind(actual_quantity)
+        .bind(adjustment_qty)
+        .bind(notes)
+        .bind(line_id.to_string())
+        .execute(pool)
+        .await
+        .map_err(Error::Database)?;
+        
+        Ok(())
+    }
+
+    pub async fn complete_count(pool: &SqlitePool, id: Uuid) -> Result<()> {
+        let now = Utc::now();
+        sqlx::query(
+            "UPDATE cycle_counts SET status = 'Completed', completed_at = ? WHERE id = ?"
+        )
+        .bind(now.to_rfc3339())
+        .bind(id.to_string())
+        .execute(pool)
+        .await
+        .map_err(Error::Database)?;
+        
+        Ok(())
+    }
+
+    pub async fn post_adjustments(pool: &SqlitePool, cycle_count_id: Uuid) -> Result<()> {
+        let mut tx = pool.begin().await.map_err(Error::Database)?;
+        
+        let count = sqlx::query_as::<_, CycleCountRow>(
+            "SELECT id, count_number, warehouse_id, name, status, planned_date, completed_at, created_by, created_at
+             FROM cycle_counts WHERE id = ?"
+        )
+        .bind(cycle_count_id.to_string())
+        .fetch_one(&mut *tx)
+        .await
+        .map_err(Error::Database)?;
+
+        if count.status != "Completed" {
+            return Err(Error::business_rule("Cycle count must be completed before posting adjustments"));
+        }
+
+        let lines = sqlx::query_as::<_, CycleCountLineRow>(
+            "SELECT id, cycle_count_id, product_id, location_id, expected_quantity, actual_quantity, adjustment_qty, status, notes
+             FROM cycle_count_lines WHERE cycle_count_id = ?"
+        )
+        .bind(cycle_count_id.to_string())
+        .fetch_all(&mut *tx)
+        .await
+        .map_err(Error::Database)?;
+
+        for line in lines {
+            if let Some(adj) = line.adjustment_qty {
+                if adj != 0 {
+                    let now = Utc::now();
+                    let movement_id = Uuid::new_v4();
+                    let movement_number = format!("ADJ-{}", movement_id.to_string()[..8].to_string());
+                    
+                    sqlx::query("INSERT INTO stock_movements (id, movement_number, movement_type, product_id, 
+                         from_location_id, to_location_id, quantity, reference, movement_date, created_at, updated_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                    .bind(movement_id.to_string())
+                    .bind(&movement_number)
+                    .bind("Adjustment")
+                    .bind(&line.product_id)
+                    .bind(if adj < 0 { Some(&line.location_id) } else { None })
+                    .bind(&line.location_id)
+                    .bind(adj.abs())
+                    .bind(Some(format!("Cycle Count {}", count.count_number)))
+                    .bind(now.to_rfc3339())
+                    .bind(now.to_rfc3339())
+                    .bind(now.to_rfc3339())
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(Error::Database)?;
+
+                    // Update stock levels
+                    sqlx::query("UPDATE stock_levels SET quantity = quantity + ?, available_quantity = available_quantity + ?
+                         WHERE product_id = ? AND location_id = ?")
+                    .bind(adj)
+                    .bind(adj)
+                    .bind(&line.product_id)
+                    .bind(&line.location_id)
+                    .execute(&mut *tx)
+                    .await
+                    .map_err(Error::Database)?;
+                }
+            }
+            
+            sqlx::query("UPDATE cycle_count_lines SET status = 'Adjusted' WHERE id = ?")
+                .bind(&line.id)
+                .execute(&mut *tx)
+                .await
+                .map_err(Error::Database)?;
+        }
+
+        sqlx::query("UPDATE cycle_counts SET status = 'Adjusted' WHERE id = ?")
+            .bind(cycle_count_id.to_string())
+            .execute(&mut *tx)
+            .await
+            .map_err(Error::Database)?;
+
+        tx.commit().await.map_err(Error::Database)?;
+        
+        Ok(())
+    }
+}
+
+#[derive(sqlx::FromRow)]
+struct CycleCountRow {
+    id: String,
+    count_number: String,
+    warehouse_id: String,
+    name: String,
+    status: String,
+    planned_date: String,
+    completed_at: Option<String>,
+    created_by: Option<String>,
+    created_at: String,
+}
+
+#[derive(sqlx::FromRow)]
+struct CycleCountLineRow {
+    id: String,
+    cycle_count_id: String,
+    product_id: String,
+    location_id: String,
+    expected_quantity: i64,
+    actual_quantity: Option<i64>,
+    adjustment_qty: Option<i64>,
+    status: String,
+    notes: Option<String>,
 }
