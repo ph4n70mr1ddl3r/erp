@@ -261,3 +261,139 @@ impl ProjectBillingRepository for SqliteProjectBillingRepository {
         Err(Error::not_found("ProjectBilling", &id.to_string()))
     }
 }
+
+#[async_trait]
+pub trait SkillRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Skill>;
+    async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<Skill>>;
+    async fn create(&self, pool: &SqlitePool, skill: Skill) -> Result<Skill>;
+    async fn update(&self, pool: &SqlitePool, skill: Skill) -> Result<Skill>;
+    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
+}
+
+pub struct SqliteSkillRepository;
+
+#[async_trait]
+impl SkillRepository for SqliteSkillRepository {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<Skill> {
+        Err(Error::not_found("Skill", &id.to_string()))
+    }
+
+    async fn find_all(&self, _pool: &SqlitePool, _pagination: Pagination) -> Result<Paginated<Skill>> {
+        Ok(Paginated::new(vec![], 0, _pagination))
+    }
+
+    async fn create(&self, _pool: &SqlitePool, skill: Skill) -> Result<Skill> {
+        Ok(skill)
+    }
+
+    async fn update(&self, _pool: &SqlitePool, skill: Skill) -> Result<Skill> {
+        Ok(skill)
+    }
+
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
+        Err(Error::not_found("Skill", &id.to_string()))
+    }
+}
+
+#[async_trait]
+pub trait ResourceSkillRepository: Send + Sync {
+    async fn find_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<ResourceSkill>>;
+    async fn create(&self, pool: &SqlitePool, skill: ResourceSkill) -> Result<ResourceSkill>;
+    async fn update(&self, pool: &SqlitePool, skill: ResourceSkill) -> Result<ResourceSkill>;
+    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
+}
+
+pub struct SqliteResourceSkillRepository;
+
+#[async_trait]
+impl ResourceSkillRepository for SqliteResourceSkillRepository {
+    async fn find_by_employee(&self, _pool: &SqlitePool, _employee_id: Uuid) -> Result<Vec<ResourceSkill>> {
+        Ok(vec![])
+    }
+
+    async fn create(&self, _pool: &SqlitePool, skill: ResourceSkill) -> Result<ResourceSkill> {
+        Ok(skill)
+    }
+
+    async fn update(&self, _pool: &SqlitePool, skill: ResourceSkill) -> Result<ResourceSkill> {
+        Ok(skill)
+    }
+
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
+        Err(Error::not_found("ResourceSkill", &id.to_string()))
+    }
+}
+
+#[async_trait]
+pub trait ResourceRequestRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ResourceRequest>;
+    async fn find_by_project(&self, pool: &SqlitePool, project_id: Uuid) -> Result<Vec<ResourceRequest>>;
+    async fn create(&self, pool: &SqlitePool, request: ResourceRequest) -> Result<ResourceRequest>;
+    async fn update(&self, pool: &SqlitePool, request: ResourceRequest) -> Result<ResourceRequest>;
+    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
+}
+
+pub struct SqliteResourceRequestRepository;
+
+#[async_trait]
+impl ResourceRequestRepository for SqliteResourceRequestRepository {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ResourceRequest> {
+        Err(Error::not_found("ResourceRequest", &id.to_string()))
+    }
+
+    async fn find_by_project(&self, _pool: &SqlitePool, _project_id: Uuid) -> Result<Vec<ResourceRequest>> {
+        Ok(vec![])
+    }
+
+    async fn create(&self, _pool: &SqlitePool, request: ResourceRequest) -> Result<ResourceRequest> {
+        Ok(request)
+    }
+
+    async fn update(&self, _pool: &SqlitePool, request: ResourceRequest) -> Result<ResourceRequest> {
+        Ok(request)
+    }
+
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
+        Err(Error::not_found("ResourceRequest", &id.to_string()))
+    }
+}
+
+#[async_trait]
+pub trait ResourceAllocationRepository: Send + Sync {
+    async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<ResourceAllocation>;
+    async fn find_by_project(&self, pool: &SqlitePool, project_id: Uuid) -> Result<Vec<ResourceAllocation>>;
+    async fn find_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<ResourceAllocation>>;
+    async fn create(&self, pool: &SqlitePool, allocation: ResourceAllocation) -> Result<ResourceAllocation>;
+    async fn update(&self, pool: &SqlitePool, allocation: ResourceAllocation) -> Result<ResourceAllocation>;
+    async fn delete(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
+}
+
+pub struct SqliteResourceAllocationRepository;
+
+#[async_trait]
+impl ResourceAllocationRepository for SqliteResourceAllocationRepository {
+    async fn find_by_id(&self, _pool: &SqlitePool, id: Uuid) -> Result<ResourceAllocation> {
+        Err(Error::not_found("ResourceAllocation", &id.to_string()))
+    }
+
+    async fn find_by_project(&self, _pool: &SqlitePool, _project_id: Uuid) -> Result<Vec<ResourceAllocation>> {
+        Ok(vec![])
+    }
+
+    async fn find_by_employee(&self, _pool: &SqlitePool, _employee_id: Uuid) -> Result<Vec<ResourceAllocation>> {
+        Ok(vec![])
+    }
+
+    async fn create(&self, _pool: &SqlitePool, allocation: ResourceAllocation) -> Result<ResourceAllocation> {
+        Ok(allocation)
+    }
+
+    async fn update(&self, _pool: &SqlitePool, allocation: ResourceAllocation) -> Result<ResourceAllocation> {
+        Ok(allocation)
+    }
+
+    async fn delete(&self, _pool: &SqlitePool, id: Uuid) -> Result<()> {
+        Err(Error::not_found("ResourceAllocation", &id.to_string()))
+    }
+}

@@ -486,3 +486,65 @@ impl ProjectBillingService {
         self.repo.delete(pool, id).await
     }
 }
+
+pub struct ResourceService {
+    skill_repo: SqliteSkillRepository,
+    resource_skill_repo: SqliteResourceSkillRepository,
+    request_repo: SqliteResourceRequestRepository,
+    allocation_repo: SqliteResourceAllocationRepository,
+}
+
+impl Default for ResourceService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl ResourceService {
+    pub fn new() -> Self {
+        Self {
+            skill_repo: SqliteSkillRepository,
+            resource_skill_repo: SqliteResourceSkillRepository,
+            request_repo: SqliteResourceRequestRepository,
+            allocation_repo: SqliteResourceAllocationRepository,
+        }
+    }
+
+    pub async fn create_request(&self, pool: &SqlitePool, mut request: ResourceRequest) -> Result<ResourceRequest> {
+        request.id = Uuid::new_v4();
+        request.created_at = Utc::now();
+        request.status = ResourceRequestStatus::Draft;
+        self.request_repo.create(pool, request).await
+    }
+
+    pub async fn submit_request(&self, pool: &SqlitePool, id: Uuid) -> Result<()> {
+        let mut request = self.request_repo.find_by_id(pool, id).await?;
+        if request.status != ResourceRequestStatus::Draft {
+            return Err(Error::validation("Only draft requests can be submitted"));
+        }
+        request.status = ResourceRequestStatus::Pending;
+        self.request_repo.update(pool, request).await?;
+        Ok(())
+    }
+
+    pub async fn allocate_resource(&self, pool: &SqlitePool, mut allocation: ResourceAllocation) -> Result<ResourceAllocation> {
+        allocation.id = Uuid::new_v4();
+        allocation.created_at = Utc::now();
+        
+        if let Some(request_id) = allocation.request_id {
+            let mut request = self.request_repo.find_by_id(pool, request_id).await?;
+            request.status = ResourceRequestStatus::Fulfilled;
+            self.request_repo.update(pool, request).await?;
+        }
+        
+        self.allocation_repo.create(pool, allocation).await
+    }
+
+    pub async fn list_allocations_by_project(&self, pool: &SqlitePool, project_id: Uuid) -> Result<Vec<ResourceAllocation>> {
+        self.allocation_repo.find_by_project(pool, project_id).await
+    }
+
+    pub async fn list_allocations_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<ResourceAllocation>> {
+        self.allocation_repo.find_by_employee(pool, employee_id).await
+    }
+}

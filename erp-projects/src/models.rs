@@ -223,9 +223,61 @@ pub enum ProjectBillingType {
 #[sqlx(type_name = "TEXT")]
 pub enum ProjectBillingStatus {
     Draft,
-    Submitted,
-    Approved,
     Invoiced,
     Paid,
     Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Skill {
+    pub id: Uuid,
+    pub name: String,
+    pub category: String,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceSkill {
+    pub id: Uuid,
+    pub employee_id: Uuid,
+    pub skill_id: Uuid,
+    pub proficiency_level: i32, // 1-5
+    pub years_experience: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum ResourceRequestStatus {
+    Draft,
+    Pending,
+    Fulfilled,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceRequest {
+    pub id: Uuid,
+    pub project_id: Uuid,
+    pub task_id: Option<Uuid>,
+    pub skill_id: Uuid,
+    pub min_proficiency: i32,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub hours_required: f64,
+    pub status: ResourceRequestStatus,
+    pub requested_by: Uuid,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResourceAllocation {
+    pub id: Uuid,
+    pub request_id: Option<Uuid>,
+    pub project_id: Uuid,
+    pub employee_id: Uuid,
+    pub start_date: DateTime<Utc>,
+    pub end_date: DateTime<Utc>,
+    pub allocation_percent: i32,
+    pub billable_rate: Option<i64>,
+    pub created_at: DateTime<Utc>,
 }
