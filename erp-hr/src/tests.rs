@@ -60,4 +60,31 @@ mod tests {
         assert_eq!(total_cost_rate, 7000); // 5000 * 1.3 + 500 = 6500 + 500 = 7000
         Ok(())
     }
+
+    #[test]
+    fn test_successor_ranking_logic() {
+        let mut successors = vec![
+            Successor {
+                id: Uuid::new_v4(),
+                plan_id: Uuid::new_v4(),
+                employee_id: Uuid::new_v4(),
+                readiness: ReadinessLevel::Ready1To2Years,
+                development_needs: None,
+                ranking: 2,
+            },
+            Successor {
+                id: Uuid::new_v4(),
+                plan_id: Uuid::new_v4(),
+                employee_id: Uuid::new_v4(),
+                readiness: ReadinessLevel::ReadyNow,
+                development_needs: None,
+                ranking: 1,
+            },
+        ];
+
+        successors.sort_by_key(|s| s.ranking);
+        assert_eq!(successors[0].ranking, 1);
+        assert_eq!(successors[1].ranking, 2);
+        assert_eq!(successors[0].readiness, ReadinessLevel::ReadyNow);
+    }
 }

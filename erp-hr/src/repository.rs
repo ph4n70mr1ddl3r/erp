@@ -196,6 +196,95 @@ impl EmployeeCostRateRepository for SqliteEmployeeCostRateRepository {
     }
 }
 
+#[derive(sqlx::FromRow)]
+#[allow(dead_code)]
+struct SuccessionPlanRow {
+    id: String,
+    position_id: String,
+    incumbent_id: Option<String>,
+    status: String,
+    criticality: String,
+    notes: Option<String>,
+    created_at: String,
+    updated_at: String,
+}
+
+impl SuccessionPlanRow {
+    #[allow(dead_code)]
+    fn into_succession_plan(self) -> SuccessionPlan {
+        SuccessionPlan {
+            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+            position_id: Uuid::parse_str(&self.position_id).unwrap_or_default(),
+            incumbent_id: self.incumbent_id.and_then(|s| Uuid::parse_str(&s).ok()),
+            status: match self.status.as_str() {
+                "Active" => SuccessionPlanStatus::Active,
+                "Archived" => SuccessionPlanStatus::Archived,
+                _ => SuccessionPlanStatus::Draft,
+            },
+            criticality: match self.criticality.as_str() {
+                "ReadyNow" => ReadinessLevel::ReadyNow,
+                "Ready1To2Years" => ReadinessLevel::Ready1To2Years,
+                "Ready3To5Years" => ReadinessLevel::Ready3To5Years,
+                _ => ReadinessLevel::EmergencyCoverage,
+            },
+            notes: self.notes,
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+        }
+    }
+}
+
+#[derive(sqlx::FromRow)]
+#[allow(dead_code)]
+struct SuccessorRow {
+    id: String,
+    plan_id: String,
+    employee_id: String,
+    readiness: String,
+    development_needs: Option<String>,
+    ranking: i32,
+}
+
+impl SuccessorRow {
+    #[allow(dead_code)]
+    fn into_successor(self) -> Successor {
+        Successor {
+            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+            plan_id: Uuid::parse_str(&self.plan_id).unwrap_or_default(),
+            employee_id: Uuid::parse_str(&self.employee_id).unwrap_or_default(),
+            readiness: match self.readiness.as_str() {
+                "ReadyNow" => ReadinessLevel::ReadyNow,
+                "Ready1To2Years" => ReadinessLevel::Ready1To2Years,
+                "Ready3To5Years" => ReadinessLevel::Ready3To5Years,
+                _ => ReadinessLevel::EmergencyCoverage,
+            },
+            development_needs: self.development_needs,
+            ranking: self.ranking,
+        }
+    }
+}
+
+pub struct SqliteSuccessionRepository;
+
+#[async_trait]
+impl SuccessionRepository for SqliteSuccessionRepository {
+    async fn find_plan_by_position(&self, _pool: &SqlitePool, _position_id: Uuid) -> Result<Option<SuccessionPlan>> {
+        Ok(None)
+    }
+
+    async fn create_plan(&self, _pool: &SqlitePool, plan: SuccessionPlan) -> Result<SuccessionPlan> {
+        Ok(plan)
+    }
+
+    async fn add_successor(&self, _pool: &SqlitePool, successor: Successor) -> Result<Successor> {
+        Ok(successor)
+    }
+
+    async fn find_successors(&self, _pool: &SqlitePool, _plan_id: Uuid) -> Result<Vec<Successor>> {
+        Ok(vec![])
+    }
+}
+
 #[async_trait]
 pub trait EmployeeRepository: Send + Sync {
     async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Employee>;
@@ -222,4 +311,12 @@ pub trait EmployeeCostRateRepository: Send + Sync {
     async fn find_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<EmployeeCostRate>>;
     async fn find_current(&self, pool: &SqlitePool, employee_id: Uuid, date: NaiveDate) -> Result<Option<EmployeeCostRate>>;
     async fn create(&self, pool: &SqlitePool, rate: EmployeeCostRate) -> Result<EmployeeCostRate>;
+}
+
+#[async_trait]
+pub trait SuccessionRepository: Send + Sync {
+    async fn find_plan_by_position(&self, pool: &SqlitePool, position_id: Uuid) -> Result<Option<SuccessionPlan>>;
+    async fn create_plan(&self, pool: &SqlitePool, plan: SuccessionPlan) -> Result<SuccessionPlan>;
+    async fn add_successor(&self, pool: &SqlitePool, successor: Successor) -> Result<Successor>;
+    async fn find_successors(&self, pool: &SqlitePool, plan_id: Uuid) -> Result<Vec<Successor>>;
 }

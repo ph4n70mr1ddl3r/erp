@@ -824,3 +824,64 @@ impl EmployeeCostRateService {
         self.repo.find_current(pool, employee_id, date).await
     }
 }
+
+pub struct SuccessionService {
+    repo: SqliteSuccessionRepository,
+}
+
+impl Default for SuccessionService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SuccessionService {
+    pub fn new() -> Self {
+        Self {
+            repo: SqliteSuccessionRepository,
+        }
+    }
+
+    pub async fn create_plan(
+        &self,
+        pool: &SqlitePool,
+        position_id: Uuid,
+        incumbent_id: Option<Uuid>,
+        criticality: ReadinessLevel,
+    ) -> Result<SuccessionPlan> {
+        let plan = SuccessionPlan {
+            id: Uuid::new_v4(),
+            position_id,
+            incumbent_id,
+            status: SuccessionPlanStatus::Draft,
+            criticality,
+            notes: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+        self.repo.create_plan(pool, plan).await
+    }
+
+    pub async fn add_successor(
+        &self,
+        pool: &SqlitePool,
+        plan_id: Uuid,
+        employee_id: Uuid,
+        readiness: ReadinessLevel,
+        ranking: i32,
+    ) -> Result<Successor> {
+        let successor = Successor {
+            id: Uuid::new_v4(),
+            plan_id,
+            employee_id,
+            readiness,
+            development_needs: None,
+            ranking,
+        };
+        self.repo.add_successor(pool, successor).await
+    }
+
+    pub async fn list_successors(&self, pool: &SqlitePool, plan_id: Uuid) -> Result<Vec<Successor>> {
+        self.repo.find_successors(pool, plan_id).await
+    }
+}

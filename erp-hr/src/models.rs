@@ -770,3 +770,42 @@ pub struct EmployeeCostRate {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SuccessionPlan {
+    pub id: Uuid,
+    pub position_id: Uuid,
+    pub incumbent_id: Option<Uuid>,
+    pub status: SuccessionPlanStatus,
+    pub criticality: ReadinessLevel,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum SuccessionPlanStatus {
+    Draft,
+    Active,
+    Archived,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Successor {
+    pub id: Uuid,
+    pub plan_id: Uuid,
+    pub employee_id: Uuid,
+    pub readiness: ReadinessLevel,
+    pub development_needs: Option<String>,
+    pub ranking: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum ReadinessLevel {
+    ReadyNow,
+    Ready1To2Years,
+    Ready3To5Years,
+    EmergencyCoverage,
+}
