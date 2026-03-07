@@ -1,6 +1,7 @@
 use crate::models::*;
 use crate::repository::{GRCRepository, SqliteGRCRepository};
 use chrono::Utc;
+use erp_core::{BaseEntity, Status};
 use uuid::Uuid;
 
 pub struct GRCService<R: GRCRepository> {
@@ -83,5 +84,51 @@ impl<R: GRCRepository> GRCService<R> {
         };
         self.repo.create_screening_result(&result).await?;
         Ok(result)
+    }
+
+    pub async fn create_dsar_request(&self, req: CreateDSARRequest) -> anyhow::Result<DSARRequest> {
+        let now = Utc::now();
+        let request_number = format!("DSAR-{}", now.format("%Y%m%d%H%M%S"));
+        let request = DSARRequest {
+            base: BaseEntity::new(),
+            request_number,
+            subject_id: req.subject_id,
+            subject_type: req.subject_type,
+            request_type: req.request_type,
+            status: DSARStatus::New,
+            requested_date: now,
+            due_date: now + chrono::Duration::days(30), // standard 30 day limit
+            completed_date: None,
+            assigned_to: None,
+            identity_proof_ref: req.identity_proof_ref,
+            notes: None,
+        };
+        self.repo.create_dsar_request(&request).await?;
+        
+        // Auto-generate tasks based on request type
+        let modules = vec!["HR", "Sales", "Finance", "Auth"];
+        for module in modules {
+            let task = DSARTask {
+                id: Uuid::new_v4(),
+                request_id: request.base.id,
+                module_name: module.to_string(),
+                task_description: format!("Identify and process data for {} in module {}", request.subject_type, module),
+                status: Status::Active,
+                assigned_to: None,
+                completed_at: None,
+                result_metadata: None,
+            };
+            self.repo.create_dsar_task(&task).await?;
+        }
+
+        Ok(request)
+    }
+
+    pub async fn get_dsar_request(&self, id: Uuid) -> anyhow::Result<Option<DSARRequest>> {
+        self.repo.get_dsar_request(id).await
+    }
+
+    pub async fn list_dsar_tasks(&self, request_id: Uuid) -> anyhow::Result<Vec<DSARTask>> {
+        self.repo.list_dsar_tasks(request_id).await
     }
 }

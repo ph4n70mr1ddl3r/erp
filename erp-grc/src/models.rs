@@ -651,3 +651,62 @@ pub struct UpdateProductTradeDataRequest {
     pub export_license_required: bool,
     pub import_license_required: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum DSARType {
+    Access,
+    Erasure,
+    Correction,
+    Portability,
+    Restriction,
+    Objection,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum DSARStatus {
+    New,
+    IdentityVerified,
+    InProgress,
+    UnderReview,
+    Fulfilled,
+    Rejected,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DSARRequest {
+    pub base: BaseEntity,
+    pub request_number: String,
+    pub subject_id: Uuid,
+    pub subject_type: String, // Employee, Customer, etc.
+    pub request_type: DSARType,
+    pub status: DSARStatus,
+    pub requested_date: DateTime<Utc>,
+    pub due_date: DateTime<Utc>,
+    pub completed_date: Option<DateTime<Utc>>,
+    pub assigned_to: Option<Uuid>,
+    pub identity_proof_ref: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DSARTask {
+    pub id: Uuid,
+    pub request_id: Uuid,
+    pub module_name: String,
+    pub task_description: String,
+    pub status: Status,
+    pub assigned_to: Option<Uuid>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub result_metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateDSARRequest {
+    pub subject_id: Uuid,
+    pub subject_type: String,
+    pub request_type: DSARType,
+    pub identity_proof_ref: Option<String>,
+}
