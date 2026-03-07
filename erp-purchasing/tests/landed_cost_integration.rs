@@ -118,7 +118,7 @@ async fn test_landed_cost_posting_updates_inventory() {
             LandedCostLine {
                 id: Uuid::new_v4(),
                 voucher_id: Uuid::nil(), // set in create_voucher
-                category_id: freight_cat.id,
+                category_id: freight_cat.base.id,
                 description: "Shipping".to_string(),
                 amount: Money::new(2000, Currency::USD), // $20.00
             }

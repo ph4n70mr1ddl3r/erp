@@ -72,25 +72,26 @@ impl PortalUserService {
     }
     
     pub async fn login(&self, pool: &SqlitePool, username: &str, password: &str) -> Result<(PortalUser, PortalSession)> {
-        let user = match self.repo.find_by_username(pool, username).await {
-            Ok(u) => u,
-            Err(_) => return Err(Error::not_found("User", username)),
-        };
-        
+        let user = self.repo.find_by_username(pool, username).await.map_err(|e| {
+            match e {
+                Error::NotFound(_) => Error::Unauthorized,
+                _ => e
+            }
+        })?;
+
         if user.status != PortalUserStatus::Active {
-            return Err(Error::validation("Account is not active"));
+            return Err(Error::Unauthorized);
         }
-        
+
         if let Some(locked) = user.locked_until {
             if locked > Utc::now() {
-                return Err(Error::validation("Account is temporarily locked"));
+                return Err(Error::Unauthorized);
             }
         }
-        
+
         if !Self::verify_password(password, &user.password_hash)? {
-            return Err(Error::validation("Invalid credentials"));
-        }
-        
+            return Err(Error::Unauthorized);
+        }        
         self.repo.update_last_login(pool, user.base.id).await?;
         
         let session = self.create_session(pool, user.base.id, None, None).await?;

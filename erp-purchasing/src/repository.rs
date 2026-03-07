@@ -231,7 +231,12 @@ impl LandedCostRepository for SqliteLandedCostRepository {
         ).fetch_all(pool).await?;
         
         Ok(rows.into_iter().map(|r| LandedCostCategory {
-            id: Uuid::parse_str(&r.id).unwrap_or_default(),
+            base: BaseEntity {
+                id: Uuid::parse_str(&r.id).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&r.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&r.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None, updated_by: None,
+            },
             code: r.code, name: r.name, description: r.description,
             allocation_method: match r.allocation_method.as_str() {
                 "Weight" => LandedCostAllocationMethod::ByWeight,
@@ -239,7 +244,7 @@ impl LandedCostRepository for SqliteLandedCostRepository {
                 "Quantity" => LandedCostAllocationMethod::ByQuantity,
                 _ => LandedCostAllocationMethod::ByValue,
             },
-            status: Status::Active,
+            status: r.status.parse().unwrap_or(Status::Active),
         }).collect())
     }
 

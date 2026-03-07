@@ -108,7 +108,7 @@ pub struct VendorPerformance {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LandedCostCategory {
-    pub id: Uuid,
+    pub base: BaseEntity,
     pub code: String,
     pub name: String,
     pub description: Option<String>,

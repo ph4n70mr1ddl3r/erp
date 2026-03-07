@@ -45,7 +45,7 @@ fn test_calculate_landed_cost_by_value() {
     let category_id = Uuid::new_v4();
     let categories = vec![
         LandedCostCategory {
-            id: category_id,
+            base: BaseEntity::new_with_id(category_id),
             code: "FREIGHT".to_string(),
             name: "Freight".to_string(),
             description: None,
@@ -129,7 +129,7 @@ fn test_calculate_landed_cost_by_quantity() {
     let category_id = Uuid::new_v4();
     let categories = vec![
         LandedCostCategory {
-            id: category_id,
+            base: BaseEntity::new_with_id(category_id),
             code: "DUTY".to_string(),
             name: "Customs Duty".to_string(),
             description: None,

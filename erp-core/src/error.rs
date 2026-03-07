@@ -56,8 +56,22 @@ pub fn parse_uuid(s: &str, field_name: &str) -> Result<Uuid> {
         .map_err(|e| Error::validation(format!("Invalid UUID for {}: {} - {}", field_name, s, e)))
 }
 
+pub fn parse_uuid_opt(s: Option<&str>, field_name: &str) -> Result<Option<Uuid>> {
+    match s {
+        Some(s) => Ok(Some(parse_uuid(s, field_name)?)),
+        None => Ok(None),
+    }
+}
+
 pub fn parse_datetime(s: &str, field_name: &str) -> Result<chrono::DateTime<chrono::Utc>> {
     chrono::DateTime::parse_from_rfc3339(s)
         .map(|dt| dt.with_timezone(&chrono::Utc))
         .map_err(|e| Error::validation(format!("Invalid DateTime for {}: {} - {}", field_name, s, e)))
+}
+
+pub fn parse_datetime_opt(s: Option<&str>, field_name: &str) -> Result<Option<chrono::DateTime<chrono::Utc>>> {
+    match s {
+        Some(s) => Ok(Some(parse_datetime(s, field_name)?)),
+        None => Ok(None),
+    }
 }

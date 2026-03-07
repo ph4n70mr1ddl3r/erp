@@ -309,8 +309,8 @@ impl LandedCostService {
 
         for voucher_line in &voucher.lines {
             let category = categories.iter()
-                .find(|c| c.id == voucher_line.category_id)
-                .ok_or_else(|| Error::validation(&format!("Category not found: {}", voucher_line.category_id)))?;
+                .find(|c| c.base.id == voucher_line.category_id)
+                .ok_or_else(|| Error::validation(format!("Category not found: {}", voucher_line.category_id)))?;
 
             let line_allocations = match category.allocation_method {
                 LandedCostAllocationMethod::ByValue => {
@@ -408,12 +408,12 @@ impl ThreeWayMatchService {
             // Find corresponding PO line
             let po_line = po.lines.iter()
                 .find(|l| l.product_id == inv_line.product_id)
-                .ok_or_else(|| Error::validation(&format!("Product {} not found in PO", inv_line.product_id)))?;
+                .ok_or_else(|| Error::validation(format!("Product {} not found in PO", inv_line.product_id)))?;
 
             // Find corresponding GR line
             let gr_line = gr.lines.iter()
                 .find(|l| l.product_id == inv_line.product_id)
-                .ok_or_else(|| Error::validation(&format!("Product {} not found in Goods Receipt", inv_line.product_id)))?;
+                .ok_or_else(|| Error::validation(format!("Product {} not found in Goods Receipt", inv_line.product_id)))?;
 
             // 1. Price Match (Invoice vs PO)
             if inv_line.unit_price.amount != po_line.unit_price.amount {
