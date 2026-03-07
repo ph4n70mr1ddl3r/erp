@@ -420,3 +420,90 @@ impl AssetAssignmentRepository for SqliteAssetAssignmentRepository {
         Ok(())
     }
 }
+
+#[derive(sqlx::FromRow)]
+struct DepreciationRow {
+    id: String,
+    asset_id: String,
+    depreciation_method: String,
+    useful_life_months: i32,
+    salvage_value: i64,
+    current_value: i64,
+    accumulated_depreciation: i64,
+    last_depreciation_date: Option<String>,
+    currency: String,
+    created_at: String,
+    updated_at: String,
+}
+
+impl DepreciationRow {
+    fn into_depreciation(self) -> AssetDepreciation {
+        AssetDepreciation {
+            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+            asset_id: Uuid::parse_str(&self.asset_id).unwrap_or_default(),
+            depreciation_method: serde_json::from_str(&self.depreciation_method).unwrap_or(DepreciationMethod::StraightLine),
+            useful_life_months: self.useful_life_months,
+            salvage_value: self.salvage_value,
+            current_value: self.current_value,
+            accumulated_depreciation: self.accumulated_depreciation,
+            last_depreciation_date: self.last_depreciation_date.and_then(|s| NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            currency: self.currency,
+            created_at: DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+            updated_at: DateTime::parse_from_rfc3339(&self.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+        }
+    }
+}
+
+#[async_trait]
+pub trait AssetDepreciationRepository: Send + Sync {
+    async fn create(&self, pool: &SqlitePool, dep: &AssetDepreciation) -> Result<()>;
+    async fn find_by_asset(&self, pool: &SqlitePool, asset_id: Uuid) -> Result<Option<AssetDepreciation>>;
+    async fn update(&self, pool: &SqlitePool, dep: &AssetDepreciation) -> Result<()>;
+}
+
+pub struct SqliteAssetDepreciationRepository;
+
+#[async_trait]
+impl AssetDepreciationRepository for SqliteAssetDepreciationRepository {
+    async fn create(&self, pool: &SqlitePool, dep: &AssetDepreciation) -> Result<()> {
+        sqlx::query(
+            "INSERT INTO asset_depreciations (id, asset_id, depreciation_method, useful_life_months, salvage_value, current_value, accumulated_depreciation, last_depreciation_date, currency, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(dep.id.to_string())
+            .bind(dep.asset_id.to_string())
+            .bind(serde_json::to_string(&dep.depreciation_method)?)
+            .bind(dep.useful_life_months)
+            .bind(dep.salvage_value)
+            .bind(dep.current_value)
+            .bind(dep.accumulated_depreciation)
+            .bind(dep.last_depreciation_date.map(|d| d.to_string()))
+            .bind(&dep.currency)
+            .bind(dep.created_at.to_rfc3339())
+            .bind(dep.updated_at.to_rfc3339())
+            .execute(pool).await?;
+        Ok(())
+    }
+
+    async fn find_by_asset(&self, pool: &SqlitePool, asset_id: Uuid) -> Result<Option<AssetDepreciation>> {
+        let row = sqlx::query_as::<_, DepreciationRow>(
+            "SELECT id, asset_id, depreciation_method, useful_life_months, salvage_value, current_value, accumulated_depreciation, last_depreciation_date, currency, created_at, updated_at FROM asset_depreciations WHERE asset_id = ?")
+            .bind(asset_id.to_string())
+            .fetch_optional(pool).await?;
+        Ok(row.map(|r| r.into_depreciation()))
+    }
+
+    async fn update(&self, pool: &SqlitePool, dep: &AssetDepreciation) -> Result<()> {
+        sqlx::query(
+            "UPDATE asset_depreciations SET depreciation_method = ?, useful_life_months = ?, salvage_value = ?, current_value = ?, accumulated_depreciation = ?, last_depreciation_date = ?, updated_at = ? WHERE id = ?")
+            .bind(serde_json::to_string(&dep.depreciation_method)?)
+            .bind(dep.useful_life_months)
+            .bind(dep.salvage_value)
+            .bind(dep.current_value)
+            .bind(dep.accumulated_depreciation)
+            .bind(dep.last_depreciation_date.map(|d| d.to_string()))
+            .bind(dep.updated_at.to_rfc3339())
+            .bind(dep.id.to_string())
+            .execute(pool).await?;
+        Ok(())
+    }
+}
+

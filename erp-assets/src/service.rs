@@ -1,5 +1,5 @@
 use anyhow::{Result, anyhow};
-use chrono::Utc;
+use chrono::{Utc, Datelike};
 use erp_core::BaseEntity;
 use sqlx::SqlitePool;
 use uuid::Uuid;
@@ -217,3 +217,115 @@ impl SoftwareLicenseService {
         self.repo.delete(pool, id).await
     }
 }
+
+pub struct AssetDepreciationService {
+    dep_repo: SqliteAssetDepreciationRepository,
+    asset_repo: SqliteITAssetRepository,
+}
+
+impl Default for AssetDepreciationService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AssetDepreciationService {
+    pub fn new() -> Self {
+        Self {
+            dep_repo: SqliteAssetDepreciationRepository,
+            asset_repo: SqliteITAssetRepository,
+        }
+    }
+
+    pub async fn setup_depreciation(
+        &self,
+        pool: &SqlitePool,
+        asset_id: Uuid,
+        method: DepreciationMethod,
+        useful_life_months: i32,
+        salvage_value: i64,
+    ) -> Result<AssetDepreciation> {
+        let asset = self.asset_repo.find_by_id(pool, asset_id).await?
+            .ok_or_else(|| anyhow!("Asset not found"))?;
+
+        let now = Utc::now();
+        let dep = AssetDepreciation {
+            id: Uuid::new_v4(),
+            asset_id,
+            depreciation_method: method,
+            useful_life_months,
+            salvage_value,
+            current_value: asset.purchase_cost,
+            accumulated_depreciation: 0,
+            last_depreciation_date: asset.purchase_date,
+            currency: asset.currency,
+            created_at: now,
+            updated_at: now,
+        };
+
+        self.dep_repo.create(pool, &dep).await?;
+        Ok(dep)
+    }
+
+    pub async fn run_depreciation(
+        &self,
+        pool: &SqlitePool,
+        asset_id: Uuid,
+        as_of_date: chrono::NaiveDate,
+    ) -> Result<AssetDepreciation> {
+        let mut dep = self.dep_repo.find_by_asset(pool, asset_id).await?
+            .ok_or_else(|| anyhow!("Depreciation not set up for this asset"))?;
+
+        let last_date = dep.last_depreciation_date.ok_or_else(|| anyhow!("Missing last depreciation date"))?;
+        
+        if as_of_date <= last_date {
+            return Ok(dep);
+        }
+
+        // Calculate months since last depreciation
+        let months = (as_of_date.year() - last_date.year()) * 12 + (as_of_date.month() as i32 - last_date.month() as i32);
+        
+        if months <= 0 {
+            return Ok(dep);
+        }
+
+        let dep_amount = self.calculate_depreciation_amount_test(&dep, months);
+        
+        dep.accumulated_depreciation += dep_amount;
+        dep.current_value = (dep.current_value - dep_amount).max(dep.salvage_value);
+        dep.last_depreciation_date = Some(as_of_date);
+        dep.updated_at = Utc::now();
+
+        self.dep_repo.update(pool, &dep).await?;
+        Ok(dep)
+    }
+
+    pub fn calculate_depreciation_amount_test(&self, dep: &AssetDepreciation, months: i32) -> i64 {
+        match dep.depreciation_method {
+            DepreciationMethod::StraightLine => {
+                let total_depreciable = (dep.current_value + dep.accumulated_depreciation) - dep.salvage_value;
+                // Use more precision for calculation
+                (total_depreciable * months as i64) / dep.useful_life_months as i64
+            }
+            DepreciationMethod::DecliningBalance => {
+                // Simplified 200% declining balance
+                let factor = 2.0 / dep.useful_life_months as f64;
+                let mut current = dep.current_value as f64;
+                let mut total_dep = 0.0;
+                for _ in 0..months {
+                    let monthly = current * factor;
+                    if current - monthly < dep.salvage_value as f64 {
+                        total_dep += current - dep.salvage_value as f64;
+                        break;
+                    }
+                    total_dep += monthly;
+                    current -= monthly;
+                }
+                total_dep as i64
+            }
+            _ => 0,
+        }
+    }
+}
+
+
