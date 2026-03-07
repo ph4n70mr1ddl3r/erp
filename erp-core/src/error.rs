@@ -55,3 +55,9 @@ pub fn parse_uuid(s: &str, field_name: &str) -> Result<Uuid> {
     Uuid::parse_str(s)
         .map_err(|e| Error::validation(format!("Invalid UUID for {}: {} - {}", field_name, s, e)))
 }
+
+pub fn parse_datetime(s: &str, field_name: &str) -> Result<chrono::DateTime<chrono::Utc>> {
+    chrono::DateTime::parse_from_rfc3339(s)
+        .map(|dt| dt.with_timezone(&chrono::Utc))
+        .map_err(|e| Error::validation(format!("Invalid DateTime for {}: {} - {}", field_name, s, e)))
+}

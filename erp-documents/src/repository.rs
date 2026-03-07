@@ -57,9 +57,9 @@ impl DocumentRepository for SqliteDocumentRepository {
         
         Ok(DocumentFolder {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.try_get::<&str, _>("id")?).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("created_at")?).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("updated_at")?).unwrap().with_timezone(&chrono::Utc),
+                id: erp_core::parse_uuid(row.try_get::<&str, _>("id")?, "id")?,
+                created_at: erp_core::parse_datetime(row.try_get::<&str, _>("created_at")?, "created_at")?,
+                updated_at: erp_core::parse_datetime(row.try_get::<&str, _>("updated_at")?, "updated_at")?,
                 created_by: row.try_get::<Option<&str>, _>("created_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.try_get::<Option<&str>, _>("updated_by")?.and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -91,9 +91,9 @@ impl DocumentRepository for SqliteDocumentRepository {
         for row in rows {
             folders.push(DocumentFolder {
                 base: erp_core::BaseEntity {
-                    id: Uuid::parse_str(row.try_get::<&str, _>("id")?).unwrap(),
-                    created_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("created_at")?).unwrap().with_timezone(&chrono::Utc),
-                    updated_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("updated_at")?).unwrap().with_timezone(&chrono::Utc),
+                    id: erp_core::parse_uuid(row.try_get::<&str, _>("id")?, "id")?,
+                    created_at: erp_core::parse_datetime(row.try_get::<&str, _>("created_at")?, "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.try_get::<&str, _>("updated_at")?, "updated_at")?,
                     created_by: row.try_get::<Option<&str>, _>("created_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                     updated_by: row.try_get::<Option<&str>, _>("updated_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                 },
@@ -161,9 +161,9 @@ impl DocumentRepository for SqliteDocumentRepository {
         
         Ok(Document {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.try_get::<&str, _>("id")?).unwrap(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("created_at")?).unwrap().with_timezone(&chrono::Utc),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("updated_at")?).unwrap().with_timezone(&chrono::Utc),
+                id: erp_core::parse_uuid(row.try_get::<&str, _>("id")?, "id")?,
+                created_at: erp_core::parse_datetime(row.try_get::<&str, _>("created_at")?, "created_at")?,
+                updated_at: erp_core::parse_datetime(row.try_get::<&str, _>("updated_at")?, "updated_at")?,
                 created_by: row.try_get::<Option<&str>, _>("created_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.try_get::<Option<&str>, _>("updated_by")?.and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -261,9 +261,9 @@ impl DocumentRepository for SqliteDocumentRepository {
         for row in rows {
             documents.push(Document {
                 base: erp_core::BaseEntity {
-                    id: Uuid::parse_str(row.try_get::<&str, _>("id")?).unwrap(),
-                    created_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("created_at")?).unwrap().with_timezone(&chrono::Utc),
-                    updated_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("updated_at")?).unwrap().with_timezone(&chrono::Utc),
+                    id: erp_core::parse_uuid(row.try_get::<&str, _>("id")?, "id")?,
+                    created_at: erp_core::parse_datetime(row.try_get::<&str, _>("created_at")?, "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.try_get::<&str, _>("updated_at")?, "updated_at")?,
                     created_by: row.try_get::<Option<&str>, _>("created_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                     updated_by: row.try_get::<Option<&str>, _>("updated_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                 },
@@ -333,13 +333,13 @@ impl DocumentRepository for SqliteDocumentRepository {
         for row in rows {
             versions.push(DocumentVersion {
                 base: erp_core::BaseEntity {
-                    id: Uuid::parse_str(row.try_get::<&str, _>("id")?).unwrap(),
-                    created_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("created_at")?).unwrap().with_timezone(&chrono::Utc),
-                    updated_at: chrono::DateTime::parse_from_rfc3339(row.try_get::<&str, _>("updated_at")?).unwrap().with_timezone(&chrono::Utc),
+                    id: erp_core::parse_uuid(row.try_get::<&str, _>("id")?, "id")?,
+                    created_at: erp_core::parse_datetime(row.try_get::<&str, _>("created_at")?, "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.try_get::<&str, _>("updated_at")?, "updated_at")?,
                     created_by: row.try_get::<Option<&str>, _>("created_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                     updated_by: row.try_get::<Option<&str>, _>("updated_by")?.and_then(|s| Uuid::parse_str(s).ok()),
                 },
-                document_id: Uuid::parse_str(row.try_get::<&str, _>("document_id")?).unwrap(),
+                document_id: erp_core::parse_uuid(row.try_get::<&str, _>("document_id")?, "document_id")?,
                 version: row.try_get::<i32, _>("version")?,
                 revision: row.try_get::<&str, _>("revision")?.to_string(),
                 file_path: row.try_get::<&str, _>("file_path")?.to_string(),

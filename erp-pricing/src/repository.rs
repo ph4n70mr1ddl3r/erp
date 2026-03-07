@@ -131,9 +131,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(PriceBook {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -156,24 +156,28 @@ impl PricingRepository for SqlitePricingRepository {
         )
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(|row| PriceBook {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            name: row.get::<&str, _>("name").to_string(),
-            code: row.get::<&str, _>("code").to_string(),
-            description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            currency: row.get::<&str, _>("currency").to_string(),
-            is_default: row.get::<i32, _>("is_default") == 1,
-            is_active: row.get::<i32, _>("is_active") == 1,
-            valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            parent_id: row.get::<Option<&str>, _>("parent_id").and_then(|s| Uuid::parse_str(s).ok()),
-        }).collect())
+        let mut price_books = Vec::new();
+        for row in rows {
+            price_books.push(PriceBook {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                name: row.get::<&str, _>("name").to_string(),
+                code: row.get::<&str, _>("code").to_string(),
+                description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
+                currency: row.get::<&str, _>("currency").to_string(),
+                is_default: row.get::<i32, _>("is_default") == 1,
+                is_active: row.get::<i32, _>("is_active") == 1,
+                valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                parent_id: row.get::<Option<&str>, _>("parent_id").and_then(|s| Uuid::parse_str(s).ok()),
+            });
+        }
+        Ok(price_books)
     }
 
     async fn create_price_book_entry(&self, pool: &SqlitePool, entry: PriceBookEntry) -> Result<PriceBookEntry> {
@@ -210,24 +214,28 @@ impl PricingRepository for SqlitePricingRepository {
         .bind(product_id.to_string())
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|row| PriceBookEntry {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            price_book_id: Uuid::parse_str(row.get::<&str, _>("price_book_id")).unwrap_or_default(),
-            product_id: Uuid::parse_str(row.get::<&str, _>("product_id")).unwrap_or_default(),
-            unit_price: row.get::<i64, _>("unit_price"),
-            currency: row.get::<&str, _>("currency").to_string(),
-            min_quantity: row.get::<i32, _>("min_quantity"),
-            max_quantity: row.get::<Option<i32>, _>("max_quantity"),
-            valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            status: erp_core::Status::Active,
-        }))
+        if let Some(row) = row {
+            Ok(Some(PriceBookEntry {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                price_book_id: Uuid::parse_str(row.get::<&str, _>("price_book_id")).unwrap_or_default(),
+                product_id: Uuid::parse_str(row.get::<&str, _>("product_id")).unwrap_or_default(),
+                unit_price: row.get::<i64, _>("unit_price"),
+                currency: row.get::<&str, _>("currency").to_string(),
+                min_quantity: row.get::<i32, _>("min_quantity"),
+                max_quantity: row.get::<Option<i32>, _>("max_quantity"),
+                valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                status: erp_core::Status::Active,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn create_price_rule(&self, pool: &SqlitePool, rule: PriceRule) -> Result<PriceRule> {
@@ -271,9 +279,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(PriceRule {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -302,29 +310,33 @@ impl PricingRepository for SqlitePricingRepository {
         )
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(|row| PriceRule {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            name: row.get::<&str, _>("name").to_string(),
-            code: row.get::<&str, _>("code").to_string(),
-            description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            rule_type: parse_price_rule_type(row.get::<&str, _>("rule_type")),
-            scope: parse_price_rule_scope(row.get::<&str, _>("scope")),
-            priority: row.get::<i32, _>("priority"),
-            value: row.get::<f64, _>("value"),
-            currency: row.get::<Option<&str>, _>("currency").map(|s| s.to_string()),
-            conditions: row.get::<Option<&str>, _>("conditions").map(|s| s.to_string()),
-            valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            is_active: row.get::<i32, _>("is_active") == 1,
-            is_stackable: row.get::<i32, _>("is_stackable") == 1,
-            max_applications: row.get::<Option<i32>, _>("max_applications"),
-        }).collect())
+        let mut price_rules = Vec::new();
+        for row in rows {
+            price_rules.push(PriceRule {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                name: row.get::<&str, _>("name").to_string(),
+                code: row.get::<&str, _>("code").to_string(),
+                description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
+                rule_type: parse_price_rule_type(row.get::<&str, _>("rule_type")),
+                scope: parse_price_rule_scope(row.get::<&str, _>("scope")),
+                priority: row.get::<i32, _>("priority"),
+                value: row.get::<f64, _>("value"),
+                currency: row.get::<Option<&str>, _>("currency").map(|s| s.to_string()),
+                conditions: row.get::<Option<&str>, _>("conditions").map(|s| s.to_string()),
+                valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                is_active: row.get::<i32, _>("is_active") == 1,
+                is_stackable: row.get::<i32, _>("is_stackable") == 1,
+                max_applications: row.get::<Option<i32>, _>("max_applications"),
+            });
+        }
+        Ok(price_rules)
     }
 
     async fn create_discount(&self, pool: &SqlitePool, discount: Discount) -> Result<Discount> {
@@ -375,9 +387,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(Discount {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -413,34 +425,38 @@ impl PricingRepository for SqlitePricingRepository {
         .bind(code)
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|row| Discount {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            name: row.get::<&str, _>("name").to_string(),
-            code: row.get::<&str, _>("code").to_string(),
-            description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
-            value: row.get::<f64, _>("value"),
-            max_discount: row.get::<Option<i64>, _>("max_discount"),
-            min_order_value: row.get::<Option<i64>, _>("min_order_value"),
-            applicable_to: row.get::<Option<&str>, _>("applicable_to").map(|s| s.to_string()),
-            customer_groups: row.get::<Option<&str>, _>("customer_groups").map(|s| s.to_string()),
-            products: row.get::<Option<&str>, _>("products").map(|s| s.to_string()),
-            categories: row.get::<Option<&str>, _>("categories").map(|s| s.to_string()),
-            valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            usage_limit: row.get::<Option<i32>, _>("usage_limit"),
-            usage_per_customer: row.get::<Option<i32>, _>("usage_per_customer"),
-            current_usage: row.get::<i32, _>("current_usage"),
-            is_active: row.get::<i32, _>("is_active") == 1,
-            requires_code: row.get::<i32, _>("requires_code") == 1,
-            auto_apply: row.get::<i32, _>("auto_apply") == 1,
-        }))
+        if let Some(row) = row {
+            Ok(Some(Discount {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                name: row.get::<&str, _>("name").to_string(),
+                code: row.get::<&str, _>("code").to_string(),
+                description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
+                discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
+                value: row.get::<f64, _>("value"),
+                max_discount: row.get::<Option<i64>, _>("max_discount"),
+                min_order_value: row.get::<Option<i64>, _>("min_order_value"),
+                applicable_to: row.get::<Option<&str>, _>("applicable_to").map(|s| s.to_string()),
+                customer_groups: row.get::<Option<&str>, _>("customer_groups").map(|s| s.to_string()),
+                products: row.get::<Option<&str>, _>("products").map(|s| s.to_string()),
+                categories: row.get::<Option<&str>, _>("categories").map(|s| s.to_string()),
+                valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                usage_limit: row.get::<Option<i32>, _>("usage_limit"),
+                usage_per_customer: row.get::<Option<i32>, _>("usage_per_customer"),
+                current_usage: row.get::<i32, _>("current_usage"),
+                is_active: row.get::<i32, _>("is_active") == 1,
+                requires_code: row.get::<i32, _>("requires_code") == 1,
+                auto_apply: row.get::<i32, _>("auto_apply") == 1,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn list_discounts(&self, pool: &SqlitePool) -> Result<Vec<Discount>> {
@@ -452,34 +468,38 @@ impl PricingRepository for SqlitePricingRepository {
         )
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(|row| Discount {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            name: row.get::<&str, _>("name").to_string(),
-            code: row.get::<&str, _>("code").to_string(),
-            description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
-            value: row.get::<f64, _>("value"),
-            max_discount: row.get::<Option<i64>, _>("max_discount"),
-            min_order_value: row.get::<Option<i64>, _>("min_order_value"),
-            applicable_to: row.get::<Option<&str>, _>("applicable_to").map(|s| s.to_string()),
-            customer_groups: row.get::<Option<&str>, _>("customer_groups").map(|s| s.to_string()),
-            products: row.get::<Option<&str>, _>("products").map(|s| s.to_string()),
-            categories: row.get::<Option<&str>, _>("categories").map(|s| s.to_string()),
-            valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            usage_limit: row.get::<Option<i32>, _>("usage_limit"),
-            usage_per_customer: row.get::<Option<i32>, _>("usage_per_customer"),
-            current_usage: row.get::<i32, _>("current_usage"),
-            is_active: row.get::<i32, _>("is_active") == 1,
-            requires_code: row.get::<i32, _>("requires_code") == 1,
-            auto_apply: row.get::<i32, _>("auto_apply") == 1,
-        }).collect())
+        let mut discounts = Vec::new();
+        for row in rows {
+            discounts.push(Discount {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                name: row.get::<&str, _>("name").to_string(),
+                code: row.get::<&str, _>("code").to_string(),
+                description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
+                discount_type: parse_discount_type(row.get::<&str, _>("discount_type")),
+                value: row.get::<f64, _>("value"),
+                max_discount: row.get::<Option<i64>, _>("max_discount"),
+                min_order_value: row.get::<Option<i64>, _>("min_order_value"),
+                applicable_to: row.get::<Option<&str>, _>("applicable_to").map(|s| s.to_string()),
+                customer_groups: row.get::<Option<&str>, _>("customer_groups").map(|s| s.to_string()),
+                products: row.get::<Option<&str>, _>("products").map(|s| s.to_string()),
+                categories: row.get::<Option<&str>, _>("categories").map(|s| s.to_string()),
+                valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                usage_limit: row.get::<Option<i32>, _>("usage_limit"),
+                usage_per_customer: row.get::<Option<i32>, _>("usage_per_customer"),
+                current_usage: row.get::<i32, _>("current_usage"),
+                is_active: row.get::<i32, _>("is_active") == 1,
+                requires_code: row.get::<i32, _>("requires_code") == 1,
+                auto_apply: row.get::<i32, _>("auto_apply") == 1,
+            });
+        }
+        Ok(discounts)
     }
 
     async fn create_coupon(&self, pool: &SqlitePool, coupon: Coupon) -> Result<Coupon> {
@@ -516,25 +536,29 @@ impl PricingRepository for SqlitePricingRepository {
         .bind(code)
         .fetch_optional(pool).await?;
         
-        Ok(row.map(|row| Coupon {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            code: row.get::<&str, _>("code").to_string(),
-            discount_id: Uuid::parse_str(row.get::<&str, _>("discount_id")).unwrap(),
-            promotion_id: row.get::<Option<&str>, _>("promotion_id").and_then(|s| Uuid::parse_str(s).ok()),
-            customer_id: row.get::<Option<&str>, _>("customer_id").and_then(|s| Uuid::parse_str(s).ok()),
-            is_used: row.get::<i32, _>("is_used") == 1,
-            used_at: row.get::<Option<&str>, _>("used_at").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            order_id: row.get::<Option<&str>, _>("order_id").and_then(|s| Uuid::parse_str(s).ok()),
-            valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
-            status: erp_core::Status::Active,
-        }))
+        if let Some(row) = row {
+            Ok(Some(Coupon {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                code: row.get::<&str, _>("code").to_string(),
+                discount_id: Uuid::parse_str(row.get::<&str, _>("discount_id")).unwrap(),
+                promotion_id: row.get::<Option<&str>, _>("promotion_id").and_then(|s| Uuid::parse_str(s).ok()),
+                customer_id: row.get::<Option<&str>, _>("customer_id").and_then(|s| Uuid::parse_str(s).ok()),
+                is_used: row.get::<i32, _>("is_used") == 1,
+                used_at: row.get::<Option<&str>, _>("used_at").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                order_id: row.get::<Option<&str>, _>("order_id").and_then(|s| Uuid::parse_str(s).ok()),
+                valid_from: row.get::<Option<&str>, _>("valid_from").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                valid_to: row.get::<Option<&str>, _>("valid_to").and_then(|d| chrono::DateTime::parse_from_rfc3339(d).ok().map(|d| d.with_timezone(&chrono::Utc))),
+                status: erp_core::Status::Active,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn use_coupon(&self, pool: &SqlitePool, id: Uuid, order_id: Uuid) -> Result<()> {
@@ -591,9 +615,9 @@ impl PricingRepository for SqlitePricingRepository {
         
         Ok(Promotion {
             base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
+                id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
                 created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
                 updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
             },
@@ -602,8 +626,8 @@ impl PricingRepository for SqlitePricingRepository {
             description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
             promotion_type: parse_promotion_type(row.get::<&str, _>("promotion_type")),
             status: parse_promotion_status(row.get::<&str, _>("status")),
-            start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).unwrap().with_timezone(&chrono::Utc),
-            end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).unwrap().with_timezone(&chrono::Utc),
+            start_date: erp_core::parse_datetime(row.get::<&str, _>("start_date"), "start_date")?,
+            end_date: erp_core::parse_datetime(row.get::<&str, _>("end_date"), "end_date")?,
             rules: row.get::<&str, _>("rules").to_string(),
             rewards: row.get::<&str, _>("rewards").to_string(),
             target_segments: row.get::<Option<&str>, _>("target_segments").map(|s| s.to_string()),
@@ -623,30 +647,34 @@ impl PricingRepository for SqlitePricingRepository {
         )
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(|row| Promotion {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            name: row.get::<&str, _>("name").to_string(),
-            code: row.get::<&str, _>("code").to_string(),
-            description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
-            promotion_type: parse_promotion_type(row.get::<&str, _>("promotion_type")),
-            status: parse_promotion_status(row.get::<&str, _>("status")),
-            start_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("start_date")).unwrap().with_timezone(&chrono::Utc),
-            end_date: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("end_date")).unwrap().with_timezone(&chrono::Utc),
-            rules: row.get::<&str, _>("rules").to_string(),
-            rewards: row.get::<&str, _>("rewards").to_string(),
-            target_segments: row.get::<Option<&str>, _>("target_segments").map(|s| s.to_string()),
-            channels: row.get::<Option<&str>, _>("channels").map(|s| s.to_string()),
-            budget: row.get::<Option<i64>, _>("budget"),
-            spent: row.get::<i64, _>("spent"),
-            usage_limit: row.get::<Option<i32>, _>("usage_limit"),
-            current_usage: row.get::<i32, _>("current_usage"),
-        }).collect())
+        let mut promotions = Vec::new();
+        for row in rows {
+            promotions.push(Promotion {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                name: row.get::<&str, _>("name").to_string(),
+                code: row.get::<&str, _>("code").to_string(),
+                description: row.get::<Option<&str>, _>("description").map(|s| s.to_string()),
+                promotion_type: parse_promotion_type(row.get::<&str, _>("promotion_type")),
+                status: parse_promotion_status(row.get::<&str, _>("status")),
+                start_date: erp_core::parse_datetime(row.get::<&str, _>("start_date"), "start_date")?,
+                end_date: erp_core::parse_datetime(row.get::<&str, _>("end_date"), "end_date")?,
+                rules: row.get::<&str, _>("rules").to_string(),
+                rewards: row.get::<&str, _>("rewards").to_string(),
+                target_segments: row.get::<Option<&str>, _>("target_segments").map(|s| s.to_string()),
+                channels: row.get::<Option<&str>, _>("channels").map(|s| s.to_string()),
+                budget: row.get::<Option<i64>, _>("budget"),
+                spent: row.get::<i64, _>("spent"),
+                usage_limit: row.get::<Option<i32>, _>("usage_limit"),
+                current_usage: row.get::<i32, _>("current_usage"),
+            });
+        }
+        Ok(promotions)
     }
 
     async fn create_price_tier(&self, pool: &SqlitePool, tier: PriceTier) -> Result<PriceTier> {
@@ -680,22 +708,26 @@ impl PricingRepository for SqlitePricingRepository {
         .bind(product_id.to_string())
         .fetch_all(pool).await?;
         
-        Ok(rows.iter().map(|row| PriceTier {
-            base: erp_core::BaseEntity {
-                id: Uuid::parse_str(row.get::<&str, _>("id")).unwrap_or_default(),
-                created_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("created_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                updated_at: chrono::DateTime::parse_from_rfc3339(row.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&chrono::Utc)).unwrap_or_else(|_| chrono::Utc::now()),
-                created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
-                updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
-            },
-            price_book_entry_id: row.get::<Option<&str>, _>("price_book_entry_id").and_then(|s| Uuid::parse_str(s).ok()),
-            product_id: row.get::<Option<&str>, _>("product_id").and_then(|s| Uuid::parse_str(s).ok()),
-            min_quantity: row.get::<i32, _>("min_quantity"),
-            max_quantity: row.get::<Option<i32>, _>("max_quantity"),
-            unit_price: row.get::<i64, _>("unit_price"),
-            discount_percent: row.get::<Option<f64>, _>("discount_percent"),
-            currency: row.get::<&str, _>("currency").to_string(),
-        }).collect())
+        let mut tiers = Vec::new();
+        for row in rows {
+            tiers.push(PriceTier {
+                base: erp_core::BaseEntity {
+                    id: erp_core::parse_uuid(row.get::<&str, _>("id"), "id")?,
+                    created_at: erp_core::parse_datetime(row.get::<&str, _>("created_at"), "created_at")?,
+                    updated_at: erp_core::parse_datetime(row.get::<&str, _>("updated_at"), "updated_at")?,
+                    created_by: row.get::<Option<&str>, _>("created_by").and_then(|s| Uuid::parse_str(s).ok()),
+                    updated_by: row.get::<Option<&str>, _>("updated_by").and_then(|s| Uuid::parse_str(s).ok()),
+                },
+                price_book_entry_id: row.get::<Option<&str>, _>("price_book_entry_id").and_then(|s| Uuid::parse_str(s).ok()),
+                product_id: row.get::<Option<&str>, _>("product_id").and_then(|s| Uuid::parse_str(s).ok()),
+                min_quantity: row.get::<i32, _>("min_quantity"),
+                max_quantity: row.get::<Option<i32>, _>("max_quantity"),
+                unit_price: row.get::<i64, _>("unit_price"),
+                discount_percent: row.get::<Option<f64>, _>("discount_percent"),
+                currency: row.get::<&str, _>("currency").to_string(),
+            });
+        }
+        Ok(tiers)
     }
 
     async fn create_customer_price_group(&self, pool: &SqlitePool, group: CustomerPriceGroup) -> Result<CustomerPriceGroup> {

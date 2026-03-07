@@ -20,7 +20,7 @@ pub use compliance::*;
 pub use compliance_service::ComplianceService;
 pub use custom_field::CustomFieldService;
 pub use db::Database;
-pub use error::{Error, Result, parse_uuid};
+pub use error::{Error, Result, parse_uuid, parse_datetime};
 pub use models::{Address, BaseEntity, ContactInfo, Currency, Money, Status, CustomFieldDefinition, CustomFieldType, CustomFieldValue};
 pub use pagination::{Pagination, Paginated};
 pub use platform::{TenantService, AutomationService, EmailService, ReportService, MobileService, APIService, TenantLimits, APIUsageStats};

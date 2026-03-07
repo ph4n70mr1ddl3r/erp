@@ -88,7 +88,12 @@ impl AuthService {
     }
 
     pub async fn login(&self, pool: &SqlitePool, req: LoginRequest) -> Result<AuthResponse> {
-        let user = self.repo.find_by_username(pool, &req.username).await?;
+        let user = self.repo.find_by_username(pool, &req.username).await.map_err(|e| {
+            match e {
+                Error::NotFound(_) => Error::Unauthorized,
+                _ => e
+            }
+        })?;
         
         if user.status != UserStatus::Active {
             return Err(Error::Unauthorized);
