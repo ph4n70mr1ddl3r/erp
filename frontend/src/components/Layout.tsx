@@ -40,7 +40,8 @@ import {
   CalendarClock,
   CheckCircle,
   TrendingUp,
-  Gift
+  Gift,
+  Heart
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -88,6 +89,7 @@ const navItems = [
   { path: '/payment-terms', icon: Clock, label: 'Payment Terms' },
   { path: '/vendor-bills', icon: FileInput, label: 'Vendor Bills' },
   { path: '/bank-reconciliation', icon: RefreshCw, label: 'Bank Recon' },
+  { path: '/favorites', icon: Heart, label: 'Favorites' },
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {

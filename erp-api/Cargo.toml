@@ -122,6 +122,7 @@ erp-quality.workspace = true
 erp-product-variants.workspace = true
 erp-credit-notes.workspace = true
 erp-giftcards.workspace = true
+erp-favorites.workspace = true
 async-graphql.workspace = true
 once_cell.workspace = true
 futures = "0.3"

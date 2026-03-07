@@ -749,6 +749,7 @@ dependencies = [
  "erp-edi",
  "erp-email",
  "erp-enterprise",
+ "erp-favorites",
  "erp-features",
  "erp-finance",
  "erp-fraud",
@@ -1389,6 +1390,22 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "uuid 1.21.0",
+]
+
+[[package]]
+name = "erp-favorites"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
  "uuid 1.21.0",
 ]
 

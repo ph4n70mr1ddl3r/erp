@@ -45,6 +45,7 @@ import VendorScorecards from './pages/VendorScorecards';
 import Quality from './pages/Quality';
 import Performance from './pages/Performance';
 import GiftCards from './pages/GiftCards';
+import Favorites from './pages/Favorites';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -106,6 +107,7 @@ function AppRoutes() {
       <Route path="/quality" element={<PrivateRoute><Quality /></PrivateRoute>} />
       <Route path="/performance" element={<PrivateRoute><Performance /></PrivateRoute>} />
       <Route path="/giftcards" element={<PrivateRoute><GiftCards /></PrivateRoute>} />
+      <Route path="/favorites" element={<PrivateRoute><Favorites /></PrivateRoute>} />
     </Routes>
   );
 }

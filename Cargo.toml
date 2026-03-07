@@ -113,7 +113,8 @@ members = [
     "erp-notes",
     "erp-credit-notes",
     "erp-product-variants",
-    "erp-giftcards"
+    "erp-giftcards",
+    "erp-favorites"
 ]
 resolver = "2"
 
@@ -261,6 +262,7 @@ erp-notes = { path = "erp-notes" }
 erp-credit-notes = { path = "erp-credit-notes" }
 erp-product-variants = { path = "erp-product-variants" }
 erp-giftcards = { path = "erp-giftcards" }
+erp-favorites = { path = "erp-favorites" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"

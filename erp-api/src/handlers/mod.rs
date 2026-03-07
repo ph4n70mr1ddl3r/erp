@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod approval_workflow;
+pub mod favorites;
 pub mod aps;
 pub mod archival;
 pub mod assets;

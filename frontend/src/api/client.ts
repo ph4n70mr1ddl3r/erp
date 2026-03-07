@@ -1947,3 +1947,45 @@ export const giftcards = {
   checkBalance: (cardNumber: string, pin?: string) =>
     api.post<GiftCard>('/api/v1/giftcards/check-balance', { card_number: cardNumber, pin }),
 };
+
+export interface Favorite {
+  id: string;
+  user_id: string;
+  favorite_type: string;
+  entity_id: string | null;
+  entity_name: string;
+  entity_code: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface FavoriteListResponse {
+  items: Favorite[];
+  total: number;
+}
+
+export const favorites = {
+  list: (params?: string) =>
+    api.get<FavoriteListResponse>(`/api/v1/favorites${params || ''}`),
+  create: (data: {
+    favorite_type: string;
+    entity_id?: string;
+    entity_name: string;
+    entity_code?: string;
+    notes?: string;
+  }) => api.post<Favorite>('/api/v1/favorites', data),
+  get: (id: string) =>
+    api.get<Favorite>(`/api/v1/favorites/${id}`),
+  delete: (id: string) =>
+    api.delete(`/api/v1/favorites/${id}`),
+  toggle: (data: {
+    favorite_type: string;
+    entity_id: string;
+    entity_name: string;
+    entity_code?: string;
+  }) => api.post<{ favorite: Favorite | null; is_favorited: boolean }>('/api/v1/favorites/toggle', data),
+  isFavorite: (favoriteType: string, entityId: string) =>
+    api.get<{ is_favorited: boolean }>(`/api/v1/favorites/check/${favoriteType}/${entityId}`),
+  count: () =>
+    api.get<{ count: number }>('/api/v1/favorites/count'),
+};
