@@ -702,16 +702,24 @@ impl QualityRepository for SqliteQualityRepository {
                         initiator_id, owner_id, root_cause_analysis, action_plan, verification_plan, 
                         effectiveness_criteria, target_completion_date, effectiveness_result, created_at, updated_at
                         FROM quality_capas WHERE 1=1".to_string();
+        let mut binds: Vec<String> = Vec::new();
 
         if let Some(s) = status {
-            query.push_str(&format!(" AND status = '{:?}'", s));
+            query.push_str(" AND status = ?");
+            binds.push(format!("{:?}", s));
         }
         if let Some(p) = priority {
-            query.push_str(&format!(" AND priority = '{:?}'", p));
+            query.push_str(" AND priority = ?");
+            binds.push(format!("{:?}", p));
         }
         query.push_str(" ORDER BY created_at DESC");
 
-        let rows = sqlx::query(&query).fetch_all(&self.pool).await?;
+        let mut sql_query = sqlx::query(&query);
+        for bind in binds {
+            sql_query = sql_query.bind(bind);
+        }
+
+        let rows = sql_query.fetch_all(&self.pool).await?;
         Ok(rows.into_iter().map(|r| CAPA {
             base: BaseEntity {
                 id: Uuid::parse_str(r.get::<&str, _>("id")).unwrap_or_default(),

@@ -490,6 +490,26 @@ impl<R: QualityRepository> QualityService<R> {
         self.repo.create_capa_action(&action).await
     }
 
+    pub async fn update_capa_action(&self, capa_id: Uuid, action_id: Uuid, status: CAPAActionStatus, evidence: Option<String>) -> Result<CAPAAction> {
+        let actions = self.repo.list_capa_actions(capa_id).await?;
+        let mut action = actions.into_iter().find(|a| a.id == action_id)
+            .ok_or_else(|| anyhow::anyhow!("CAPA action not found"))?;
+
+        action.status = status.clone();
+        if status == CAPAActionStatus::Completed {
+            action.completed_at = Some(Utc::now());
+        }
+        if let Some(e) = evidence {
+            action.evidence = Some(e);
+        }
+
+        self.repo.update_capa_action(&action).await
+    }
+
+    pub async fn complete_capa_action(&self, capa_id: Uuid, action_id: Uuid, evidence: String) -> Result<CAPAAction> {
+        self.update_capa_action(capa_id, action_id, CAPAActionStatus::Completed, Some(evidence)).await
+    }
+
     pub async fn list_capa_actions(&self, capa_id: Uuid) -> Result<Vec<CAPAAction>> {
         self.repo.list_capa_actions(capa_id).await
     }

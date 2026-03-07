@@ -560,11 +560,16 @@ impl ProjectBillingService {
     }
 }
 
-pub struct ResourceService {
-    skill_repo: SqliteSkillRepository,
-    resource_skill_repo: SqliteResourceSkillRepository,
-    request_repo: SqliteResourceRequestRepository,
-    allocation_repo: SqliteResourceAllocationRepository,
+pub struct ResourceService<
+    S: SkillRepository = SqliteSkillRepository,
+    RS: ResourceSkillRepository = SqliteResourceSkillRepository,
+    RQ: ResourceRequestRepository = SqliteResourceRequestRepository,
+    A: ResourceAllocationRepository = SqliteResourceAllocationRepository,
+> {
+    skill_repo: S,
+    resource_skill_repo: RS,
+    request_repo: RQ,
+    allocation_repo: A,
 }
 
 impl Default for ResourceService {
@@ -580,6 +585,23 @@ impl ResourceService {
             resource_skill_repo: SqliteResourceSkillRepository,
             request_repo: SqliteResourceRequestRepository,
             allocation_repo: SqliteResourceAllocationRepository,
+        }
+    }
+}
+
+impl<S, RS, RQ, A> ResourceService<S, RS, RQ, A>
+where
+    S: SkillRepository,
+    RS: ResourceSkillRepository,
+    RQ: ResourceRequestRepository,
+    A: ResourceAllocationRepository,
+{
+    pub fn with_repos(skill_repo: S, resource_skill_repo: RS, request_repo: RQ, allocation_repo: A) -> Self {
+        Self {
+            skill_repo,
+            resource_skill_repo,
+            request_repo,
+            allocation_repo,
         }
     }
 
@@ -619,6 +641,14 @@ impl ResourceService {
 
     pub async fn list_allocations_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<ResourceAllocation>> {
         self.allocation_repo.find_by_employee(pool, employee_id).await
+    }
+
+    pub async fn list_skills(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<Skill>> {
+        self.skill_repo.find_all(pool, pagination).await
+    }
+
+    pub async fn get_employee_skills(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<ResourceSkill>> {
+        self.resource_skill_repo.find_by_employee(pool, employee_id).await
     }
 }
 

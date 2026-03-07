@@ -12,6 +12,9 @@ mod tests {
     use tokio::sync::Mutex;
 
     struct MockQualityRepository {
+        inspections: Arc<Mutex<Vec<QualityInspection>>>,
+        items: Arc<Mutex<Vec<InspectionItem>>>,
+        ncrs: Arc<Mutex<Vec<NonConformanceReport>>>,
         devices: Arc<Mutex<Vec<CalibrationDevice>>>,
         records: Arc<Mutex<Vec<CalibrationRecord>>>,
         readings: Arc<Mutex<Vec<CalibrationReading>>>,
@@ -22,6 +25,9 @@ mod tests {
     impl MockQualityRepository {
         fn new() -> Self {
             Self {
+                inspections: Arc::new(Mutex::new(Vec::new())),
+                items: Arc::new(Mutex::new(Vec::new())),
+                ncrs: Arc::new(Mutex::new(Vec::new())),
                 devices: Arc::new(Mutex::new(Vec::new())),
                 records: Arc::new(Mutex::new(Vec::new())),
                 readings: Arc::new(Mutex::new(Vec::new())),
@@ -33,22 +39,85 @@ mod tests {
 
     #[async_trait]
     impl QualityRepository for MockQualityRepository {
-        async fn create_inspection(&self, _i: &QualityInspection) -> Result<QualityInspection> { todo!() }
-        async fn get_inspection(&self, _id: Uuid) -> Result<Option<QualityInspection>> { todo!() }
-        async fn list_inspections(&self, _s: Option<InspectionStatus>, _t: Option<InspectionType>) -> Result<Vec<QualityInspection>> { todo!() }
-        async fn update_inspection(&self, _i: &QualityInspection) -> Result<QualityInspection> { todo!() }
-        async fn delete_inspection(&self, _id: Uuid) -> Result<()> { todo!() }
-        async fn add_inspection_item(&self, _item: &InspectionItem) -> Result<InspectionItem> { todo!() }
-        async fn get_inspection_items(&self, _id: Uuid) -> Result<Vec<InspectionItem>> { todo!() }
-        async fn update_inspection_item(&self, _item: &InspectionItem) -> Result<InspectionItem> { todo!() }
-        async fn delete_inspection_items(&self, _id: Uuid) -> Result<()> { todo!() }
-        async fn get_next_inspection_number(&self) -> Result<String> { todo!() }
-        async fn create_ncr(&self, _ncr: &NonConformanceReport) -> Result<NonConformanceReport> { todo!() }
-        async fn get_ncr(&self, _id: Uuid) -> Result<Option<NonConformanceReport>> { todo!() }
-        async fn list_ncrs(&self, _s: Option<NCRStatus>, _sev: Option<NCRSeverity>) -> Result<Vec<NonConformanceReport>> { todo!() }
-        async fn update_ncr(&self, _ncr: &NonConformanceReport) -> Result<NonConformanceReport> { todo!() }
-        async fn delete_ncr(&self, _id: Uuid) -> Result<()> { todo!() }
-        async fn get_next_ncr_number(&self) -> Result<String> { todo!() }
+        async fn create_inspection(&self, i: &QualityInspection) -> Result<QualityInspection> {
+            let mut inspections = self.inspections.lock().await;
+            inspections.push(i.clone());
+            Ok(i.clone())
+        }
+        async fn get_inspection(&self, id: Uuid) -> Result<Option<QualityInspection>> {
+            let inspections = self.inspections.lock().await;
+            Ok(inspections.iter().find(|i| i.base.id == id).cloned())
+        }
+        async fn list_inspections(&self, _s: Option<InspectionStatus>, _t: Option<InspectionType>) -> Result<Vec<QualityInspection>> {
+            let inspections = self.inspections.lock().await;
+            Ok(inspections.clone())
+        }
+        async fn update_inspection(&self, i: &QualityInspection) -> Result<QualityInspection> {
+            let mut inspections = self.inspections.lock().await;
+            if let Some(ins) = inspections.iter_mut().find(|ins| ins.base.id == i.base.id) {
+                *ins = i.clone();
+            }
+            Ok(i.clone())
+        }
+        async fn delete_inspection(&self, id: Uuid) -> Result<()> {
+            let mut inspections = self.inspections.lock().await;
+            inspections.retain(|i| i.base.id != id);
+            Ok(())
+        }
+        async fn add_inspection_item(&self, item: &InspectionItem) -> Result<InspectionItem> {
+            let mut items = self.items.lock().await;
+            items.push(item.clone());
+            Ok(item.clone())
+        }
+        async fn get_inspection_items(&self, id: Uuid) -> Result<Vec<InspectionItem>> {
+            let items = self.items.lock().await;
+            Ok(items.iter().filter(|i| i.inspection_id == id).cloned().collect())
+        }
+        async fn update_inspection_item(&self, item: &InspectionItem) -> Result<InspectionItem> {
+            let mut items = self.items.lock().await;
+            if let Some(i) = items.iter_mut().find(|i| i.id == item.id) {
+                *i = item.clone();
+            }
+            Ok(item.clone())
+        }
+        async fn delete_inspection_items(&self, id: Uuid) -> Result<()> {
+            let mut items = self.items.lock().await;
+            items.retain(|i| i.inspection_id != id);
+            Ok(())
+        }
+        async fn get_next_inspection_number(&self) -> Result<String> {
+            let inspections = self.inspections.lock().await;
+            Ok(format!("QI-{:06}", inspections.len() + 1))
+        }
+        async fn create_ncr(&self, ncr: &NonConformanceReport) -> Result<NonConformanceReport> {
+            let mut ncrs = self.ncrs.lock().await;
+            ncrs.push(ncr.clone());
+            Ok(ncr.clone())
+        }
+        async fn get_ncr(&self, id: Uuid) -> Result<Option<NonConformanceReport>> {
+            let ncrs = self.ncrs.lock().await;
+            Ok(ncrs.iter().find(|n| n.base.id == id).cloned())
+        }
+        async fn list_ncrs(&self, _s: Option<NCRStatus>, _sev: Option<NCRSeverity>) -> Result<Vec<NonConformanceReport>> {
+            let ncrs = self.ncrs.lock().await;
+            Ok(ncrs.clone())
+        }
+        async fn update_ncr(&self, ncr: &NonConformanceReport) -> Result<NonConformanceReport> {
+            let mut ncrs = self.ncrs.lock().await;
+            if let Some(n) = ncrs.iter_mut().find(|n| n.base.id == ncr.base.id) {
+                *n = ncr.clone();
+            }
+            Ok(ncr.clone())
+        }
+        async fn delete_ncr(&self, id: Uuid) -> Result<()> {
+            let mut ncrs = self.ncrs.lock().await;
+            ncrs.retain(|n| n.base.id != id);
+            Ok(())
+        }
+        async fn get_next_ncr_number(&self) -> Result<String> {
+            let ncrs = self.ncrs.lock().await;
+            Ok(format!("NCR-{:06}", ncrs.len() + 1))
+        }
 
         async fn create_calibration_device(&self, device: &CalibrationDevice) -> Result<CalibrationDevice> {
             let mut devices = self.devices.lock().await;
@@ -247,6 +316,92 @@ mod tests {
         assert_eq!(updated_device.status, CalibrationStatus::Passed);
         assert!(updated_device.last_calibration_date.is_some());
         assert_eq!(updated_device.last_calibration_date.unwrap(), Utc::now().date_naive());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_inspection_lifecycle() -> Result<()> {
+        let repo = MockQualityRepository::new();
+        let service = QualityService::with_repo(repo);
+        let entity_id = Uuid::new_v4();
+
+        let req = CreateInspectionRequest {
+            inspection_type: InspectionType::Incoming,
+            entity_type: "PurchaseOrder".to_string(),
+            entity_id,
+            inspector_id: Some(Uuid::new_v4()),
+            inspection_date: Utc::now().date_naive(),
+            notes: Some("Test inspection".to_string()),
+            items: vec![
+                CreateInspectionItemRequest {
+                    criterion: "Dimension A".to_string(),
+                    expected_value: Some("10mm".to_string()),
+                    actual_value: None,
+                    pass_fail: None,
+                    notes: None,
+                }
+            ],
+        };
+
+        let inspection_with_items = service.create_inspection(req, None).await?;
+        let inspection_id = inspection_with_items.inspection.base.id;
+        let item_id = inspection_with_items.items[0].id;
+
+        assert_eq!(inspection_with_items.inspection.status, InspectionStatus::Pending);
+
+        // Start inspection
+        let inspection = service.start_inspection(inspection_id).await?;
+        assert_eq!(inspection.status, InspectionStatus::InProgress);
+
+        // Update item
+        service.update_inspection_item(inspection_id, item_id, UpdateInspectionItemRequest {
+            actual_value: Some("10.01mm".to_string()),
+            pass_fail: Some(true),
+            notes: Some("Within tolerance".to_string()),
+        }).await?;
+
+        // Complete inspection
+        let completed = service.complete_inspection(inspection_id).await?;
+        assert_eq!(completed.status, InspectionStatus::Passed);
+        assert_eq!(completed.result, Some(InspectionResult::Pass));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_ncr_lifecycle() -> Result<()> {
+        let repo = MockQualityRepository::new();
+        let service = QualityService::with_repo(repo);
+        let product_id = Uuid::new_v4();
+
+        let req = CreateNCRRequest {
+            source_type: NCRSource::ProductionIssue,
+            source_id: None,
+            product_id: Some(product_id),
+            description: "Surface scratches on housing".to_string(),
+            severity: NCRSeverity::Minor,
+            assigned_to: Some(Uuid::new_v4()),
+        };
+
+        let ncr = service.create_ncr(req, None).await?;
+        assert_eq!(ncr.status, NCRStatus::Open);
+
+        // Update NCR
+        let update_req = UpdateNCRRequest {
+            root_cause: Some("Improper handling during assembly".to_string()),
+            corrective_action: Some("Retrain assembly team".to_string()),
+            preventive_action: Some("Add protective film during assembly".to_string()),
+            status: Some(NCRStatus::CorrectiveAction),
+        };
+
+        let updated = service.update_ncr(ncr.base.id, update_req).await?;
+        assert_eq!(updated.status, NCRStatus::CorrectiveAction);
+
+        // Close NCR
+        let closed = service.close_ncr(ncr.base.id).await?;
+        assert_eq!(closed.status, NCRStatus::Closed);
+        assert!(closed.resolution_date.is_some());
 
         Ok(())
     }
