@@ -450,3 +450,65 @@ pub struct AssetDownEvent {
     pub work_order_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MaintenanceRoute {
+    pub id: Uuid,
+    pub route_number: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub department_id: Option<Uuid>,
+    pub estimated_duration_minutes: i32,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteStop {
+    pub id: Uuid,
+    pub route_id: Uuid,
+    pub asset_id: Uuid,
+    pub sequence: i32,
+    pub instructions: Option<String>,
+    pub estimated_minutes: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RouteWorkOrderResult {
+    pub id: Uuid,
+    pub work_order_id: Uuid,
+    pub route_stop_id: Uuid,
+    pub asset_id: Uuid,
+    pub completed: bool,
+    pub result_status: RouteStopResultStatus,
+    pub reading_value: Option<i64>,
+    pub notes: Option<String>,
+    pub completed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum RouteStopResultStatus {
+    Pass,
+    Fail,
+    Warning,
+    NotApplicable,
+    Skipped,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRouteRequest {
+    pub name: String,
+    pub description: Option<String>,
+    pub department_id: Option<Uuid>,
+    pub stops: Vec<CreateRouteStopRequest>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateRouteStopRequest {
+    pub asset_id: Uuid,
+    pub sequence: i32,
+    pub instructions: Option<String>,
+    pub estimated_minutes: i32,
+}

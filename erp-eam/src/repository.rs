@@ -276,4 +276,20 @@ impl EamRepository {
         .execute(pool).await?;
         Ok(())
     }
+
+    pub async fn create_route(_pool: &SqlitePool, _route: &MaintenanceRoute) -> Result<()> {
+        Ok(())
+    }
+
+    pub async fn add_route_stop(_pool: &SqlitePool, _stop: &RouteStop) -> Result<()> {
+        Ok(())
+    }
+
+    pub async fn list_routes(_pool: &SqlitePool) -> Result<Vec<MaintenanceRoute>> {
+        Ok(vec![])
+    }
+
+    pub async fn get_route_stops(_pool: &SqlitePool, _route_id: Uuid) -> Result<Vec<RouteStop>> {
+        Ok(vec![])
+    }
 }

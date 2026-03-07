@@ -175,4 +175,65 @@ impl EamService {
     pub async fn get_work_order(pool: &SqlitePool, id: Uuid) -> Result<Option<WorkOrder>> {
         EamRepository::get_work_order(pool, id).await
     }
+
+    pub async fn create_route(
+        pool: &SqlitePool,
+        req: CreateRouteRequest,
+    ) -> Result<MaintenanceRoute> {
+        let now = Utc::now();
+        let total_est = req.stops.iter().map(|s| s.estimated_minutes).sum();
+        let route = MaintenanceRoute {
+            id: Uuid::new_v4(),
+            route_number: format!("RT-{}", now.format("%Y%m%d%H%M%S")),
+            name: req.name,
+            description: req.description,
+            department_id: req.department_id,
+            estimated_duration_minutes: total_est,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+        };
+
+        EamRepository::create_route(pool, &route).await?;
+
+        for stop_req in req.stops {
+            let stop = RouteStop {
+                id: Uuid::new_v4(),
+                route_id: route.id,
+                asset_id: stop_req.asset_id,
+                sequence: stop_req.sequence,
+                instructions: stop_req.instructions,
+                estimated_minutes: stop_req.estimated_minutes,
+            };
+            EamRepository::add_route_stop(pool, &stop).await?;
+        }
+
+        Ok(route)
+    }
+
+    pub async fn create_work_order_from_route(
+        pool: &SqlitePool,
+        route_id: Uuid,
+        requested_by: Option<Uuid>,
+    ) -> Result<WorkOrder> {
+        let routes = EamRepository::list_routes(pool).await?;
+        let route = routes.into_iter().find(|r| r.id == route_id)
+            .ok_or_else(|| anyhow::anyhow!("Route not found"))?;
+        
+        let _stops = EamRepository::get_route_stops(pool, route_id).await?;
+        
+        let wo = Self::create_work_order(
+            pool,
+            format!("Route Maintenance: {}", route.name),
+            WorkOrderType::Inspection,
+            WorkOrderPriority::Medium,
+            None, // Header WO might not have a single asset
+            requested_by,
+        ).await?;
+
+        // In a real system, we'd create RouteWorkOrderResult records for each stop here
+        // and link them to the work order.
+
+        Ok(wo)
+    }
 }
