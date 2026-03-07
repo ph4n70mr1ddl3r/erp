@@ -1449,3 +1449,114 @@ impl From<DocumentRevisionRow> for DocumentRevision {
         }
     }
 }
+
+pub struct OEEService {
+    oee_repo: SqliteOEERepository,
+    state_repo: SqliteMachineStateRepository,
+}
+
+impl Default for OEEService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl OEEService {
+    pub fn new() -> Self {
+        Self {
+            oee_repo: SqliteOEERepository,
+            state_repo: SqliteMachineStateRepository,
+        }
+    }
+
+    pub async fn record_state_change(
+        &self,
+        pool: &sqlx::SqlitePool,
+        equipment_id: Uuid,
+        new_state: MachineState,
+    ) -> Result<MachineStateLog> {
+        let now = Utc::now();
+        
+        // Find last open log for this equipment
+        let last_logs = self.state_repo.find_by_equipment(pool, equipment_id, 1).await?;
+        if let Some(last_log) = last_logs.into_iter().next() {
+            if last_log.ended_at.is_none() {
+                let duration = now.signed_duration_since(last_log.started_at).num_seconds();
+                self.state_repo.update_end_time(pool, last_log.id, now, duration).await?;
+            }
+        }
+
+        let new_log = MachineStateLog {
+            id: Uuid::new_v4(),
+            equipment_id,
+            state: new_state,
+            started_at: now,
+            ended_at: None,
+            duration_seconds: None,
+        };
+
+        self.state_repo.create(pool, new_log).await
+    }
+
+    pub async fn calculate_daily_oee(
+        &self,
+        pool: &sqlx::SqlitePool,
+        equipment_id: Uuid,
+        date: chrono::NaiveDate,
+        total_produced: i64,
+        good_produced: i64,
+        ideal_cycle_time_secs: f64,
+        planned_production_time_mins: i32,
+    ) -> Result<OEEMetric> {
+        // Calculate Availability
+        let logs = self.state_repo.find_by_equipment(pool, equipment_id, 100).await?;
+        let downtime_secs: i64 = logs.iter()
+            .filter(|l| matches!(l.state, MachineState::Downtime | MachineState::Maintenance))
+            .filter_map(|l| l.duration_seconds)
+            .sum();
+        
+        let downtime_mins = (downtime_secs / 60) as i32;
+        let runtime_mins = planned_production_time_mins - downtime_mins;
+        
+        let availability = if planned_production_time_mins > 0 {
+            runtime_mins as f64 / planned_production_time_mins as f64
+        } else {
+            0.0
+        };
+
+        // Calculate Performance
+        let performance = if runtime_mins > 0 && total_produced > 0 {
+            (total_produced as f64 * ideal_cycle_time_secs) / (runtime_mins as f64 * 60.0)
+        } else {
+            0.0
+        };
+
+        // Calculate Quality
+        let quality = if total_produced > 0 {
+            good_produced as f64 / total_produced as f64
+        } else {
+            0.0
+        };
+
+        let oee = (availability * performance * quality).clamp(0.0, 1.0);
+
+        let metric = OEEMetric {
+            id: Uuid::new_v4(),
+            equipment_id,
+            date,
+            availability,
+            performance,
+            quality,
+            oee,
+            runtime_minutes: runtime_mins,
+            downtime_minutes: downtime_mins,
+            ideal_cycle_time: ideal_cycle_time_secs,
+            total_count: total_produced,
+            good_count: good_produced,
+            scrap_count: total_produced - good_produced,
+        };
+
+        self.oee_repo.create(pool, metric).await
+    }
+}
+

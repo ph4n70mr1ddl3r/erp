@@ -547,3 +547,40 @@ pub enum DocumentRevisionStatus {
     Superseded,
     Obsolete,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OEEMetric {
+    pub id: Uuid,
+    pub equipment_id: Uuid,
+    pub date: chrono::NaiveDate,
+    pub availability: f64, // 0.0 - 1.0
+    pub performance: f64,  // 0.0 - 1.0
+    pub quality: f64,      // 0.0 - 1.0
+    pub oee: f64,          // availability * performance * quality
+    pub runtime_minutes: i32,
+    pub downtime_minutes: i32,
+    pub ideal_cycle_time: f64,
+    pub total_count: i64,
+    pub good_count: i64,
+    pub scrap_count: i64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MachineStateLog {
+    pub id: Uuid,
+    pub equipment_id: Uuid,
+    pub state: MachineState,
+    pub started_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
+    pub duration_seconds: Option<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "TEXT")]
+pub enum MachineState {
+    Running,
+    Idle,
+    Downtime,
+    Maintenance,
+    Off,
+}

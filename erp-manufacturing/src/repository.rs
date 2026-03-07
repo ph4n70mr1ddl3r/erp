@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{Utc, DateTime, NaiveDate};
 use erp_core::{Error, Result, Pagination, Paginated, BaseEntity, Status};
 use crate::models::*;
 
@@ -164,4 +164,76 @@ pub trait WorkOrderRepository: Send + Sync {
     async fn find_all(&self, pool: &SqlitePool, pagination: Pagination) -> Result<Paginated<WorkOrder>>;
     async fn create(&self, pool: &SqlitePool, order: WorkOrder) -> Result<WorkOrder>;
     async fn update_status(&self, pool: &SqlitePool, id: Uuid, status: Status, actual_start: Option<String>, actual_end: Option<String>) -> Result<()>;
+}
+
+#[derive(sqlx::FromRow)]
+#[allow(dead_code)]
+struct OEEMetricRow {
+    pub id: String,
+    pub equipment_id: String,
+    pub date: String,
+    pub availability: f64,
+    pub performance: f64,
+    pub quality: f64,
+    pub oee: f64,
+    pub runtime_minutes: i32,
+    pub downtime_minutes: i32,
+    pub ideal_cycle_time: f64,
+    pub total_count: i64,
+    pub good_count: i64,
+    pub scrap_count: i64,
+}
+
+#[derive(sqlx::FromRow)]
+#[allow(dead_code)]
+struct MachineStateLogRow {
+    pub id: String,
+    pub equipment_id: String,
+    pub state: String,
+    pub started_at: String,
+    pub ended_at: Option<String>,
+    pub duration_seconds: Option<i64>,
+}
+
+pub struct SqliteOEERepository;
+
+#[async_trait]
+impl OEERepository for SqliteOEERepository {
+    async fn find_by_equipment(&self, _pool: &SqlitePool, _equipment_id: Uuid, _start_date: NaiveDate, _end_date: NaiveDate) -> Result<Vec<OEEMetric>> {
+        Ok(vec![])
+    }
+
+    async fn create(&self, _pool: &SqlitePool, metric: OEEMetric) -> Result<OEEMetric> {
+        Ok(metric)
+    }
+}
+
+pub struct SqliteMachineStateRepository;
+
+#[async_trait]
+impl MachineStateRepository for SqliteMachineStateRepository {
+    async fn find_by_equipment(&self, _pool: &SqlitePool, _equipment_id: Uuid, _limit: i64) -> Result<Vec<MachineStateLog>> {
+        Ok(vec![])
+    }
+
+    async fn create(&self, _pool: &SqlitePool, log: MachineStateLog) -> Result<MachineStateLog> {
+        Ok(log)
+    }
+
+    async fn update_end_time(&self, _pool: &SqlitePool, _id: Uuid, _ended_at: DateTime<Utc>, _duration_seconds: i64) -> Result<()> {
+        Ok(())
+    }
+}
+
+#[async_trait]
+pub trait OEERepository: Send + Sync {
+    async fn find_by_equipment(&self, pool: &SqlitePool, equipment_id: Uuid, start_date: NaiveDate, end_date: NaiveDate) -> Result<Vec<OEEMetric>>;
+    async fn create(&self, pool: &SqlitePool, metric: OEEMetric) -> Result<OEEMetric>;
+}
+
+#[async_trait]
+pub trait MachineStateRepository: Send + Sync {
+    async fn find_by_equipment(&self, pool: &SqlitePool, equipment_id: Uuid, limit: i64) -> Result<Vec<MachineStateLog>>;
+    async fn create(&self, pool: &SqlitePool, log: MachineStateLog) -> Result<MachineStateLog>;
+    async fn update_end_time(&self, pool: &SqlitePool, id: Uuid, ended_at: DateTime<Utc>, duration_seconds: i64) -> Result<()>;
 }
