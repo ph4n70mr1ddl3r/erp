@@ -770,3 +770,57 @@ impl From<JobPostingRow> for JobPosting {
         }
     }
 }
+
+pub struct EmployeeCostRateService {
+    repo: SqliteEmployeeCostRateRepository,
+}
+
+impl Default for EmployeeCostRateService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl EmployeeCostRateService {
+    pub fn new() -> Self {
+        Self { repo: SqliteEmployeeCostRateRepository }
+    }
+
+    pub async fn add_cost_rate(
+        &self,
+        pool: &SqlitePool,
+        employee_id: Uuid,
+        base_rate: i64,
+        burden_percent: f64,
+        burden_amount: i64,
+        currency: String,
+        effective_date: NaiveDate,
+    ) -> Result<EmployeeCostRate> {
+        let total_cost_rate = (base_rate as f64 * (1.0 + burden_percent)) as i64 + burden_amount;
+        
+        let rate = EmployeeCostRate {
+            id: Uuid::new_v4(),
+            employee_id,
+            effective_date,
+            base_rate,
+            burden_percent,
+            burden_amount,
+            total_cost_rate,
+            currency,
+            status: Status::Active,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+        
+        self.repo.create(pool, rate).await
+    }
+
+    pub async fn get_current_rate(
+        &self,
+        pool: &SqlitePool,
+        employee_id: Uuid,
+        date: NaiveDate,
+    ) -> Result<Option<EmployeeCostRate>> {
+        self.repo.find_current(pool, employee_id, date).await
+    }
+}

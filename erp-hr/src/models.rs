@@ -755,3 +755,18 @@ pub enum OfferStatus {
     Withdrawn,
     Expired,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmployeeCostRate {
+    pub id: Uuid,
+    pub employee_id: Uuid,
+    pub effective_date: NaiveDate,
+    pub base_rate: i64,
+    pub burden_percent: f64,
+    pub burden_amount: i64,
+    pub total_cost_rate: i64,
+    pub currency: String,
+    pub status: Status,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}

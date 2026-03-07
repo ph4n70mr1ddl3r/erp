@@ -144,6 +144,58 @@ impl PayrollRepository for SqlitePayrollRepository {
     }
 }
 
+#[derive(sqlx::FromRow)]
+struct CostRateRow {
+    id: String, employee_id: String, effective_date: String, base_rate: i64, burden_percent: f64,
+    burden_amount: i64, total_cost_rate: i64, currency: String, status: String, created_at: String, updated_at: String,
+}
+
+impl CostRateRow {
+    fn into_cost_rate(self) -> EmployeeCostRate {
+        EmployeeCostRate {
+            id: Uuid::parse_str(&self.id).unwrap_or_default(),
+            employee_id: Uuid::parse_str(&self.employee_id).unwrap_or_default(),
+            effective_date: NaiveDate::parse_from_str(&self.effective_date, "%Y-%m-%d").unwrap_or_else(|_| NaiveDate::from_ymd_opt(1970, 1, 1).unwrap()),
+            base_rate: self.base_rate, burden_percent: self.burden_percent, burden_amount: self.burden_amount,
+            total_cost_rate: self.total_cost_rate, currency: self.currency,
+            status: match self.status.as_str() { "Inactive" => Status::Inactive, _ => Status::Active },
+            created_at: chrono::DateTime::parse_from_rfc3339(&self.created_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+            updated_at: chrono::DateTime::parse_from_rfc3339(&self.updated_at).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+        }
+    }
+}
+
+pub struct SqliteEmployeeCostRateRepository;
+
+#[async_trait]
+impl EmployeeCostRateRepository for SqliteEmployeeCostRateRepository {
+    async fn find_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<EmployeeCostRate>> {
+        let rows = sqlx::query_as::<_, CostRateRow>(
+            "SELECT id, employee_id, effective_date, base_rate, burden_percent, burden_amount, total_cost_rate, currency, status, created_at, updated_at FROM employee_cost_rates WHERE employee_id = ? ORDER BY effective_date DESC")
+            .bind(employee_id.to_string()).fetch_all(pool).await?;
+        Ok(rows.into_iter().map(|r| r.into_cost_rate()).collect())
+    }
+
+    async fn find_current(&self, pool: &SqlitePool, employee_id: Uuid, date: NaiveDate) -> Result<Option<EmployeeCostRate>> {
+        let row = sqlx::query_as::<_, CostRateRow>(
+            "SELECT id, employee_id, effective_date, base_rate, burden_percent, burden_amount, total_cost_rate, currency, status, created_at, updated_at FROM employee_cost_rates WHERE employee_id = ? AND effective_date <= ? AND status = 'Active' ORDER BY effective_date DESC LIMIT 1")
+            .bind(employee_id.to_string()).bind(date.to_string()).fetch_optional(pool).await?;
+        Ok(row.map(|r| r.into_cost_rate()))
+    }
+
+    async fn create(&self, pool: &SqlitePool, rate: EmployeeCostRate) -> Result<EmployeeCostRate> {
+        let now = Utc::now();
+        sqlx::query("INSERT INTO employee_cost_rates (id, employee_id, effective_date, base_rate, burden_percent, burden_amount, total_cost_rate, currency, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            .bind(rate.id.to_string()).bind(rate.employee_id.to_string()).bind(rate.effective_date.to_string())
+            .bind(rate.base_rate).bind(rate.burden_percent).bind(rate.burden_amount).bind(rate.total_cost_rate)
+            .bind(&rate.currency).bind(format!("{:?}", rate.status)).bind(rate.created_at.to_rfc3339()).bind(now.to_rfc3339())
+            .execute(pool).await?;
+        let mut created = rate;
+        created.updated_at = now;
+        Ok(created)
+    }
+}
+
 #[async_trait]
 pub trait EmployeeRepository: Send + Sync {
     async fn find_by_id(&self, pool: &SqlitePool, id: Uuid) -> Result<Employee>;
@@ -163,4 +215,11 @@ pub trait PayrollRepository: Send + Sync {
     async fn find_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<Payroll>>;
     async fn create(&self, pool: &SqlitePool, payroll: Payroll) -> Result<Payroll>;
     async fn approve(&self, pool: &SqlitePool, id: Uuid) -> Result<()>;
+}
+
+#[async_trait]
+pub trait EmployeeCostRateRepository: Send + Sync {
+    async fn find_by_employee(&self, pool: &SqlitePool, employee_id: Uuid) -> Result<Vec<EmployeeCostRate>>;
+    async fn find_current(&self, pool: &SqlitePool, employee_id: Uuid, date: NaiveDate) -> Result<Option<EmployeeCostRate>>;
+    async fn create(&self, pool: &SqlitePool, rate: EmployeeCostRate) -> Result<EmployeeCostRate>;
 }
