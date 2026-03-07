@@ -197,6 +197,15 @@ pub enum CAPAStatus {
     Cancelled,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum CAPAActionStatus {
+    Pending,
+    InProgress,
+    Completed,
+    Cancelled,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CAPA {
     pub base: BaseEntity,
@@ -216,8 +225,6 @@ pub struct CAPA {
     pub target_completion_date: Option<NaiveDate>,
     pub actual_completion_date: Option<NaiveDate>,
     pub effectiveness_result: Option<bool>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -229,7 +236,7 @@ pub struct CAPAAction {
     pub assigned_to: Option<Uuid>,
     pub due_date: NaiveDate,
     pub completed_at: Option<DateTime<Utc>>,
-    pub status: String,
+    pub status: CAPAActionStatus,
     pub evidence: Option<String>,
 }
 
@@ -241,6 +248,21 @@ pub struct CreateCAPARequest {
     pub description: String,
     pub priority: NCRSeverity,
     pub initiator_id: Uuid,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateCAPARequest {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub priority: Option<NCRSeverity>,
+    pub owner_id: Option<Uuid>,
+    pub root_cause_analysis: Option<String>,
+    pub action_plan: Option<String>,
+    pub verification_plan: Option<String>,
+    pub effectiveness_criteria: Option<String>,
+    pub target_completion_date: Option<NaiveDate>,
+    pub effectiveness_result: Option<bool>,
+    pub status: Option<CAPAStatus>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]

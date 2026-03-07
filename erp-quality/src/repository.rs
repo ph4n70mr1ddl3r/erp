@@ -2,7 +2,7 @@ use crate::models::*;
 use async_trait::async_trait;
 use chrono::Utc;
 use erp_core::BaseEntity;
-use sqlx::SqlitePool;
+use sqlx::{Row, SqlitePool};
 use uuid::Uuid;
 
 #[async_trait]
@@ -628,35 +628,239 @@ impl QualityRepository for SqliteQualityRepository {
 
     // CAPA Management
     async fn create_capa(&self, capa: &CAPA) -> anyhow::Result<CAPA> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            r#"INSERT INTO quality_capas 
+               (id, capa_number, title, source_type, source_id, description, priority, status, 
+                initiator_id, owner_id, root_cause_analysis, action_plan, verification_plan, 
+                effectiveness_criteria, target_completion_date, effectiveness_result, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(capa.base.id.to_string())
+        .bind(&capa.capa_number)
+        .bind(&capa.title)
+        .bind(format!("{:?}", capa.source_type))
+        .bind(capa.source_id.map(|id| id.to_string()))
+        .bind(&capa.description)
+        .bind(format!("{:?}", capa.priority))
+        .bind(format!("{:?}", capa.status))
+        .bind(capa.initiator_id.to_string())
+        .bind(capa.owner_id.map(|id| id.to_string()))
+        .bind(&capa.root_cause_analysis)
+        .bind(&capa.action_plan)
+        .bind(&capa.verification_plan)
+        .bind(&capa.effectiveness_criteria)
+        .bind(capa.target_completion_date.map(|d| d.to_string()))
+        .bind(capa.effectiveness_result.map(|b| if b { 1 } else { 0 }))
+        .bind(&now)
+        .bind(&now)
+        .execute(&self.pool)
+        .await?;
         Ok(capa.clone())
     }
 
-    async fn get_capa(&self, _id: Uuid) -> anyhow::Result<Option<CAPA>> {
-        Ok(None)
+    async fn get_capa(&self, id: Uuid) -> anyhow::Result<Option<CAPA>> {
+        let row = sqlx::query(
+            "SELECT id, capa_number, title, source_type, source_id, description, priority, status, 
+                    initiator_id, owner_id, root_cause_analysis, action_plan, verification_plan, 
+                    effectiveness_criteria, target_completion_date, effectiveness_result, created_at, updated_at
+             FROM quality_capas WHERE id = ?"
+        )
+        .bind(id.to_string())
+        .fetch_optional(&self.pool)
+        .await?;
+
+        Ok(row.map(|r| CAPA {
+            base: BaseEntity {
+                id: Uuid::parse_str(r.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(r.get::<&str, _>("created_at")).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(r.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None,
+                updated_by: None,
+            },
+            capa_number: r.get("capa_number"),
+            title: r.get("title"),
+            source_type: parse_capa_source(r.get("source_type")),
+            source_id: r.get::<Option<String>, _>("source_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            description: r.get("description"),
+            priority: parse_ncr_severity(r.get("priority")),
+            status: parse_capa_status(r.get("status")),
+            initiator_id: Uuid::parse_str(r.get::<&str, _>("initiator_id")).unwrap_or_default(),
+            owner_id: r.get::<Option<String>, _>("owner_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            root_cause_analysis: r.get("root_cause_analysis"),
+            action_plan: r.get("action_plan"),
+            verification_plan: r.get("verification_plan"),
+            effectiveness_criteria: r.get("effectiveness_criteria"),
+            target_completion_date: r.get::<Option<String>, _>("target_completion_date").and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            actual_completion_date: None,
+            effectiveness_result: r.get::<Option<i32>, _>("effectiveness_result").map(|v| v == 1),
+        }))
     }
 
-    async fn list_capas(&self, _status: Option<CAPAStatus>, _priority: Option<NCRSeverity>) -> anyhow::Result<Vec<CAPA>> {
-        Ok(vec![])
+    async fn list_capas(&self, status: Option<CAPAStatus>, priority: Option<NCRSeverity>) -> anyhow::Result<Vec<CAPA>> {
+        let mut query = "SELECT id, capa_number, title, source_type, source_id, description, priority, status, 
+                        initiator_id, owner_id, root_cause_analysis, action_plan, verification_plan, 
+                        effectiveness_criteria, target_completion_date, effectiveness_result, created_at, updated_at
+                        FROM quality_capas WHERE 1=1".to_string();
+
+        if let Some(s) = status {
+            query.push_str(&format!(" AND status = '{:?}'", s));
+        }
+        if let Some(p) = priority {
+            query.push_str(&format!(" AND priority = '{:?}'", p));
+        }
+        query.push_str(" ORDER BY created_at DESC");
+
+        let rows = sqlx::query(&query).fetch_all(&self.pool).await?;
+        Ok(rows.into_iter().map(|r| CAPA {
+            base: BaseEntity {
+                id: Uuid::parse_str(r.get::<&str, _>("id")).unwrap_or_default(),
+                created_at: chrono::DateTime::parse_from_rfc3339(r.get::<&str, _>("created_at")).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                updated_at: chrono::DateTime::parse_from_rfc3339(r.get::<&str, _>("updated_at")).map(|d| d.with_timezone(&Utc)).unwrap_or_else(|_| Utc::now()),
+                created_by: None,
+                updated_by: None,
+            },
+            capa_number: r.get("capa_number"),
+            title: r.get("title"),
+            source_type: parse_capa_source(r.get("source_type")),
+            source_id: r.get::<Option<String>, _>("source_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            description: r.get("description"),
+            priority: parse_ncr_severity(r.get("priority")),
+            status: parse_capa_status(r.get("status")),
+            initiator_id: Uuid::parse_str(r.get::<&str, _>("initiator_id")).unwrap_or_default(),
+            owner_id: r.get::<Option<String>, _>("owner_id").and_then(|s| Uuid::parse_str(&s).ok()),
+            root_cause_analysis: r.get("root_cause_analysis"),
+            action_plan: r.get("action_plan"),
+            verification_plan: r.get("verification_plan"),
+            effectiveness_criteria: r.get("effectiveness_criteria"),
+            target_completion_date: r.get::<Option<String>, _>("target_completion_date").and_then(|s| chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").ok()),
+            actual_completion_date: None,
+            effectiveness_result: r.get::<Option<i32>, _>("effectiveness_result").map(|v| v == 1),
+        }).collect())
     }
 
     async fn update_capa(&self, capa: &CAPA) -> anyhow::Result<CAPA> {
+        let now = Utc::now().to_rfc3339();
+        sqlx::query(
+            "UPDATE quality_capas SET title=?, description=?, priority=?, status=?, owner_id=?, 
+             root_cause_analysis=?, action_plan=?, verification_plan=?, effectiveness_criteria=?, 
+             target_completion_date=?, effectiveness_result=?, updated_at=? WHERE id=?"
+        )
+        .bind(&capa.title)
+        .bind(&capa.description)
+        .bind(format!("{:?}", capa.priority))
+        .bind(format!("{:?}", capa.status))
+        .bind(capa.owner_id.map(|id| id.to_string()))
+        .bind(&capa.root_cause_analysis)
+        .bind(&capa.action_plan)
+        .bind(&capa.verification_plan)
+        .bind(&capa.effectiveness_criteria)
+        .bind(capa.target_completion_date.map(|d| d.to_string()))
+        .bind(capa.effectiveness_result.map(|b| if b { 1 } else { 0 }))
+        .bind(&now)
+        .bind(capa.base.id.to_string())
+        .execute(&self.pool)
+        .await?;
         Ok(capa.clone())
     }
 
     async fn get_next_capa_number(&self) -> anyhow::Result<String> {
-        Ok("CAPA-000001".to_string())
+        let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM quality_capas")
+            .fetch_one(&self.pool)
+            .await?;
+        Ok(format!("CAPA-{:06}", count.0 + 1))
     }
 
     async fn create_capa_action(&self, action: &CAPAAction) -> anyhow::Result<CAPAAction> {
+        sqlx::query(
+            r#"INSERT INTO quality_capa_actions 
+               (id, capa_id, action_type, description, assigned_to, due_date, completed_at, status, evidence)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"#
+        )
+        .bind(action.id.to_string())
+        .bind(action.capa_id.to_string())
+        .bind(&action.action_type)
+        .bind(&action.description)
+        .bind(action.assigned_to.map(|id| id.to_string()))
+        .bind(action.due_date.to_string())
+        .bind(action.completed_at.map(|d| d.to_rfc3339()))
+        .bind(format!("{:?}", action.status))
+        .bind(&action.evidence)
+        .execute(&self.pool)
+        .await?;
         Ok(action.clone())
     }
 
-    async fn list_capa_actions(&self, _capa_id: Uuid) -> anyhow::Result<Vec<CAPAAction>> {
-        Ok(vec![])
+    async fn list_capa_actions(&self, capa_id: Uuid) -> anyhow::Result<Vec<CAPAAction>> {
+        let rows = sqlx::query_as::<_, (String, String, String, String, Option<String>, String, Option<String>, String, Option<String>)>(
+            "SELECT id, capa_id, action_type, description, assigned_to, due_date, completed_at, status, evidence 
+             FROM quality_capa_actions WHERE capa_id = ?"
+        )
+        .bind(capa_id.to_string())
+        .fetch_all(&self.pool)
+        .await?;
+
+        Ok(rows.into_iter().map(|r| CAPAAction {
+            id: Uuid::parse_str(&r.0).unwrap_or_default(),
+            capa_id: Uuid::parse_str(&r.1).unwrap_or_default(),
+            action_type: r.2,
+            description: r.3,
+            assigned_to: r.4.and_then(|s| Uuid::parse_str(&s).ok()),
+            due_date: chrono::NaiveDate::parse_from_str(&r.5, "%Y-%m-%d").unwrap_or_else(|_| chrono::Utc::now().date_naive()),
+            completed_at: r.6.and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).map(|d| d.with_timezone(&Utc)).ok()),
+            status: parse_capa_action_status(&r.7),
+            evidence: r.8,
+        }).collect())
     }
 
     async fn update_capa_action(&self, action: &CAPAAction) -> anyhow::Result<CAPAAction> {
+        sqlx::query(
+            "UPDATE quality_capa_actions SET description=?, assigned_to=?, due_date=?, completed_at=?, status=?, evidence=? WHERE id=?"
+        )
+        .bind(&action.description)
+        .bind(action.assigned_to.map(|id| id.to_string()))
+        .bind(action.due_date.to_string())
+        .bind(action.completed_at.map(|d| d.to_rfc3339()))
+        .bind(format!("{:?}", action.status))
+        .bind(&action.evidence)
+        .bind(action.id.to_string())
+        .execute(&self.pool)
+        .await?;
         Ok(action.clone())
+    }
+}
+
+fn parse_capa_source(s: &str) -> CAPASource {
+    match s {
+        "NCR" => CAPASource::NCR,
+        "Audit" => CAPASource::Audit,
+        "CustomerComplaint" => CAPASource::CustomerComplaint,
+        "ManagementReview" => CAPASource::ManagementReview,
+        "RiskAssessment" => CAPASource::RiskAssessment,
+        "TrendAnalysis" => CAPASource::TrendAnalysis,
+        _ => CAPASource::Other,
+    }
+}
+
+fn parse_capa_status(s: &str) -> CAPAStatus {
+    match s {
+        "Draft" => CAPAStatus::Draft,
+        "Investigation" => CAPAStatus::Investigation,
+        "ActionPlan" => CAPAStatus::ActionPlan,
+        "Implementation" => CAPAStatus::Implementation,
+        "Verification" => CAPAStatus::Verification,
+        "EffectivenessReview" => CAPAStatus::EffectivenessReview,
+        "Closed" => CAPAStatus::Closed,
+        _ => CAPAStatus::Cancelled,
+    }
+}
+
+fn parse_capa_action_status(s: &str) -> CAPAActionStatus {
+    match s {
+        "Pending" => CAPAActionStatus::Pending,
+        "InProgress" => CAPAActionStatus::InProgress,
+        "Completed" => CAPAActionStatus::Completed,
+        _ => CAPAActionStatus::Cancelled,
     }
 }
 

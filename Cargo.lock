@@ -1311,6 +1311,7 @@ dependencies = [
  "serde_json",
  "sqlx",
  "thiserror 1.0.69",
+ "tokio",
  "uuid 1.21.0",
 ]
 
@@ -1528,12 +1529,14 @@ dependencies = [
 name = "erp-grc"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "chrono",
  "erp-core",
  "serde",
  "serde_json",
  "sqlx",
+ "tokio",
  "uuid 1.21.0",
 ]
 

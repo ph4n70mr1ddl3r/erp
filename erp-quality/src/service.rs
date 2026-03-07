@@ -440,8 +440,6 @@ impl<R: QualityRepository> QualityService<R> {
             target_completion_date: None,
             actual_completion_date: None,
             effectiveness_result: None,
-            created_at: now,
-            updated_at: now,
         };
 
         let capa = self.repo.create_capa(&capa).await?;
@@ -453,11 +451,26 @@ impl<R: QualityRepository> QualityService<R> {
         self.repo.get_capa(id).await
     }
 
-    pub async fn update_capa_status(&self, id: Uuid, status: CAPAStatus) -> Result<CAPA> {
+    pub async fn list_capas(&self, status: Option<CAPAStatus>, priority: Option<NCRSeverity>) -> Result<Vec<CAPA>> {
+        self.repo.list_capas(status, priority).await
+    }
+
+    pub async fn update_capa(&self, id: Uuid, req: UpdateCAPARequest) -> Result<CAPA> {
         let mut capa = self.repo.get_capa(id).await?
             .ok_or_else(|| anyhow::anyhow!("CAPA not found"))?;
-        
-        capa.status = status;
+
+        if let Some(title) = req.title { capa.title = title; }
+        if let Some(description) = req.description { capa.description = description; }
+        if let Some(priority) = req.priority { capa.priority = priority; }
+        if let Some(owner_id) = req.owner_id { capa.owner_id = Some(owner_id); }
+        if let Some(root_cause) = req.root_cause_analysis { capa.root_cause_analysis = Some(root_cause); }
+        if let Some(action_plan) = req.action_plan { capa.action_plan = Some(action_plan); }
+        if let Some(verification_plan) = req.verification_plan { capa.verification_plan = Some(verification_plan); }
+        if let Some(criteria) = req.effectiveness_criteria { capa.effectiveness_criteria = Some(criteria); }
+        if let Some(date) = req.target_completion_date { capa.target_completion_date = Some(date); }
+        if let Some(result) = req.effectiveness_result { capa.effectiveness_result = Some(result); }
+        if let Some(status) = req.status { capa.status = status; }
+
         capa.base.updated_at = Utc::now();
         self.repo.update_capa(&capa).await
     }
@@ -471,9 +484,13 @@ impl<R: QualityRepository> QualityService<R> {
             assigned_to,
             due_date,
             completed_at: None,
-            status: "Pending".to_string(),
+            status: CAPAActionStatus::Pending,
             evidence: None,
         };
         self.repo.create_capa_action(&action).await
+    }
+
+    pub async fn list_capa_actions(&self, capa_id: Uuid) -> Result<Vec<CAPAAction>> {
+        self.repo.list_capa_actions(capa_id).await
     }
 }

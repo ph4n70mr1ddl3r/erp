@@ -15,6 +15,8 @@ mod tests {
         devices: Arc<Mutex<Vec<CalibrationDevice>>>,
         records: Arc<Mutex<Vec<CalibrationRecord>>>,
         readings: Arc<Mutex<Vec<CalibrationReading>>>,
+        capas: Arc<Mutex<Vec<CAPA>>>,
+        capa_actions: Arc<Mutex<Vec<CAPAAction>>>,
     }
 
     impl MockQualityRepository {
@@ -23,6 +25,8 @@ mod tests {
                 devices: Arc::new(Mutex::new(Vec::new())),
                 records: Arc::new(Mutex::new(Vec::new())),
                 readings: Arc::new(Mutex::new(Vec::new())),
+                capas: Arc::new(Mutex::new(Vec::new())),
+                capa_actions: Arc::new(Mutex::new(Vec::new())),
             }
         }
     }
@@ -47,55 +51,87 @@ mod tests {
         async fn get_next_ncr_number(&self) -> Result<String> { todo!() }
 
         async fn create_calibration_device(&self, device: &CalibrationDevice) -> Result<CalibrationDevice> {
-            let mut devices: tokio::sync::MutexGuard<'_, Vec<CalibrationDevice>> = self.devices.lock().await;
+            let mut devices = self.devices.lock().await;
             devices.push(device.clone());
             Ok(device.clone())
         }
         async fn get_calibration_device(&self, id: Uuid) -> Result<Option<CalibrationDevice>> {
-            let devices: tokio::sync::MutexGuard<'_, Vec<CalibrationDevice>> = self.devices.lock().await;
+            let devices = self.devices.lock().await;
             Ok(devices.iter().find(|d| d.base.id == id).cloned())
         }
         async fn list_calibration_devices(&self, _s: Option<CalibrationStatus>) -> Result<Vec<CalibrationDevice>> {
-            let devices: tokio::sync::MutexGuard<'_, Vec<CalibrationDevice>> = self.devices.lock().await;
+            let devices = self.devices.lock().await;
             Ok(devices.clone())
         }
         async fn update_calibration_device(&self, device: &CalibrationDevice) -> Result<CalibrationDevice> {
-            let mut devices: tokio::sync::MutexGuard<'_, Vec<CalibrationDevice>> = self.devices.lock().await;
+            let mut devices = self.devices.lock().await;
             if let Some(d) = devices.iter_mut().find(|d| d.base.id == device.base.id) {
                 *d = device.clone();
             }
             Ok(device.clone())
         }
         async fn create_calibration_record(&self, record: &CalibrationRecord) -> Result<CalibrationRecord> {
-            let mut records: tokio::sync::MutexGuard<'_, Vec<CalibrationRecord>> = self.records.lock().await;
+            let mut records = self.records.lock().await;
             records.push(record.clone());
             Ok(record.clone())
         }
         async fn get_calibration_record(&self, id: Uuid) -> Result<Option<CalibrationRecord>> {
-            let records: tokio::sync::MutexGuard<'_, Vec<CalibrationRecord>> = self.records.lock().await;
+            let records = self.records.lock().await;
             Ok(records.iter().find(|r| r.base.id == id).cloned())
         }
         async fn add_calibration_reading(&self, reading: &CalibrationReading) -> Result<CalibrationReading> {
-            let mut readings: tokio::sync::MutexGuard<'_, Vec<CalibrationReading>> = self.readings.lock().await;
+            let mut readings = self.readings.lock().await;
             readings.push(reading.clone());
             Ok(reading.clone())
         }
         async fn get_calibration_readings(&self, record_id: Uuid) -> Result<Vec<CalibrationReading>> {
-            let readings: tokio::sync::MutexGuard<'_, Vec<CalibrationReading>> = self.readings.lock().await;
+            let readings = self.readings.lock().await;
             Ok(readings.iter().filter(|r| r.record_id == record_id).cloned().collect())
         }
         async fn get_next_calibration_record_number(&self) -> Result<String> {
             Ok("CAL-000001".to_string())
         }
 
-        async fn create_capa(&self, capa: &CAPA) -> Result<CAPA> { Ok(capa.clone()) }
-        async fn get_capa(&self, _id: Uuid) -> Result<Option<CAPA>> { Ok(None) }
-        async fn list_capas(&self, _s: Option<CAPAStatus>, _p: Option<NCRSeverity>) -> Result<Vec<CAPA>> { Ok(vec![]) }
-        async fn update_capa(&self, capa: &CAPA) -> Result<CAPA> { Ok(capa.clone()) }
-        async fn get_next_capa_number(&self) -> Result<String> { Ok("CAPA-000001".to_string()) }
-        async fn create_capa_action(&self, action: &CAPAAction) -> Result<CAPAAction> { Ok(action.clone()) }
-        async fn list_capa_actions(&self, _id: Uuid) -> Result<Vec<CAPAAction>> { Ok(vec![]) }
-        async fn update_capa_action(&self, action: &CAPAAction) -> Result<CAPAAction> { Ok(action.clone()) }
+        async fn create_capa(&self, capa: &CAPA) -> Result<CAPA> {
+            let mut capas = self.capas.lock().await;
+            capas.push(capa.clone());
+            Ok(capa.clone())
+        }
+        async fn get_capa(&self, id: Uuid) -> Result<Option<CAPA>> {
+            let capas = self.capas.lock().await;
+            Ok(capas.iter().find(|c| c.base.id == id).cloned())
+        }
+        async fn list_capas(&self, _s: Option<CAPAStatus>, _p: Option<NCRSeverity>) -> Result<Vec<CAPA>> {
+            let capas = self.capas.lock().await;
+            Ok(capas.clone())
+        }
+        async fn update_capa(&self, capa: &CAPA) -> Result<CAPA> {
+            let mut capas = self.capas.lock().await;
+            if let Some(c) = capas.iter_mut().find(|c| c.base.id == capa.base.id) {
+                *c = capa.clone();
+            }
+            Ok(capa.clone())
+        }
+        async fn get_next_capa_number(&self) -> Result<String> {
+            let capas = self.capas.lock().await;
+            Ok(format!("CAPA-{:06}", capas.len() + 1))
+        }
+        async fn create_capa_action(&self, action: &CAPAAction) -> Result<CAPAAction> {
+            let mut actions = self.capa_actions.lock().await;
+            actions.push(action.clone());
+            Ok(action.clone())
+        }
+        async fn list_capa_actions(&self, capa_id: Uuid) -> Result<Vec<CAPAAction>> {
+            let actions = self.capa_actions.lock().await;
+            Ok(actions.iter().filter(|a| a.capa_id == capa_id).cloned().collect())
+        }
+        async fn update_capa_action(&self, action: &CAPAAction) -> Result<CAPAAction> {
+            let mut actions = self.capa_actions.lock().await;
+            if let Some(a) = actions.iter_mut().find(|a| a.id == action.id) {
+                *a = action.clone();
+            }
+            Ok(action.clone())
+        }
     }
 
     #[tokio::test]
@@ -119,6 +155,49 @@ mod tests {
         assert_eq!(capa.status, CAPAStatus::Draft);
         assert_eq!(capa.initiator_id, initiator_id);
         
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_update_capa() -> Result<()> {
+        let repo = MockQualityRepository::new();
+        let service = QualityService::with_repo(repo);
+        let initiator_id = Uuid::new_v4();
+
+        let req = CreateCAPARequest {
+            title: "Original Title".to_string(),
+            source_type: CAPASource::Other,
+            source_id: None,
+            description: "Original description".to_string(),
+            priority: NCRSeverity::Minor,
+            initiator_id,
+        };
+
+        let capa = service.create_capa(req, Some(initiator_id)).await?;
+        let capa_id = capa.base.id;
+
+        let update_req = UpdateCAPARequest {
+            title: Some("Updated Title".to_string()),
+            description: None,
+            priority: Some(NCRSeverity::Critical),
+            owner_id: Some(Uuid::new_v4()),
+            root_cause_analysis: Some("Found root cause".to_string()),
+            action_plan: None,
+            verification_plan: None,
+            effectiveness_criteria: None,
+            target_completion_date: None,
+            effectiveness_result: None,
+            status: Some(CAPAStatus::Investigation),
+        };
+
+        let updated_capa = service.update_capa(capa_id, update_req).await?;
+
+        assert_eq!(updated_capa.title, "Updated Title");
+        assert_eq!(updated_capa.priority, NCRSeverity::Critical);
+        assert_eq!(updated_capa.status, CAPAStatus::Investigation);
+        assert_eq!(updated_capa.root_cause_analysis, Some("Found root cause".to_string()));
+        assert!(updated_capa.owner_id.is_some());
+
         Ok(())
     }
 
