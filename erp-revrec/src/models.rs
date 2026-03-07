@@ -19,7 +19,7 @@ pub struct RevenueContract {
     pub updated_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ContractStatus {
     Draft,
     Active,
@@ -43,13 +43,13 @@ pub struct PerformanceObligation {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum RecognitionType {
     PointInTime,
     OverTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum RecognitionMethod {
     StraightLine,
     PercentageComplete,
@@ -58,7 +58,7 @@ pub enum RecognitionMethod {
     Milestones,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum ObligationStatus {
     NotStarted,
     InProgress,
