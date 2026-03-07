@@ -8,31 +8,36 @@ use uuid::Uuid;
 pub struct PaymentService<
     P: PaymentRepository = SqlitePaymentRepository,
     R: RefundRepository = SqliteRefundRepository,
+    A: PaymentAllocationRepository = SqlitePaymentAllocationRepository,
 > {
     repo: P,
     refund_repo: R,
+    allocation_repo: A,
     pool: SqlitePool,
 }
 
-impl PaymentService<SqlitePaymentRepository, SqliteRefundRepository> {
+impl PaymentService<SqlitePaymentRepository, SqliteRefundRepository, SqlitePaymentAllocationRepository> {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
             repo: SqlitePaymentRepository::new(pool.clone()),
             refund_repo: SqliteRefundRepository::new(pool.clone()),
+            allocation_repo: SqlitePaymentAllocationRepository::new(pool.clone()),
             pool,
         }
     }
 }
 
-impl<P, R> PaymentService<P, R>
+impl<P, R, A> PaymentService<P, R, A>
 where
     P: PaymentRepository,
     R: RefundRepository,
+    A: PaymentAllocationRepository,
 {
-    pub fn with_repos(repo: P, refund_repo: R, pool: SqlitePool) -> Self {
+    pub fn with_repos(repo: P, refund_repo: R, allocation_repo: A, pool: SqlitePool) -> Self {
         Self {
             repo,
             refund_repo,
+            allocation_repo,
             pool,
         }
     }
@@ -81,16 +86,19 @@ where
 
     async fn allocate_to_invoice(&self, payment_id: Uuid, invoice_id: Uuid, amount: i64) -> Result<()> {
         let now = Utc::now();
-        sqlx::query(
-            r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at)
-               VALUES (?, ?, ?, ?, ?)"#
-        )
-        .bind(Uuid::new_v4())
-        .bind(payment_id)
-        .bind(invoice_id)
-        .bind(amount)
-        .bind(now)
-        .execute(&self.pool).await?;
+        let allocation = PaymentAllocation {
+            base: BaseEntity {
+                id: Uuid::new_v4(),
+                created_at: now,
+                updated_at: now,
+                created_by: None,
+                updated_by: None,
+            },
+            payment_id,
+            invoice_id,
+            amount,
+        };
+        self.allocation_repo.create(allocation).await?;
         Ok(())
     }
 
@@ -155,31 +163,36 @@ where
 pub struct GatewayService<
     G: GatewayRepository = SqliteGatewayRepository,
     P: PaymentRepository = SqlitePaymentRepository,
+    A: PaymentAllocationRepository = SqlitePaymentAllocationRepository,
 > {
     repo: G,
     payment_repo: P,
+    allocation_repo: A,
     pool: SqlitePool,
 }
 
-impl GatewayService<SqliteGatewayRepository, SqlitePaymentRepository> {
+impl GatewayService<SqliteGatewayRepository, SqlitePaymentRepository, SqlitePaymentAllocationRepository> {
     pub fn new(pool: SqlitePool) -> Self {
         Self {
             repo: SqliteGatewayRepository::new(pool.clone()),
             payment_repo: SqlitePaymentRepository::new(pool.clone()),
+            allocation_repo: SqlitePaymentAllocationRepository::new(pool.clone()),
             pool,
         }
     }
 }
 
-impl<G, P> GatewayService<G, P>
+impl<G, P, A> GatewayService<G, P, A>
 where
     G: GatewayRepository,
     P: PaymentRepository,
+    A: PaymentAllocationRepository,
 {
-    pub fn with_repos(repo: G, payment_repo: P, pool: SqlitePool) -> Self {
+    pub fn with_repos(repo: G, payment_repo: P, allocation_repo: A, pool: SqlitePool) -> Self {
         Self {
             repo,
             payment_repo,
+            allocation_repo,
             pool,
         }
     }
@@ -255,16 +268,19 @@ where
         self.payment_repo.create(payment.clone()).await?;
         
         if let Some(invoice_id) = req.invoice_id {
-            sqlx::query(
-                r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at)
-                   VALUES (?, ?, ?, ?, ?)"#
-            )
-            .bind(Uuid::new_v4())
-            .bind(payment.base.id)
-            .bind(invoice_id)
-            .bind(req.amount)
-            .bind(now)
-            .execute(&self.pool).await?;
+            let allocation = PaymentAllocation {
+                base: BaseEntity {
+                    id: Uuid::new_v4(),
+                    created_at: now,
+                    updated_at: now,
+                    created_by: None,
+                    updated_by: None,
+                },
+                payment_id: payment.base.id,
+                invoice_id,
+                amount: req.amount,
+            };
+            self.allocation_repo.create(allocation).await?;
         }
         
         Ok(payment)

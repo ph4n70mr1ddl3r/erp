@@ -329,6 +329,38 @@ impl RefundRepository for SqliteRefundRepository {
 }
 
 #[async_trait]
+pub trait PaymentAllocationRepository: Send + Sync {
+    async fn create(&self, allocation: PaymentAllocation) -> Result<PaymentAllocation>;
+}
+
+pub struct SqlitePaymentAllocationRepository {
+    pool: SqlitePool,
+}
+
+impl SqlitePaymentAllocationRepository {
+    pub fn new(pool: SqlitePool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl PaymentAllocationRepository for SqlitePaymentAllocationRepository {
+    async fn create(&self, allocation: PaymentAllocation) -> Result<PaymentAllocation> {
+        sqlx::query(
+            r#"INSERT INTO payment_allocations (id, payment_id, invoice_id, amount, created_at)
+               VALUES (?, ?, ?, ?, ?)"#
+        )
+        .bind(allocation.base.id)
+        .bind(allocation.payment_id)
+        .bind(allocation.invoice_id)
+        .bind(allocation.amount)
+        .bind(allocation.base.created_at)
+        .execute(&self.pool).await?;
+        Ok(allocation)
+    }
+}
+
+#[async_trait]
 pub trait CustomerPaymentMethodRepository: Send + Sync {
     async fn create(&self, method: CustomerPaymentMethod) -> Result<CustomerPaymentMethod>;
 }
@@ -368,3 +400,5 @@ impl CustomerPaymentMethodRepository for SqliteCustomerPaymentMethodRepository {
         Ok(method)
     }
 }
+
+
