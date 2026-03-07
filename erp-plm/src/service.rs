@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::repository::PLMRepository;
-use chrono::Utc;
+use chrono::{Utc, DateTime};
 use uuid::Uuid;
 
 pub struct PLMService<R: PLMRepository> {
@@ -312,5 +312,90 @@ impl<R: PLMRepository> PLMService<R> {
         doc.updated_at = Utc::now();
         self.repo.update_document(&doc).await?;
         Ok(doc)
+    }
+
+    pub async fn create_ip_asset(&self, req: CreateIPAssetRequest) -> anyhow::Result<IPAsset> {
+        let now = Utc::now();
+        let ip_number = format!("IP-{}", now.format("%Y%m%d%H%M%S"));
+        let asset = IPAsset {
+            id: Uuid::new_v4(),
+            ip_number,
+            title: req.title,
+            description: req.description,
+            ip_type: req.ip_type,
+            status: IPStatus::Discovery,
+            owner_id: req.owner_id,
+            inventor_ids: req.inventor_ids,
+            filing_date: None,
+            grant_date: None,
+            expiry_date: None,
+            jurisdiction: req.jurisdiction,
+            attorney_id: None,
+            internal_ref: req.internal_ref,
+            external_ref: None,
+            cost_center_id: None,
+            total_cost: 0,
+            currency: "USD".to_string(),
+            created_at: now,
+            updated_at: now,
+        };
+        self.repo.create_ip_asset(&asset).await?;
+        Ok(asset)
+    }
+
+    pub async fn get_ip_asset(&self, id: Uuid) -> anyhow::Result<Option<IPAsset>> {
+        self.repo.get_ip_asset(id).await
+    }
+
+    pub async fn list_ip_assets(&self, ip_type: Option<IPType>, status: Option<IPStatus>) -> anyhow::Result<Vec<IPAsset>> {
+        self.repo.list_ip_assets(ip_type, status).await
+    }
+
+    pub async fn add_ip_filing(&self, ip_id: Uuid, application_number: String, jurisdiction: String) -> anyhow::Result<IPFiling> {
+        let filing = IPFiling {
+            id: Uuid::new_v4(),
+            ip_id,
+            filing_type: "Initial".to_string(),
+            application_number,
+            filing_date: Utc::now(),
+            publication_number: None,
+            publication_date: None,
+            grant_number: None,
+            grant_date: None,
+            status: "Filed".to_string(),
+            agent_id: None,
+            notes: Some(format!("Filed in {}", jurisdiction)),
+        };
+        self.repo.create_ip_filing(&filing).await?;
+        Ok(filing)
+    }
+
+    pub async fn add_ip_maintenance(&self, ip_id: Uuid, amount: i64, due_date: DateTime<Utc>) -> anyhow::Result<IPMaintenance> {
+        let maintenance = IPMaintenance {
+            id: Uuid::new_v4(),
+            ip_id,
+            maintenance_type: "Renewal".to_string(),
+            due_date,
+            amount,
+            currency: "USD".to_string(),
+            paid_date: None,
+            payment_reference: None,
+            status: "Scheduled".to_string(),
+        };
+        self.repo.create_ip_maintenance(&maintenance).await?;
+        Ok(maintenance)
+    }
+
+    pub async fn link_ip_to_item(&self, ip_id: Uuid, item_id: Uuid, link_type: String) -> anyhow::Result<IPItemLink> {
+        let link = IPItemLink {
+            id: Uuid::new_v4(),
+            ip_id,
+            item_id,
+            link_type,
+            notes: None,
+            created_at: Utc::now(),
+        };
+        self.repo.create_ip_item_link(&link).await?;
+        Ok(link)
     }
 }

@@ -64,6 +64,21 @@ pub trait PLMRepository {
     
     async fn create_item_compliance(&self, compliance: &ItemCompliance) -> anyhow::Result<()>;
     async fn list_item_compliances(&self, item_id: Uuid) -> anyhow::Result<Vec<ItemCompliance>>;
+
+    // IP Management
+    async fn create_ip_asset(&self, asset: &IPAsset) -> anyhow::Result<()>;
+    async fn get_ip_asset(&self, id: Uuid) -> anyhow::Result<Option<IPAsset>>;
+    async fn list_ip_assets(&self, ip_type: Option<IPType>, status: Option<IPStatus>) -> anyhow::Result<Vec<IPAsset>>;
+    async fn update_ip_asset(&self, asset: &IPAsset) -> anyhow::Result<()>;
+    
+    async fn create_ip_filing(&self, filing: &IPFiling) -> anyhow::Result<()>;
+    async fn list_ip_filings(&self, ip_id: Uuid) -> anyhow::Result<Vec<IPFiling>>;
+    
+    async fn create_ip_maintenance(&self, maintenance: &IPMaintenance) -> anyhow::Result<()>;
+    async fn list_ip_maintenance(&self, ip_id: Uuid) -> anyhow::Result<Vec<IPMaintenance>>;
+    
+    async fn create_ip_item_link(&self, link: &IPItemLink) -> anyhow::Result<()>;
+    async fn list_ip_item_links(&self, ip_id: Uuid) -> anyhow::Result<Vec<IPItemLink>>;
 }
 
 pub struct SqlitePLMRepository {
@@ -974,6 +989,47 @@ impl PLMRepository for SqlitePLMRepository {
         .bind(item_id.to_string())
         .fetch_all(&self.pool).await?;
         Ok(rows.into_iter().map(Into::into).collect())
+    }
+
+    // IP Management
+    async fn create_ip_asset(&self, _asset: &IPAsset) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn get_ip_asset(&self, _id: Uuid) -> anyhow::Result<Option<IPAsset>> {
+        Ok(None)
+    }
+
+    async fn list_ip_assets(&self, _ip_type: Option<IPType>, _status: Option<IPStatus>) -> anyhow::Result<Vec<IPAsset>> {
+        Ok(vec![])
+    }
+
+    async fn update_ip_asset(&self, _asset: &IPAsset) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn create_ip_filing(&self, _filing: &IPFiling) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn list_ip_filings(&self, _ip_id: Uuid) -> anyhow::Result<Vec<IPFiling>> {
+        Ok(vec![])
+    }
+
+    async fn create_ip_maintenance(&self, _maintenance: &IPMaintenance) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn list_ip_maintenance(&self, _ip_id: Uuid) -> anyhow::Result<Vec<IPMaintenance>> {
+        Ok(vec![])
+    }
+
+    async fn create_ip_item_link(&self, _link: &IPItemLink) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn list_ip_item_links(&self, _ip_id: Uuid) -> anyhow::Result<Vec<IPItemLink>> {
+        Ok(vec![])
     }
 }
 

@@ -445,3 +445,105 @@ pub struct CreateSpecParameterRequest {
     pub test_method: Option<String>,
     pub is_critical: bool,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum IPType {
+    Patent,
+    Trademark,
+    Copyright,
+    TradeSecret,
+    DesignRight,
+    DomainName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq)]
+#[sqlx(type_name = "TEXT")]
+pub enum IPStatus {
+    Discovery,
+    Drafting,
+    Filed,
+    Published,
+    Pending,
+    Granted,
+    Registered,
+    Active,
+    Expired,
+    Abandoned,
+    Rejected,
+    Challenged,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IPAsset {
+    pub id: Uuid,
+    pub ip_number: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub ip_type: IPType,
+    pub status: IPStatus,
+    pub owner_id: Option<Uuid>,
+    pub inventor_ids: Vec<Uuid>,
+    pub filing_date: Option<DateTime<Utc>>,
+    pub grant_date: Option<DateTime<Utc>>,
+    pub expiry_date: Option<DateTime<Utc>>,
+    pub jurisdiction: String,
+    pub attorney_id: Option<Uuid>,
+    pub internal_ref: Option<String>,
+    pub external_ref: Option<String>,
+    pub cost_center_id: Option<Uuid>,
+    pub total_cost: i64,
+    pub currency: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IPFiling {
+    pub id: Uuid,
+    pub ip_id: Uuid,
+    pub filing_type: String,
+    pub application_number: String,
+    pub filing_date: DateTime<Utc>,
+    pub publication_number: Option<String>,
+    pub publication_date: Option<DateTime<Utc>>,
+    pub grant_number: Option<String>,
+    pub grant_date: Option<DateTime<Utc>>,
+    pub status: String,
+    pub agent_id: Option<Uuid>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IPMaintenance {
+    pub id: Uuid,
+    pub ip_id: Uuid,
+    pub maintenance_type: String,
+    pub due_date: DateTime<Utc>,
+    pub amount: i64,
+    pub currency: String,
+    pub paid_date: Option<DateTime<Utc>>,
+    pub payment_reference: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IPItemLink {
+    pub id: Uuid,
+    pub ip_id: Uuid,
+    pub item_id: Uuid,
+    pub link_type: String,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateIPAssetRequest {
+    pub title: String,
+    pub description: Option<String>,
+    pub ip_type: IPType,
+    pub jurisdiction: String,
+    pub internal_ref: Option<String>,
+    pub owner_id: Option<Uuid>,
+    pub inventor_ids: Vec<Uuid>,
+}
