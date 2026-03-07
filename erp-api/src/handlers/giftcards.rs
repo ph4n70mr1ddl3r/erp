@@ -58,13 +58,13 @@ async fn create_gift_card(
         message: req.message,
         expiry_date: expiry,
     };
-    let card = service.create(&state.pool, create_req).await.unwrap();
+    let card = service.create(create_req).await.unwrap();
     Json(card.into())
 }
 
 async fn list_gift_cards(State(state): State<AppState>) -> Json<Vec<GiftCardResponse>> {
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
-    let cards = service.list(&state.pool, 1, 50).await.unwrap();
+    let cards = service.list(1, 50).await.unwrap();
     Json(cards.into_iter().map(|c| c.into()).collect())
 }
 
@@ -74,7 +74,7 @@ async fn get_gift_card(
 ) -> Json<GiftCardResponse> {
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
     let card = service
-        .get(&state.pool, id)
+        .get(id)
         .await
         .unwrap()
         .unwrap();
@@ -96,7 +96,6 @@ async fn redeem_gift_card(
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
     let tx = service
         .redeem(
-            &state.pool,
             id,
             RedeemGiftCardRequest {
                 amount: req.amount,
@@ -125,7 +124,6 @@ async fn reload_gift_card(
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
     let tx = service
         .reload(
-            &state.pool,
             id,
             ReloadGiftCardRequest {
                 amount: req.amount,
@@ -153,7 +151,6 @@ async fn adjust_gift_card(
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
     let tx = service
         .adjust(
-            &state.pool,
             id,
             AdjustGiftCardRequest {
                 amount: req.amount,
@@ -184,7 +181,7 @@ async fn cancel_gift_card(
     Json(req): Json<CancelRequest>,
 ) -> Json<CancelResponse> {
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
-    let card = service.cancel(&state.pool, id, req.reason, None).await.unwrap();
+    let card = service.cancel(id, req.reason, None).await.unwrap();
     Json(CancelResponse {
         id: card.base.id,
         card_number: card.card_number,
@@ -197,7 +194,7 @@ async fn list_transactions(
     Path(id): Path<Uuid>,
 ) -> Json<Vec<GiftCardTransactionResponse>> {
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
-    let transactions = service.list_transactions(&state.pool, id).await.unwrap();
+    let transactions = service.list_transactions(id).await.unwrap();
     Json(transactions.into_iter().map(|t| t.into()).collect())
 }
 
@@ -213,7 +210,7 @@ async fn check_balance(
 ) -> Json<GiftCardResponse> {
     let service = erp_giftcards::GiftCardService::new(state.pool.clone());
     let card = service
-        .check_balance(&state.pool, &req.card_number, req.pin.as_deref())
+        .check_balance(&req.card_number, req.pin.as_deref())
         .await
         .unwrap();
     Json(card.into())

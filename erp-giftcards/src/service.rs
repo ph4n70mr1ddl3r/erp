@@ -17,7 +17,7 @@ impl GiftCardService {
         }
     }
 
-    pub async fn create(&self, pool: &SqlitePool, req: CreateGiftCardRequest) -> Result<GiftCard> {
+    pub async fn create(&self, req: CreateGiftCardRequest) -> Result<GiftCard> {
         if req.initial_balance <= 0 {
             return Err(Error::validation("Initial balance must be positive"));
         }
@@ -70,23 +70,23 @@ impl GiftCardService {
         Ok(created)
     }
 
-    pub async fn get(&self, pool: &SqlitePool, id: Uuid) -> Result<Option<GiftCard>> {
+    pub async fn get(&self, id: Uuid) -> Result<Option<GiftCard>> {
         self.repo.get_by_id(id).await
     }
 
-    pub async fn get_by_card_number(&self, pool: &SqlitePool, card_number: &str) -> Result<Option<GiftCard>> {
+    pub async fn get_by_card_number(&self, card_number: &str) -> Result<Option<GiftCard>> {
         self.repo.get_by_card_number(card_number).await
     }
 
-    pub async fn list(&self, pool: &SqlitePool, page: i32, per_page: i32) -> Result<Vec<GiftCard>> {
+    pub async fn list(&self, page: i32, per_page: i32) -> Result<Vec<GiftCard>> {
         self.repo.list(page, per_page).await
     }
 
-    pub async fn list_by_customer(&self, pool: &SqlitePool, customer_id: Uuid) -> Result<Vec<GiftCard>> {
+    pub async fn list_by_customer(&self, customer_id: Uuid) -> Result<Vec<GiftCard>> {
         self.repo.list_by_customer(customer_id).await
     }
 
-    pub async fn redeem(&self, pool: &SqlitePool, id: Uuid, req: RedeemGiftCardRequest, user_id: Option<Uuid>) -> Result<GiftCardTransaction> {
+    pub async fn redeem(&self, id: Uuid, req: RedeemGiftCardRequest, user_id: Option<Uuid>) -> Result<GiftCardTransaction> {
         let mut card = self.repo.get_by_id(id).await?.ok_or_else(|| Error::not_found("Gift card", &id.to_string()))?;
 
         if card.status != GiftCardStatus::Active {
@@ -130,7 +130,7 @@ impl GiftCardService {
         self.repo.create_transaction(&tx).await
     }
 
-    pub async fn reload(&self, pool: &SqlitePool, id: Uuid, req: ReloadGiftCardRequest, user_id: Option<Uuid>) -> Result<GiftCardTransaction> {
+    pub async fn reload(&self, id: Uuid, req: ReloadGiftCardRequest, user_id: Option<Uuid>) -> Result<GiftCardTransaction> {
         let mut card = self.repo.get_by_id(id).await?.ok_or_else(|| Error::not_found("Gift card", &id.to_string()))?;
 
         if card.status == GiftCardStatus::Cancelled || card.status == GiftCardStatus::Expired {
@@ -166,7 +166,7 @@ impl GiftCardService {
         self.repo.create_transaction(&tx).await
     }
 
-    pub async fn adjust(&self, pool: &SqlitePool, id: Uuid, req: AdjustGiftCardRequest, user_id: Option<Uuid>) -> Result<GiftCardTransaction> {
+    pub async fn adjust(&self, id: Uuid, req: AdjustGiftCardRequest, user_id: Option<Uuid>) -> Result<GiftCardTransaction> {
         let mut card = self.repo.get_by_id(id).await?.ok_or_else(|| Error::not_found("Gift card", &id.to_string()))?;
 
         let balance_before = card.current_balance;
@@ -197,7 +197,7 @@ impl GiftCardService {
         self.repo.create_transaction(&tx).await
     }
 
-    pub async fn cancel(&self, pool: &SqlitePool, id: Uuid, reason: String, user_id: Option<Uuid>) -> Result<GiftCard> {
+    pub async fn cancel(&self, id: Uuid, reason: String, user_id: Option<Uuid>) -> Result<GiftCard> {
         let mut card = self.repo.get_by_id(id).await?.ok_or_else(|| Error::not_found("Gift card", &id.to_string()))?;
 
         if card.status == GiftCardStatus::Redeemed {
@@ -229,7 +229,7 @@ impl GiftCardService {
         Ok(updated)
     }
 
-    pub async fn check_balance(&self, pool: &SqlitePool, card_number: &str, pin: Option<&str>) -> Result<GiftCard> {
+    pub async fn check_balance(&self, card_number: &str, pin: Option<&str>) -> Result<GiftCard> {
         let card = self.repo.get_by_card_number(card_number).await?.ok_or_else(|| Error::not_found("Gift card", card_number))?;
 
         if let Some(card_pin) = &card.pin {
@@ -243,7 +243,7 @@ impl GiftCardService {
         Ok(card)
     }
 
-    pub async fn list_transactions(&self, pool: &SqlitePool, gift_card_id: Uuid) -> Result<Vec<GiftCardTransaction>> {
+    pub async fn list_transactions(&self, gift_card_id: Uuid) -> Result<Vec<GiftCardTransaction>> {
         self.repo.list_transactions(gift_card_id).await
     }
 }
