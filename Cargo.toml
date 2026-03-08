@@ -115,7 +115,7 @@ members = [
     "erp-product-variants",
     "erp-giftcards",
     "erp-favorites"
-, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning", "erp-leave", "erp-okr", "erp-capa", "erp-ehs", "erp-strategy", "erp-visitor"]
+, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning", "erp-leave", "erp-okr", "erp-capa", "erp-ehs", "erp-strategy", "erp-visitor", "erp-rebates"]
 resolver = "2"
 
 [workspace.package]
@@ -276,6 +276,7 @@ erp-capa = { path = "erp-capa" }
 erp-ehs = { path = "erp-ehs" }
 erp-strategy = { path = "erp-strategy" }
 erp-visitor = { path = "erp-visitor" }
+erp-rebates = { path = "erp-rebates" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
