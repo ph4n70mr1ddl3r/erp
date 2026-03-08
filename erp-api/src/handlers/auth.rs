@@ -7,7 +7,7 @@ use axum::{
 };
 use crate::db::AppState;
 use crate::error::ApiResult;
-use erp_auth::{AuthService, LoginRequest, RegisterRequest, AuthResponse, UserInfo};
+use erp_auth::{LoginRequest, RegisterRequest, AuthResponse, UserInfo};
 use validator::Validate;
 
 pub async fn register(

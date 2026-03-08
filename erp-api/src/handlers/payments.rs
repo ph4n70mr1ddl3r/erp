@@ -11,8 +11,8 @@ use uuid::Uuid;
 
 use crate::db::AppState;
 use crate::handlers::auth::AuthUser;
-use erp_payments::{PaymentService, GatewayService, CreatePaymentRequest, ProcessPaymentRequest, CreateRefundRequest, PaymentMethod};
-use erp_payments::{StripeService, CreatePaymentIntentRequest, CreateCheckoutSessionRequest};
+use erp_payments::{CreatePaymentRequest, ProcessPaymentRequest, CreateRefundRequest, PaymentMethod};
+use erp_payments::{CreatePaymentIntentRequest, CreateCheckoutSessionRequest};
 
 pub fn routes() -> Router<AppState> {
     Router::new()

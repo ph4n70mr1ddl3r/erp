@@ -60,16 +60,26 @@ fn create_test_app(pool: SqlitePool) -> AppState {
         database_url: ":memory:".to_string(),
         server_host: "127.0.0.1".to_string(),
         server_port: 3000,
-        jwt_secret: "test-secret".to_string(),
+        jwt_secret: "test-secret-at-least-32-characters-long-for-security".to_string(),
         jwt_expiration: 24,
         cors_allowed_origins: vec!["http://localhost:5173".to_string()],
         trust_proxy: false,
+        stripe: None,
     };
+    let config = std::sync::Arc::new(config);
     let ws_manager = std::sync::Arc::new(erp_api::handlers::websocket::WebSocketManagerInner::new());
+    
     AppState {
-        pool,
-        config: std::sync::Arc::new(config),
+        pool: pool.clone(),
+        config: config.clone(),
         ws_manager,
+        auth_svc: std::sync::Arc::new(erp_auth::AuthService::new(pool.clone())),
+        project_svc: std::sync::Arc::new(erp_projects::ProjectService::new(pool.clone())),
+        timesheet_svc: std::sync::Arc::new(erp_projects::TimesheetService::new(pool.clone())),
+        payment_svc: std::sync::Arc::new(erp_payments::PaymentService::new(pool.clone())),
+        gateway_svc: std::sync::Arc::new(erp_payments::GatewayService::new(pool.clone())),
+        stripe_svc: std::sync::Arc::new(None),
+        backup_svc: std::sync::Arc::new(erp_backup::BackupService::new(pool)),
     }
 }
 

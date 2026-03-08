@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::db::AppState;
 use crate::error::ApiResult;
 use erp_core::BaseEntity;
-use erp_backup::{BackupService, BackupSchedule, BackupType, BackupStorageType, BackupRecord};
+use erp_backup::{BackupSchedule, BackupType, BackupStorageType, BackupRecord};
 
 #[derive(Serialize)]
 pub struct BackupScheduleResponse {

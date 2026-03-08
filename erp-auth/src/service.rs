@@ -169,9 +169,9 @@ pub fn has_permission(role: &str, permission: &str) -> bool {
 mod tests {
     use super::*;
     
-    #[test]
-    fn test_hash_password() {
-        let pool = SqlitePool::connect_lazy("sqlite::memory:");
+    #[tokio::test]
+    async fn test_hash_password() {
+        let pool = SqlitePool::connect_lazy("sqlite::memory:").unwrap();
         let svc = AuthService::new(pool);
         let password = "testpassword123";
         let hash = svc.hash_password(password).unwrap();
@@ -180,9 +180,9 @@ mod tests {
         assert!(hash.starts_with("$argon2"));
     }
     
-    #[test]
-    fn test_verify_password_correct() {
-        let pool = SqlitePool::connect_lazy("sqlite::memory:");
+    #[tokio::test]
+    async fn test_verify_password_correct() {
+        let pool = SqlitePool::connect_lazy("sqlite::memory:").unwrap();
         let svc = AuthService::new(pool);
         let password = "testpassword123";
         let hash = svc.hash_password(password).unwrap();
@@ -190,9 +190,9 @@ mod tests {
         assert!(svc.verify_password(password, &hash).unwrap());
     }
     
-    #[test]
-    fn test_verify_password_incorrect() {
-        let pool = SqlitePool::connect_lazy("sqlite::memory:");
+    #[tokio::test]
+    async fn test_verify_password_incorrect() {
+        let pool = SqlitePool::connect_lazy("sqlite::memory:").unwrap();
         let svc = AuthService::new(pool);
         let password = "testpassword123";
         let hash = svc.hash_password(password).unwrap();
