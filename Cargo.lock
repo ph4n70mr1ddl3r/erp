@@ -2789,6 +2789,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-succession"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid 1.21.0",
+ "validator",
+]
+
+[[package]]
 name = "erp-sustainability"
 version = "0.1.0"
 dependencies = [
