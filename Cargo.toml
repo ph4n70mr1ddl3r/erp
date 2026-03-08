@@ -115,7 +115,7 @@ members = [
     "erp-product-variants",
     "erp-giftcards",
     "erp-favorites"
-, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning", "erp-leave", "erp-okr", "erp-capa", "erp-ehs", "erp-strategy", "erp-visitor", "erp-rebates", "erp-whistleblower", "erp-legal", "erp-trade", "erp-csr", "erp-health", "erp-insurance", "erp-coi", "erp-succession", "erp-audit", "erp-board", "erp-ir", "erp-mobility", "erp-recognition", "erp-real-estate"]
+, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning", "erp-leave", "erp-okr", "erp-capa", "erp-ehs", "erp-strategy", "erp-visitor", "erp-rebates", "erp-whistleblower", "erp-legal", "erp-trade", "erp-csr", "erp-health", "erp-insurance", "erp-coi", "erp-succession", "erp-audit", "erp-board", "erp-ir", "erp-mobility", "erp-recognition", "erp-real-estate", "erp-mentorship"]
 resolver = "2"
 
 [workspace.package]
@@ -291,6 +291,7 @@ erp-ir = { path = "erp-ir" }
 erp-mobility = { path = "erp-mobility" }
 erp-recognition = { path = "erp-recognition" }
 erp-real-estate = { path = "erp-real-estate" }
+erp-mentorship = { path = "erp-mentorship" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
