@@ -115,7 +115,7 @@ members = [
     "erp-product-variants",
     "erp-giftcards",
     "erp-favorites"
-, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll"]
+, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning"]
 resolver = "2"
 
 [workspace.package]
@@ -269,6 +269,7 @@ erp-pim = { path = "erp-pim" }
 erp-ats = { path = "erp-ats" }
 erp-timesheets = { path = "erp-timesheets" }
 erp-payroll = { path = "erp-payroll" }
+erp-dunning = { path = "erp-dunning" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
