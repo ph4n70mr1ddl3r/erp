@@ -115,7 +115,7 @@ members = [
     "erp-product-variants",
     "erp-giftcards",
     "erp-favorites"
-, "erp-fleet"]
+, "erp-fleet", "erp-crm"]
 resolver = "2"
 
 [workspace.package]
@@ -264,6 +264,7 @@ erp-product-variants = { path = "erp-product-variants" }
 erp-giftcards = { path = "erp-giftcards" }
 erp-favorites = { path = "erp-favorites" }
 erp-fleet = { path = "erp-fleet" }
+erp-crm = { path = "erp-crm" }
 
 [workspace.lints.clippy]
 too_many_arguments = "allow"
