@@ -54,11 +54,7 @@ impl AuthUser {
 
 fn extract_token(req: &Request<Body>) -> Option<String> {
     let auth = req.headers().get(AUTHORIZATION)?.to_str().ok()?;
-    if auth.starts_with("Bearer ") {
-        Some(auth[7..].to_string())
-    } else {
-        None
-    }
+    auth.strip_prefix("Bearer ").map(|stripped| stripped.to_string())
 }
 
 pub async fn auth_middleware(

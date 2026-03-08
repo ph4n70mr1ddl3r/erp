@@ -1,8 +1,9 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use crate::models::*;
     use crate::repository::*;
-    use crate::service::EmployeeCostRateService;
+    
     use anyhow::Result;
     use async_trait::async_trait;
     use chrono::{NaiveDate, Utc};
@@ -10,11 +11,13 @@ mod tests {
     use uuid::Uuid;
     use std::sync::Mutex;
 
+    #[allow(dead_code)]
     struct MockCostRateRepository {
         rates: Mutex<Vec<EmployeeCostRate>>,
     }
 
     impl MockCostRateRepository {
+        #[allow(dead_code)]
         fn new() -> Self {
             Self {
                 rates: Mutex::new(Vec::new()),
@@ -63,8 +66,7 @@ mod tests {
 
     #[test]
     fn test_successor_ranking_logic() {
-        let mut successors = vec![
-            Successor {
+        let mut successors = [Successor {
                 id: Uuid::new_v4(),
                 plan_id: Uuid::new_v4(),
                 employee_id: Uuid::new_v4(),
@@ -79,8 +81,7 @@ mod tests {
                 readiness: ReadinessLevel::ReadyNow,
                 development_needs: None,
                 ranking: 1,
-            },
-        ];
+            }];
 
         successors.sort_by_key(|s| s.ranking);
         assert_eq!(successors[0].ranking, 1);

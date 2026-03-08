@@ -1498,6 +1498,7 @@ impl OEEService {
         self.state_repo.create(pool, new_log).await
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn calculate_daily_oee(
         &self,
         pool: &sqlx::SqlitePool,

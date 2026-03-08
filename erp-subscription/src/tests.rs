@@ -1,9 +1,10 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
-    use crate::models::*;
-    use anyhow::Result;
+    
+    
     use chrono::{Duration, Utc};
-    use uuid::Uuid;
+    
 
     #[test]
     fn test_proration_calculation_logic() {

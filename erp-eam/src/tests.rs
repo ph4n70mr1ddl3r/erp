@@ -1,7 +1,8 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use crate::models::*;
-    use crate::service::EamService;
+    
     use anyhow::Result;
     use uuid::Uuid;
 

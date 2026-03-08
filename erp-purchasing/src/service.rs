@@ -461,9 +461,16 @@ impl ThreeWayMatchService {
 
 pub struct SubcontractService;
 
+impl Default for SubcontractService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SubcontractService {
     pub fn new() -> Self { Self }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn create_order(
         &self,
         pool: &SqlitePool,

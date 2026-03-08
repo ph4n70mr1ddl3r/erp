@@ -786,6 +786,7 @@ impl EmployeeCostRateService {
         Self { repo: SqliteEmployeeCostRateRepository }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn add_cost_rate(
         &self,
         pool: &SqlitePool,

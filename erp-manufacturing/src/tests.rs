@@ -1,8 +1,9 @@
 #[cfg(test)]
+#[allow(clippy::module_inception)]
 mod tests {
     use crate::models::*;
     use crate::repository::*;
-    use anyhow::Result;
+    
     use async_trait::async_trait;
     use chrono::{NaiveDate, Utc};
     use sqlx::SqlitePool;
