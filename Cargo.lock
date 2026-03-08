@@ -1138,6 +1138,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-coi"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "chrono",
+ "erp-core",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "uuid 1.21.0",
+ "validator",
+]
+
+[[package]]
 name = "erp-commission"
 version = "0.1.0"
 dependencies = [
