@@ -46,9 +46,9 @@ async fn create_gateway(
     axum::Extension(_auth_user): axum::Extension<AuthUser>,
     Json(body): Json<CreateGatewayBody>,
 ) -> Json<serde_json::Value> {
-    match GatewayService::create(&state.pool, body.code, body.name, body.gateway_type, body.supported_methods).await {
+    match state.gateway_svc.create(body.code, body.name, body.gateway_type, body.supported_methods).await {
         Ok(gateway) => Json(json!({
-            "id": gateway.id,
+            "id": gateway.base.id,
             "code": gateway.code,
             "name": gateway.name,
             "gateway_type": gateway.gateway_type,
@@ -59,10 +59,10 @@ async fn create_gateway(
 }
 
 async fn list_gateways(State(state): State<AppState>) -> Json<serde_json::Value> {
-    match GatewayService::list_active(&state.pool).await {
+    match state.gateway_svc.list_active().await {
         Ok(gateways) => Json(json!({
             "items": gateways.iter().map(|g| json!({
-                "id": g.id,
+                "id": g.base.id,
                 "code": g.code,
                 "name": g.name,
                 "gateway_type": g.gateway_type,
@@ -95,6 +95,7 @@ fn default_currency() -> String { "USD".to_string() }
 
 async fn create_payment(
     State(state): State<AppState>,
+    axum::Extension(user): axum::Extension<AuthUser>,
     Json(body): Json<CreatePaymentBody>,
 ) -> Json<serde_json::Value> {
     if body.amount <= 0 {
@@ -126,9 +127,9 @@ async fn create_payment(
         check_number: body.check_number,
         notes: body.notes,
     };
-    match PaymentService::create(&state.pool, req, None).await {
+    match state.payment_svc.create(req, Some(user.user_id())).await {
         Ok(payment) => Json(json!({
-            "id": payment.id,
+            "id": payment.base.id,
             "payment_number": payment.payment_number,
             "amount": payment.amount,
             "currency": payment.currency,
@@ -139,9 +140,9 @@ async fn create_payment(
 }
 
 async fn get_payment(State(state): State<AppState>, Path(id): Path<Uuid>) -> Json<serde_json::Value> {
-    match PaymentService::get(&state.pool, id).await {
+    match state.payment_svc.get(id).await {
         Ok(Some(payment)) => Json(json!({
-            "id": payment.id,
+            "id": payment.base.id,
             "payment_number": payment.payment_number,
             "amount": payment.amount,
             "currency": payment.currency,
@@ -158,10 +159,10 @@ async fn list_customer_payments(
     State(state): State<AppState>,
     Path(customer_id): Path<Uuid>,
 ) -> Json<serde_json::Value> {
-    match PaymentService::list_by_customer(&state.pool, customer_id).await {
+    match state.payment_svc.list_by_customer(customer_id).await {
         Ok(payments) => Json(json!({
             "items": payments.iter().map(|p| json!({
-                "id": p.id,
+                "id": p.base.id,
                 "payment_number": p.payment_number,
                 "amount": p.amount,
                 "status": p.status,
@@ -180,6 +181,7 @@ pub struct RefundPaymentBody {
 
 async fn refund_payment(
     State(state): State<AppState>,
+    axum::Extension(user): axum::Extension<AuthUser>,
     Path(id): Path<Uuid>,
     Json(body): Json<RefundPaymentBody>,
 ) -> Json<serde_json::Value> {
@@ -192,9 +194,9 @@ async fn refund_payment(
         amount: body.amount,
         reason: body.reason,
     };
-    match PaymentService::refund(&state.pool, req, None).await {
+    match state.payment_svc.refund(req, Some(user.user_id())).await {
         Ok(refund) => Json(json!({
-            "id": refund.id,
+            "id": refund.base.id,
             "refund_number": refund.refund_number,
             "amount": refund.amount,
             "status": refund.status
@@ -234,9 +236,9 @@ async fn process_payment(
         description: body.description,
         metadata: body.metadata,
     };
-    match GatewayService::process_payment(&state.pool, req).await {
+    match state.gateway_svc.process_payment(req).await {
         Ok(payment) => Json(json!({
-            "id": payment.id,
+            "id": payment.base.id,
             "payment_number": payment.payment_number,
             "amount": payment.amount,
             "status": payment.status,
@@ -265,9 +267,9 @@ async fn create_stripe_intent(
         return Json(json!({ "error": "Amount must be greater than zero" }));
     }
     
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
     let req = CreatePaymentIntentRequest {
         customer_id: body.customer_id,
@@ -278,7 +280,7 @@ async fn create_stripe_intent(
         metadata: body.metadata,
     };
     
-    match stripe.create_payment_intent(&state.pool, req).await {
+    match stripe.create_payment_intent(req).await {
         Ok(intent) => Json(json!({
             "id": intent.id,
             "stripe_intent_id": intent.stripe_intent_id,
@@ -295,18 +297,18 @@ async fn get_stripe_intent(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Json<serde_json::Value> {
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
-    match stripe.get_payment_intent(&state.pool, id).await {
+    match stripe.get_payment_intent(id).await {
         Ok(Some(intent)) => Json(json!({
-            "id": intent.id,
+            "id": intent.base.id,
             "stripe_intent_id": intent.stripe_intent_id,
             "amount": intent.amount,
             "currency": intent.currency,
             "status": intent.status,
-            "created_at": intent.created_at
+            "created_at": intent.base.created_at
         })),
         Ok(None) => Json(json!({ "error": "Payment intent not found" })),
         Err(e) => Json(json!({ "error": e.to_string() })),
@@ -319,12 +321,12 @@ pub struct CancelStripeIntentBody {
 }
 
 async fn cancel_stripe_intent(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Json(body): Json<CancelStripeIntentBody>,
 ) -> Json<serde_json::Value> {
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
     match stripe.cancel_payment_intent(&body.stripe_intent_id).await {
         Ok(intent) => Json(json!({
@@ -357,9 +359,9 @@ async fn create_stripe_checkout(
         return Json(json!({ "error": "Amount must be greater than zero" }));
     }
     
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
     let req = CreateCheckoutSessionRequest {
         customer_id: body.customer_id,
@@ -373,7 +375,7 @@ async fn create_stripe_checkout(
         metadata: body.metadata,
     };
     
-    match stripe.create_checkout_session(&state.pool, req).await {
+    match stripe.create_checkout_session(req).await {
         Ok(session) => Json(json!({
             "id": session.id,
             "stripe_session_id": session.stripe_session_id,
@@ -390,13 +392,13 @@ async fn get_stripe_checkout(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Json<serde_json::Value> {
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
-    match stripe.get_checkout_session(&state.pool, id).await {
+    match stripe.get_checkout_session(id).await {
         Ok(Some(session)) => Json(json!({
-            "id": session.id,
+            "id": session.base.id,
             "stripe_session_id": session.stripe_session_id,
             "checkout_url": session.checkout_url,
             "amount": session.amount,
@@ -420,11 +422,11 @@ async fn create_stripe_refund(
     State(state): State<AppState>,
     Json(body): Json<CreateStripeRefundBody>,
 ) -> Json<serde_json::Value> {
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
-    match stripe.create_refund(&state.pool, &body.stripe_intent_id, body.amount, body.reason).await {
+    match stripe.create_refund(&body.stripe_intent_id, body.amount, body.reason).await {
         Ok(refund) => Json(json!({
             "id": refund.id,
             "amount": refund.amount,
@@ -434,10 +436,10 @@ async fn create_stripe_refund(
     }
 }
 
-async fn get_stripe_config() -> Json<serde_json::Value> {
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+async fn get_stripe_config(State(state): State<AppState>) -> Json<serde_json::Value> {
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
     Json(json!({
         "publishable_key": stripe.get_publishable_key()
@@ -449,9 +451,9 @@ async fn stripe_webhook(
     headers: HeaderMap,
     body: Bytes,
 ) -> Json<serde_json::Value> {
-    let stripe = match StripeService::from_env() {
-        Ok(s) => s,
-        Err(e) => return Json(json!({ "error": format!("Failed to initialize Stripe: {}", e) })),
+    let stripe = match &*state.stripe_svc {
+        Some(s) => s,
+        None => return Json(json!({ "error": "Stripe is not configured" })),
     };
     
     let signature = match headers.get("stripe-signature").and_then(|v| v.to_str().ok()) {
@@ -461,7 +463,7 @@ async fn stripe_webhook(
     
     match stripe.verify_webhook_signature(&body, signature) {
         Ok(webhook) => {
-            match stripe.process_webhook_event(&state.pool, webhook).await {
+            match stripe.process_webhook_event(webhook).await {
                 Ok(()) => Json(json!({ "received": true })),
                 Err(e) => Json(json!({ "error": e.to_string() })),
             }

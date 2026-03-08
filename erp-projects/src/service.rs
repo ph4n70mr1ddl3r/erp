@@ -251,6 +251,14 @@ where
         Ok(milestone)
     }
 
+    pub async fn list_tasks_by_project(&self, project_id: Uuid) -> Result<Vec<ProjectTask>> {
+        self.task_repo.find_by_project(project_id).await
+    }
+
+    pub async fn list_milestones_by_project(&self, project_id: Uuid) -> Result<Vec<ProjectMilestone>> {
+        self.milestone_repo.find_by_project(project_id).await
+    }
+
     pub async fn add_expense(&self, mut expense: ProjectExpense, created_by: Option<Uuid>) -> Result<ProjectExpense> {
         expense.base = BaseEntity::new();
         expense.base.created_by = created_by;

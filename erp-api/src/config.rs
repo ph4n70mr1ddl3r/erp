@@ -31,6 +31,7 @@ pub struct Config {
     pub jwt_expiration: i64,
     pub cors_allowed_origins: Vec<String>,
     pub trust_proxy: bool,
+    pub stripe: Option<erp_payments::StripeConfig>,
 }
 
 #[derive(Debug)]
@@ -59,6 +60,7 @@ impl Default for Config {
                 "http://localhost:3000".to_string(),
             ],
             trust_proxy: false,
+            stripe: None,
         }
     }
 }
@@ -133,6 +135,7 @@ impl Config {
                 .ok()
                 .and_then(|p| p.parse().ok())
                 .unwrap_or(false),
+            stripe: erp_payments::StripeConfig::from_env().ok(),
         }
     }
 }

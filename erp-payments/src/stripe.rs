@@ -10,6 +10,7 @@ use std::time::Duration;
 
 const STRIPE_API_TIMEOUT_SECS: u64 = 30;
 
+#[derive(Debug, Clone)]
 pub struct StripeConfig {
     pub secret_key: String,
     pub webhook_secret: String,

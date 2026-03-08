@@ -46,8 +46,7 @@ pub struct CreateScheduleRequest {
 }
 
 pub async fn list_schedules(State(state): State<AppState>) -> ApiResult<Json<Vec<BackupScheduleResponse>>> {
-    let service = BackupService::new();
-    let schedules = service.list_schedules(&state.pool).await?;
+    let schedules = state.backup_svc.list_schedules().await?;
     Ok(Json(schedules.into_iter().map(BackupScheduleResponse::from).collect()))
 }
 
@@ -55,7 +54,6 @@ pub async fn create_schedule(
     State(state): State<AppState>,
     Json(req): Json<CreateScheduleRequest>,
 ) -> ApiResult<Json<BackupScheduleResponse>> {
-    let service = BackupService::new();
     let schedule = BackupSchedule {
         base: BaseEntity::new(),
         name: req.name,
@@ -73,7 +71,7 @@ pub async fn create_schedule(
         last_run: None,
         next_run: None,
     };
-    let created = service.create_schedule(&state.pool, schedule).await?;
+    let created = state.backup_svc.create_schedule(schedule).await?;
     Ok(Json(BackupScheduleResponse::from(created)))
 }
 
@@ -115,14 +113,12 @@ pub async fn list_backups(
     State(state): State<AppState>,
     Query(query): Query<ListBackupsQuery>,
 ) -> ApiResult<Json<Vec<BackupRecordResponse>>> {
-    let service = BackupService::new();
-    let backups = service.list_backups(&state.pool, query.limit.unwrap_or(50)).await?;
+    let backups = state.backup_svc.list_backups(query.limit.unwrap_or(50)).await?;
     Ok(Json(backups.into_iter().map(BackupRecordResponse::from).collect()))
 }
 
 pub async fn execute_backup(State(state): State<AppState>) -> ApiResult<Json<BackupRecordResponse>> {
-    let service = BackupService::new();
-    let backup = service.execute_backup(&state.pool, None).await?;
+    let backup = state.backup_svc.execute_backup(None).await?;
     Ok(Json(BackupRecordResponse::from(backup)))
 }
 
@@ -130,8 +126,7 @@ pub async fn get_backup(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<BackupRecordResponse>> {
-    let service = BackupService::new();
-    let backup = service.get_backup(&state.pool, id).await?
+    let backup = state.backup_svc.get_backup(id).await?
         .ok_or_else(|| anyhow::anyhow!("Backup not found"))?;
     Ok(Json(BackupRecordResponse::from(backup)))
 }
@@ -140,8 +135,7 @@ pub async fn delete_backup(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let service = BackupService::new();
-    service.delete_backup(&state.pool, id).await?;
+    state.backup_svc.delete_backup(id).await?;
     Ok(Json(serde_json::json!({ "status": "deleted" })))
 }
 
@@ -149,8 +143,7 @@ pub async fn restore_backup(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let service = BackupService::new();
-    let restore = service.restore_backup(&state.pool, id, None).await?;
+    let restore = state.backup_svc.restore_backup(id, None).await?;
     Ok(Json(serde_json::json!({
         "status": "restored",
         "records_restored": restore.records_restored
@@ -161,8 +154,7 @@ pub async fn verify_backup(
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let service = BackupService::new();
-    let verification = service.verify_backup(&state.pool, id).await?;
+    let verification = state.backup_svc.verify_backup(id).await?;
     Ok(Json(serde_json::json!({
         "status": format!("{:?}", verification.status),
         "file_readable": verification.file_readable,
@@ -177,8 +169,7 @@ pub struct StorageStatsResponse {
 }
 
 pub async fn storage_stats(State(state): State<AppState>) -> ApiResult<Json<StorageStatsResponse>> {
-    let service = BackupService::new();
-    let stats = service.get_storage_stats(&state.pool).await?;
+    let stats = state.backup_svc.get_storage_stats().await?;
     Ok(Json(StorageStatsResponse {
         total_size_bytes: stats.total_size_bytes,
         backup_count: stats.backup_count,

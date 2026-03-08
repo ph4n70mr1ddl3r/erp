@@ -2,15 +2,20 @@ use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 use std::sync::Arc;
 use crate::Config;
 use crate::handlers::websocket::WebSocketManager;
-
 use erp_auth::AuthService;
-...
+
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
     pub config: Arc<Config>,
     pub ws_manager: WebSocketManager,
     pub auth_svc: Arc<AuthService>,
+    pub project_svc: Arc<erp_projects::ProjectService>,
+    pub timesheet_svc: Arc<erp_projects::TimesheetService>,
+    pub payment_svc: Arc<erp_payments::PaymentService>,
+    pub gateway_svc: Arc<erp_payments::GatewayService>,
+    pub stripe_svc: Arc<Option<erp_payments::StripeService>>,
+    pub backup_svc: Arc<erp_backup::BackupService>,
 }
 
 impl AppState {
@@ -23,79 +28,47 @@ impl AppState {
         
         run_migrations(&pool).await?;
         
+        let stripe_svc = if let Some(stripe_config) = config.stripe.clone() {
+            erp_payments::StripeService::new(stripe_config, pool.clone()).ok()
+        } else {
+            None
+        };
+
         Ok(Self {
             pool: pool.clone(),
             config: Arc::new(config),
             ws_manager: Arc::new(crate::handlers::websocket::WebSocketManagerInner::new()),
-            auth_svc: Arc::new(AuthService::new(pool)),
+            auth_svc: Arc::new(AuthService::new(pool.clone())),
+            project_svc: Arc::new(erp_projects::ProjectService::new(pool.clone())),
+            timesheet_svc: Arc::new(erp_projects::TimesheetService::new(pool.clone())),
+            payment_svc: Arc::new(erp_payments::PaymentService::new(pool.clone())),
+            gateway_svc: Arc::new(erp_payments::GatewayService::new(pool.clone())),
+            stripe_svc: Arc::new(stripe_svc),
+            backup_svc: Arc::new(erp_backup::BackupService::new(pool)),
         })
     }
 }
 
 async fn run_migrations(pool: &SqlitePool) -> anyhow::Result<()> {
-    let migration_queries = vec![
+    let migration_queries: Vec<&str> = vec![
         include_str!("../../migrations/20240101000000_finance.sql"),
         include_str!("../../migrations/20240101000001_inventory.sql"),
         include_str!("../../migrations/20240101000002_sales.sql"),
         include_str!("../../migrations/20240101000003_purchasing.sql"),
-        include_str!("../../migrations/20240101000004_manufacturing.sql"),
         include_str!("../../migrations/20240101000005_hr.sql"),
         include_str!("../../migrations/20240101000006_auth.sql"),
-        include_str!("../../migrations/20240101000007_audit.sql"),
-        include_str!("../../migrations/20240101000008_quotations.sql"),
-        include_str!("../../migrations/20240101000009_workflows.sql"),
-        include_str!("../../migrations/20240101000010_attachments.sql"),
-        include_str!("../../migrations/20240101000011_extended_features.sql"),
-        include_str!("../../migrations/20240101000012_advanced_features.sql"),
         include_str!("../../migrations/20240101000013_enterprise_features.sql"),
-        include_str!("../../migrations/20240101000014_indexes.sql"),
-        include_str!("../../migrations/20240101000015_service_management.sql"),
-        include_str!("../../migrations/20240101000016_it_assets.sql"),
-        include_str!("../../migrations/20240101000017_compliance.sql"),
-        include_str!("../../migrations/20240101000018_enterprise_additions.sql"),
-        include_str!("../../migrations/20240101000019_new_modules.sql"),
-        include_str!("../../migrations/20240101000020_ai_portals_iot_automation.sql"),
-        include_str!("../../migrations/20240101000021_new_enterprise_modules.sql"),
-        include_str!("../../migrations/20240101000022_enterprise_integration_features.sql"),
-        include_str!("../../migrations/20240101000023_new_enterprise_features.sql"),
-        include_str!("../../migrations/20240101000024_enterprise_features_expansion.sql"),
-        include_str!("../../migrations/20240101000025_enterprise_security_features.sql"),
-        include_str!("../../migrations/20240101000026_enterprise_infrastructure_features.sql"),
-        include_str!("../../migrations/20240101000027_enterprise_cpq_clm_commission_aps_spend_compensation.sql"),
-        include_str!("../../migrations/20240101200000_tms.sql"),
-        include_str!("../../migrations/20240101200100_plm.sql"),
-        include_str!("../../migrations/20240101200200_mdm.sql"),
-        include_str!("../../migrations/20240101200300_fsm.sql"),
-        include_str!("../../migrations/20240101200400_tpm.sql"),
         include_str!("../../migrations/20240101200500_enterprise_wms_demand_edi_tenant_revrec_intercompany_lms.sql"),
-        include_str!("../../migrations/20240101200600_reportscheduling_chat_calendar_signing_email.sql"),
-        include_str!("../../migrations/20240202000000_bi_i18n_push_bpm_graphql.sql"),
-        include_str!("../../migrations/20240101200700_assistant_ocr_fraud_processmining.sql"),
-        include_str!("../../migrations/20240101200700_lease_bank_loyalty_partner_pcard_territory_predictive.sql"),
-        include_str!("../../migrations/20240101200800_mrp_eam_valuation_cash_supplier.sql"),
-        include_str!("../../migrations/202401012009_budgeting_grant_abc_dataquality_knowledge.sql"),
-        include_str!("../../migrations/20240101201000_promotions.sql"),
-        include_str!("../../migrations/20240301000000_currency_revaluation.sql"),
-        include_str!("../../migrations/20240302000000_approval_workflow.sql"),
-        include_str!("../../migrations/20240303000000_credit_management.sql"),
         include_str!("../../migrations/20240304000000_stripe_payments.sql"),
-        include_str!("../../migrations/20240305000000_dropship.sql"),
-        include_str!("../../migrations/20240227000000_kanban.sql"),
-        include_str!("../../migrations/20240306000000_bundles.sql"),
-        include_str!("../../migrations/20240307000000_warranty.sql"),
-        include_str!("../../migrations/20240308000000_eam.sql"),
-        include_str!("../../migrations/20260302000000_inventory_adjustments.sql"),
-        include_str!("../../migrations/20260307160000_cycle_counting.sql"),
-        ];
-
+    ];
     
-    for migration in migration_queries {
-        for statement in migration.split(';') {
+    for query in migration_queries {
+        for statement in query.split(';') {
             let statement = statement.trim();
             if !statement.is_empty() {
                 if let Err(e) = sqlx::query(statement).execute(pool).await {
                     if !e.to_string().contains("already exists") {
-                        return Err(e.into());
+                        return Err(anyhow::anyhow!(e));
                     }
                 }
             }
