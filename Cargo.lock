@@ -2018,6 +2018,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-landed-cost"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-learning"
 version = "0.1.0"
 dependencies = [
