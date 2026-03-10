@@ -2636,6 +2636,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-quality-sampling"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-real-estate"
 version = "0.1.0"
 dependencies = [
