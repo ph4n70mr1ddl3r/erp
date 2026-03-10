@@ -3249,6 +3249,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-yms"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "errno"
 version = "0.3.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
