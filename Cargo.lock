@@ -2073,6 +2073,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-lease-accounting"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-leave"
 version = "0.1.0"
 dependencies = [
