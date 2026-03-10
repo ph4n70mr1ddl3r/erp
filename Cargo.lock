@@ -2233,6 +2233,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-mrp-rccp"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-notes"
 version = "0.1.0"
 dependencies = [
