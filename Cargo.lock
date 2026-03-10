@@ -1952,6 +1952,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-inventory-aging"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-iot"
 version = "0.1.0"
 dependencies = [

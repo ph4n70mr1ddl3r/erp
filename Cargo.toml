@@ -115,7 +115,7 @@ members = [
     "erp-product-variants",
     "erp-giftcards",
     "erp-favorites"
-, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning", "erp-leave", "erp-okr", "erp-capa", "erp-ehs", "erp-strategy", "erp-visitor", "erp-rebates", "erp-whistleblower", "erp-legal", "erp-trade", "erp-csr", "erp-health", "erp-insurance", "erp-coi", "erp-succession", "erp-audit", "erp-board", "erp-ir", "erp-mobility", "erp-recognition", "erp-real-estate", "erp-mentorship", "erp-bcp", "erp-innovation", "erp-wellness", "erp-yms", "erp-consignment", "erp-landed-cost", "erp-assets-depreciation", "erp-quality-sampling", "erp-mrp-rccp", "erp-projects-evm", "erp-wms-slotting", "erp-intercompany-reconciliation", "erp-lease-accounting", "erp-expenses-validation", "erp-sales-atp", "erp-manufacturing-oee", "erp-crm-clv", "erp-manufacturing-variance"]
+, "erp-fleet", "erp-crm", "erp-pim", "erp-ats", "erp-timesheets", "erp-payroll", "erp-dunning", "erp-leave", "erp-okr", "erp-capa", "erp-ehs", "erp-strategy", "erp-visitor", "erp-rebates", "erp-whistleblower", "erp-legal", "erp-trade", "erp-csr", "erp-health", "erp-insurance", "erp-coi", "erp-succession", "erp-audit", "erp-board", "erp-ir", "erp-mobility", "erp-recognition", "erp-real-estate", "erp-mentorship", "erp-bcp", "erp-innovation", "erp-wellness", "erp-yms", "erp-consignment", "erp-landed-cost", "erp-assets-depreciation", "erp-quality-sampling", "erp-mrp-rccp", "erp-projects-evm", "erp-wms-slotting", "erp-intercompany-reconciliation", "erp-lease-accounting", "erp-expenses-validation", "erp-sales-atp", "erp-manufacturing-oee", "erp-crm-clv", "erp-manufacturing-variance", "erp-inventory-aging"]
 resolver = "2"
 
 [workspace.package]
