@@ -1593,6 +1593,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-expenses-validation"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-favorites"
 version = "0.1.0"
 dependencies = [
