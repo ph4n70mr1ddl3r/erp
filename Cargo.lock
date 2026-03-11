@@ -2212,6 +2212,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-manufacturing-bom-diff"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "erp-core",
+ "erp-manufacturing",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-manufacturing-oee"
 version = "0.1.0"
 dependencies = [
