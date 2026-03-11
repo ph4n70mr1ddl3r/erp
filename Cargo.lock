@@ -1362,6 +1362,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-credit-scoring"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-crm"
 version = "0.1.0"
 dependencies = [
