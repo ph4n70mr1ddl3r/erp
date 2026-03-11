@@ -1507,6 +1507,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erp-dunning-strategy"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "uuid 1.21.0",
+]
+
+[[package]]
 name = "erp-eam"
 version = "0.1.0"
 dependencies = [
